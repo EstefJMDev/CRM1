@@ -1,0 +1,144 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  password  String
+  name      String
+  role      Role       @default(USER)
+  contracts Contract[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@map("users")
+}
+
+model Contract {
+  id                     String         @id @default(cuid())
+  contractNumber         String         @unique
+  clientName             String
+  clientLastName         String?
+  clientType             String
+  clientDNI              String?
+  clientPhone            String?
+  clientSMS              String?
+  clientEmail            String?
+  clientIBAN             String?
+
+  supplyType             String
+  commercializer         String
+  requestType            String?
+  cups                   String?
+  cupsGas                String?
+  tariff                 String?
+  lightTariff            String?
+  gasTariff              String?
+  products               String[]       @default([])
+
+  address                String?
+  municipality           String?
+  province               String?
+  zipCode                String?
+  roadType               String?
+  roadName               String?
+  roadNumber             String?
+
+  secondaryZipCode       String?
+  secondaryMunicipality  String?
+  secondaryProvince      String?
+  secondaryRoadType      String?
+  secondaryRoadName      String?
+  secondaryRoadNumber    String?
+
+  pdv                    String?
+  scheduledCallDate      DateTime?
+  status                 ContractStatus @default(ACTIVE)
+  observations           String?
+
+  activationDate         DateTime?
+  inactiveDate           DateTime?
+
+  documents              Document[]
+  interactions           Interaction[]
+  statusHistory          ContractStatusHistory[]
+
+  userId                 String
+  user                   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+
+  @@index([userId])
+  @@map("contracts")
+}
+
+model ContractStatusHistory {
+  id           String   @id @default(cuid())
+  status       String
+  observations String?
+  changedBy    String
+
+  contract     Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  contractId   String
+
+  createdAt    DateTime @default(now())
+
+  @@index([contractId, createdAt])
+  @@map("contract_status_history")
+}
+
+model Document {
+  id         String   @id @default(cuid())
+  name       String
+  url        String
+  mimeType   String?
+  size       Int?
+
+  contract   Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  contractId String
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([contractId])
+  @@map("documents")
+}
+
+model Interaction {
+  id         String   @id @default(cuid())
+  type       String
+  date       DateTime
+  notes      String
+
+  contract   Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  contractId String
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([contractId])
+  @@map("interactions")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum ContractStatus {
+  ACTIVE
+  PENDING
+  INACTIVE
+  CANCELLED
+}
