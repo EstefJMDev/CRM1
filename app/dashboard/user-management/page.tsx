@@ -446,7 +446,103 @@ export default function UserManagementPage() {
                   <div className="text-sm text-gray-500">Total: {sortedUsers.length}</div>
                 </div>
               </div>
-              <div className="overflow-x-auto">
+              <div className="divide-y divide-gray-200 md:hidden">
+                {sortedUsers.map((user) => {
+                  const editable = editUsers[user.id];
+                  const lastLoginLabel = user.lastLoginAt
+                    ? new Date(user.lastLoginAt).toLocaleString("es-ES")
+                    : "Nunca";
+
+                  return (
+                    <article key={user.id} className="p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-base font-semibold text-gray-900">{user.name} {user.lastName || ""}</p>
+                          <p className="text-sm text-gray-600">{user.email}</p>
+                        </div>
+                        <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
+                          user.mustChangePassword
+                            ? "bg-amber-100 text-amber-800"
+                            : "bg-green-100 text-green-800"
+                        }`}>
+                          {user.mustChangePassword ? "Debe cambiar" : "Activa"}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div><p className="text-gray-500">Rol</p><p className="font-medium text-gray-800">{user.role}</p></div>
+                        <div><p className="text-gray-500">Estado</p><p className="font-medium text-gray-800">{user.isActive ? "Activo" : "Desactivado"}</p></div>
+                        <div className="col-span-2"><p className="text-gray-500">Última conexión</p><p className="text-gray-700">{lastLoginLabel}</p></div>
+                      </div>
+
+                      {user.role !== "SUPER_ADMIN" && editable && (
+                        <div className="space-y-2 border-t border-gray-100 pt-3">
+                          <input
+                            className="field-input"
+                            value={editable.name || ""}
+                            onChange={(e) => setEditUsers((prev) => ({ ...prev, [user.id]: { ...prev[user.id], name: e.target.value } }))}
+                            placeholder="Nombre"
+                          />
+                          <input
+                            className="field-input"
+                            value={editable.lastName || ""}
+                            onChange={(e) => setEditUsers((prev) => ({ ...prev, [user.id]: { ...prev[user.id], lastName: e.target.value } }))}
+                            placeholder="Apellidos"
+                          />
+                          <input
+                            className="field-input"
+                            type="email"
+                            value={editable.email || ""}
+                            onChange={(e) => setEditUsers((prev) => ({ ...prev, [user.id]: { ...prev[user.id], email: e.target.value } }))}
+                            placeholder="Email"
+                          />
+                          <select
+                            className="field-input"
+                            value={editable.role || "USER"}
+                            onChange={(e) => setEditUsers((prev) => ({ ...prev, [user.id]: { ...prev[user.id], role: e.target.value } }))}
+                          >
+                            <option value="USER">USER</option>
+                            <option value="TENANT_ADMIN">TENANT_ADMIN</option>
+                            <option value="ADMIN">ADMIN</option>
+                          </select>
+                          <label className="inline-flex items-center gap-2 rounded-full bg-gray-50 px-3 py-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(editable.isActive)}
+                              onChange={(e) => setEditUsers((prev) => ({ ...prev, [user.id]: { ...prev[user.id], isActive: e.target.checked } }))}
+                            />
+                            {editable.isActive ? "Activo" : "Desactivado"}
+                          </label>
+                          <input
+                            className="field-input"
+                            type="password"
+                            placeholder="Nueva temporal"
+                            value={resetPasswords[user.id] || ""}
+                            onChange={(e) => setResetPasswords((prev) => ({ ...prev, [user.id]: e.target.value }))}
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              className="flex-1 rounded-lg bg-amber-500 px-3 py-2 text-sm font-medium text-white hover:bg-amber-600"
+                              onClick={() => void handleResetPassword(user.id)}
+                              type="button"
+                            >
+                              Cambio clave
+                            </button>
+                            <button
+                              className="flex-1 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                              onClick={() => void handleUpdateUser(user.id)}
+                              type="button"
+                            >
+                              Guardar
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </article>
+                  );
+                })}
+              </div>
+              <div className="hidden overflow-x-auto md:block">
               <table className="w-full min-w-[1180px] divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>

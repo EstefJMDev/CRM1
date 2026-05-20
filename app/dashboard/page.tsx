@@ -414,7 +414,70 @@ export default function DashboardPage() {
         <div className="app-card overflow-hidden slide-up" style={{ animationDelay: "90ms" }}>
           {filteredContracts.length > 0 ? (
             <>
-            <div className="overflow-x-auto">
+            <div className="divide-y divide-gray-200 md:hidden">
+              {paginatedContracts.map((contract) => (
+                <article key={contract.id} className="p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-gray-500">Contrato</p>
+                      <p className="text-base font-semibold text-gray-900">{contract.contractNumber}</p>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      contract.status === "ACTIVE"
+                        ? "bg-green-100 text-green-800"
+                        : contract.status === "PENDING"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : contract.status === "INACTIVE"
+                        ? "bg-gray-100 text-gray-800"
+                        : "bg-red-100 text-red-800"
+                    }`}>
+                      {STATUS_LABELS[contract.status] || contract.status}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div><p className="text-gray-500">Agente</p><p className="text-gray-800 font-medium">{contract.user.name}</p></div>
+                    <div><p className="text-gray-500">Comercializadora</p><p className="text-gray-800 font-medium">{contract.commercializer}</p></div>
+                    <div><p className="text-gray-500">CUPS</p><p className="text-gray-800">{contract.cups || "-"}</p></div>
+                    <div><p className="text-gray-500">Adjuntos</p><p className="text-gray-800">{contract.documents?.length || 0}</p></div>
+                  </div>
+
+                  <div className="text-sm">
+                    <p className="text-gray-500">Cliente</p>
+                    <p className="font-medium text-gray-800">{contract.clientName} {contract.clientLastName || ""}</p>
+                    <p className="text-xs text-gray-500">{contract.clientDNI || "-"}</p>
+                  </div>
+
+                  <div className="text-sm">
+                    <p className="text-gray-500">Contacto</p>
+                    <p className="text-gray-700">{contract.address || "-"}</p>
+                    <p className="text-xs text-gray-500">{contract.clientPhone || "-"}</p>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 text-xs text-gray-600">
+                    <div><p className="text-gray-500">Alta</p><p>{new Date(contract.createdAt).toLocaleDateString("es-ES")}</p></div>
+                    <div><p className="text-gray-500">Activación</p><p>{contract.activationDate ? new Date(contract.activationDate).toLocaleDateString("es-ES") : "-"}</p></div>
+                    <div><p className="text-gray-500">Baja</p><p>{contract.inactiveDate ? new Date(contract.inactiveDate).toLocaleDateString("es-ES") : "-"}</p></div>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <Link
+                      href={`/dashboard/contracts/${contract.id}`}
+                      className="flex-1 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-center text-sm font-medium text-blue-700"
+                    >
+                      Ver
+                    </Link>
+                    <Link
+                      href={`/dashboard/contracts/${contract.id}/edit`}
+                      className="flex-1 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-center text-sm font-medium text-green-700"
+                    >
+                      Editar
+                    </Link>
+                  </div>
+                </article>
+              ))}
+            </div>
+            <div className="hidden overflow-x-auto md:block">
             <table className="w-full min-w-[1120px] divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
