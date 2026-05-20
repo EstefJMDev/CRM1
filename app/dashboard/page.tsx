@@ -269,9 +269,9 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow">
-        <div className="max-w-[96vw] mx-auto px-3 sm:px-4 lg:px-5 py-4 flex justify-between items-center">
+    <div className="app-shell">
+      <header className="app-header">
+        <div className="app-header-inner">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">CRM Contratos</h1>
             <p className="text-gray-600 text-sm mt-1">
@@ -285,16 +285,16 @@ export default function DashboardPage() {
                 : ""}
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/dashboard/user-management"
-              className="bg-gray-700 hover:bg-gray-800 text-white font-medium py-2 px-4 rounded-lg"
+              className="btn-secondary text-sm"
             >
               Gestion de usuario
             </Link>
             <button
             onClick={handleLogout}
-            className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg"
+            className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
           >
             Cerrar Sesión
           </button>
@@ -302,8 +302,8 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <main className="max-w-[96vw] mx-auto px-3 sm:px-4 lg:px-5 py-8">
-        <div className="bg-white rounded-lg shadow p-4 mb-6 space-y-3">
+      <main className="app-main">
+        <div className="app-card mb-6 space-y-3 p-4">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
             <div className="md:col-span-5">
               <label className="block text-xs font-semibold text-gray-600 mb-1">Buscar</label>
@@ -312,12 +312,12 @@ export default function DashboardPage() {
                 placeholder="Buscar agente, cliente, contacto, CUPS"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                className="field-input"
               />
             </div>
             <div className="md:col-span-3">
               <label className="block text-xs font-semibold text-gray-600 mb-1">Agente</label>
-              <select value={agentFilter} onChange={(e) => setAgentFilter(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+              <select value={agentFilter} onChange={(e) => setAgentFilter(e.target.value)} className="field-input">
                 <option value="all">Todos los agentes</option>
                 {agentOptions.map((agent) => (
                   <option key={agent} value={agent}>{agent}</option>
@@ -326,7 +326,7 @@ export default function DashboardPage() {
             </div>
             <div className="md:col-span-2">
               <label className="block text-xs font-semibold text-gray-600 mb-1">Estado</label>
-              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="field-input">
                 <option value="all">Todos</option>
                 <option value="PENDING">Pendiente</option>
                 <option value="ACTIVE">Activo</option>
@@ -345,12 +345,12 @@ export default function DashboardPage() {
           {showAdvancedFilters && (
             <div className="border-t pt-3 space-y-3">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div><label className="block text-xs font-semibold text-gray-600 mb-1">Desde Activación</label><input type="date" value={fromActivationDate} onChange={(e) => setFromActivationDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" /></div>
-                <div><label className="block text-xs font-semibold text-gray-600 mb-1">Hasta Activación</label><input type="date" value={toActivationDate} onChange={(e) => setToActivationDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" /></div>
-                <div><label className="block text-xs font-semibold text-gray-600 mb-1">Desde Alta</label><input type="date" value={fromCreatedDate} onChange={(e) => setFromCreatedDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" /></div>
-                <div><label className="block text-xs font-semibold text-gray-600 mb-1">Hasta Alta</label><input type="date" value={toCreatedDate} onChange={(e) => setToCreatedDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" /></div>
-                <div><label className="block text-xs font-semibold text-gray-600 mb-1">Desde Baja</label><input type="date" value={fromInactiveDate} onChange={(e) => setFromInactiveDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" /></div>
-                <div><label className="block text-xs font-semibold text-gray-600 mb-1">Hasta Baja</label><input type="date" value={toInactiveDate} onChange={(e) => setToInactiveDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" /></div>
+                <div><label className="block text-xs font-semibold text-gray-600 mb-1">Desde Activación</label><input type="date" value={fromActivationDate} onChange={(e) => setFromActivationDate(e.target.value)} className="field-input" /></div>
+                <div><label className="block text-xs font-semibold text-gray-600 mb-1">Hasta Activación</label><input type="date" value={toActivationDate} onChange={(e) => setToActivationDate(e.target.value)} className="field-input" /></div>
+                <div><label className="block text-xs font-semibold text-gray-600 mb-1">Desde Alta</label><input type="date" value={fromCreatedDate} onChange={(e) => setFromCreatedDate(e.target.value)} className="field-input" /></div>
+                <div><label className="block text-xs font-semibold text-gray-600 mb-1">Hasta Alta</label><input type="date" value={toCreatedDate} onChange={(e) => setToCreatedDate(e.target.value)} className="field-input" /></div>
+                <div><label className="block text-xs font-semibold text-gray-600 mb-1">Desde Baja</label><input type="date" value={fromInactiveDate} onChange={(e) => setFromInactiveDate(e.target.value)} className="field-input" /></div>
+                <div><label className="block text-xs font-semibold text-gray-600 mb-1">Hasta Baja</label><input type="date" value={toInactiveDate} onChange={(e) => setToInactiveDate(e.target.value)} className="field-input" /></div>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
@@ -385,27 +385,29 @@ export default function DashboardPage() {
             type="button"
             onClick={handleExport}
             disabled={isExporting || filteredContracts.length === 0}
-            title="Descargar Excel"
-            aria-label="Descargar Excel"
-            className="inline-flex items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+            title="Exportación masiva"
+            aria-label="Exportación masiva"
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M3 14.25A2.25 2.25 0 015.25 12h1a.75.75 0 010 1.5h-1a.75.75 0 00-.75.75v1.5c0 .414.336.75.75.75h9.5a.75.75 0 00.75-.75v-1.5a.75.75 0 00-.75-.75h-1a.75.75 0 010-1.5h1A2.25 2.25 0 0117 14.25v1.5A2.25 2.25 0 0114.75 18h-9.5A2.25 2.25 0 013 15.75v-1.5z" clipRule="evenodd" />
               <path fillRule="evenodd" d="M10 2.75a.75.75 0 01.75.75v7.19l1.72-1.72a.75.75 0 111.06 1.06l-3 3a.75.75 0 01-1.06 0l-3-3A.75.75 0 117.53 8.97l1.72 1.72V3.5a.75.75 0 01.75-.75z" clipRule="evenodd" />
             </svg>
+            <span>{isExporting ? "Exportando..." : "Exportación masiva"}</span>
           </button>
           <Link
             href="/dashboard/new-contract"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg"
+            className="btn-primary"
           >
             + Nuevo Contrato
           </Link>
         </div>
 
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="app-card overflow-hidden">
           {filteredContracts.length > 0 ? (
             <>
-            <table className="w-full table-fixed divide-y divide-gray-200">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[1120px] divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
@@ -478,6 +480,7 @@ export default function DashboardPage() {
                 ))}
               </tbody>
             </table>
+            </div>
             <div className="flex items-center justify-between border-t border-gray-200 bg-gray-50 px-6 py-4">
               <div className="text-sm text-gray-600">
                 Pagina {safeCurrentPage} de {totalPages}

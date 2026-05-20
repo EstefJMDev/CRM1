@@ -274,12 +274,12 @@ export default function UserManagementPage() {
     return (
       <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.20),_transparent_35%),linear-gradient(180deg,#eef4ff_0%,#f7f9fc_45%,#eef2f7_100%)]">
         <header className="bg-white/80 backdrop-blur-sm border-b border-white/60">
-          <div className="max-w-[96vw] mx-auto px-3 sm:px-4 lg:px-5 py-4 flex justify-between items-center gap-4">
+          <div className="app-header-inner">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Gestion de Usuario</h1>
               <p className="text-sm text-gray-600">{currentUser?.name} {currentUser?.lastName || ""}</p>
             </div>
-            <Link href="/dashboard" className="bg-gray-700 hover:bg-gray-800 text-white font-medium py-2 px-4 rounded-lg">
+            <Link href="/dashboard" className="btn-secondary">
               Volver al dashboard
             </Link>
           </div>
@@ -355,76 +355,76 @@ export default function UserManagementPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow">
-        <div className="max-w-[96vw] mx-auto px-3 sm:px-4 lg:px-5 py-4 flex justify-between items-center gap-4">
+    <div className="app-shell">
+      <header className="app-header">
+        <div className="app-header-inner">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Gestion de Usuario</h1>
             <p className="text-sm text-gray-600">Administra tu perfil y el acceso de los usuarios</p>
           </div>
-          <Link href="/dashboard" className="bg-gray-700 hover:bg-gray-800 text-white font-medium py-2 px-4 rounded-lg">
+          <Link href="/dashboard" className="btn-secondary">
             Volver al dashboard
           </Link>
         </div>
       </header>
 
-      <main className="max-w-[96vw] mx-auto px-3 sm:px-4 lg:px-5 py-8 space-y-6">
+      <main className="app-main space-y-6">
         {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">{error}</div>}
         {success && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">{success}</div>}
 
-        <section className="bg-white rounded-lg shadow p-6">
+        <section className="app-card p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Datos personales</h2>
           <form className="grid md:grid-cols-3 gap-4" onSubmit={handleProfileSubmit}>
-            <input className="px-3 py-2 border border-gray-300 rounded-lg" placeholder="Nombre" value={profileForm.name} onChange={(e) => setProfileForm((prev) => ({ ...prev, name: e.target.value }))} />
-            <input className="px-3 py-2 border border-gray-300 rounded-lg" placeholder="Apellidos" value={profileForm.lastName} onChange={(e) => setProfileForm((prev) => ({ ...prev, lastName: e.target.value }))} />
-            <input className="px-3 py-2 border border-gray-300 rounded-lg" placeholder="Email" type="email" value={profileForm.email} onChange={(e) => setProfileForm((prev) => ({ ...prev, email: e.target.value }))} />
+            <input className="field-input" placeholder="Nombre" value={profileForm.name} onChange={(e) => setProfileForm((prev) => ({ ...prev, name: e.target.value }))} />
+            <input className="field-input" placeholder="Apellidos" value={profileForm.lastName} onChange={(e) => setProfileForm((prev) => ({ ...prev, lastName: e.target.value }))} />
+            <input className="field-input" placeholder="Email" type="email" value={profileForm.email} onChange={(e) => setProfileForm((prev) => ({ ...prev, email: e.target.value }))} />
             <div className="md:col-span-3">
-              <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg" type="submit">Guardar perfil</button>
+              <button className="btn-primary" type="submit">Guardar perfil</button>
             </div>
           </form>
         </section>
 
-        <section className="bg-white rounded-lg shadow p-6">
+        <section className="app-card p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Cambiar contrasena</h2>
           <form className="grid md:grid-cols-3 gap-4" onSubmit={handlePasswordSubmit}>
             {!mustChangePassword && (
               <input
-                className="px-3 py-2 border border-gray-300 rounded-lg"
+                className="field-input"
                 type="password"
                 placeholder="Contrasena actual"
                 value={passwordForm.currentPassword}
                 onChange={(e) => setPasswordForm((prev) => ({ ...prev, currentPassword: e.target.value }))}
               />
             )}
-            <input className="px-3 py-2 border border-gray-300 rounded-lg" type="password" placeholder="Nueva contrasena" value={passwordForm.newPassword} onChange={(e) => setPasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))} />
-            <input className="px-3 py-2 border border-gray-300 rounded-lg" type="password" placeholder="Confirmar nueva contrasena" value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm((prev) => ({ ...prev, confirmPassword: e.target.value }))} />
+            <input className="field-input" type="password" placeholder="Nueva contrasena" value={passwordForm.newPassword} onChange={(e) => setPasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))} />
+            <input className="field-input" type="password" placeholder="Confirmar nueva contrasena" value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm((prev) => ({ ...prev, confirmPassword: e.target.value }))} />
             <div className="md:col-span-3">
-              <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg" type="submit">Actualizar contrasena</button>
+              <button className="btn-primary" type="submit">Actualizar contrasena</button>
             </div>
           </form>
         </section>
 
         {isSuperAdmin && !mustChangePassword && (
           <>
-            <section className="bg-white rounded-lg shadow p-6">
+            <section className="app-card p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Crear usuario</h2>
               <form className="grid md:grid-cols-5 gap-4" onSubmit={handleCreateUser}>
-                <input className="px-3 py-2 border border-gray-300 rounded-lg" placeholder="Nombre" value={newUserForm.name} onChange={(e) => setNewUserForm((prev) => ({ ...prev, name: e.target.value }))} />
-                <input className="px-3 py-2 border border-gray-300 rounded-lg" placeholder="Apellidos" value={newUserForm.lastName} onChange={(e) => setNewUserForm((prev) => ({ ...prev, lastName: e.target.value }))} />
-                <input className="px-3 py-2 border border-gray-300 rounded-lg" placeholder="Email" type="email" value={newUserForm.email} onChange={(e) => setNewUserForm((prev) => ({ ...prev, email: e.target.value }))} />
-                <input className="px-3 py-2 border border-gray-300 rounded-lg" placeholder="Contrasena temporal" type="password" value={newUserForm.temporaryPassword} onChange={(e) => setNewUserForm((prev) => ({ ...prev, temporaryPassword: e.target.value }))} />
-                <select className="px-3 py-2 border border-gray-300 rounded-lg" value={newUserForm.role} onChange={(e) => setNewUserForm((prev) => ({ ...prev, role: e.target.value }))}>
+                <input className="field-input" placeholder="Nombre" value={newUserForm.name} onChange={(e) => setNewUserForm((prev) => ({ ...prev, name: e.target.value }))} />
+                <input className="field-input" placeholder="Apellidos" value={newUserForm.lastName} onChange={(e) => setNewUserForm((prev) => ({ ...prev, lastName: e.target.value }))} />
+                <input className="field-input" placeholder="Email" type="email" value={newUserForm.email} onChange={(e) => setNewUserForm((prev) => ({ ...prev, email: e.target.value }))} />
+                <input className="field-input" placeholder="Contrasena temporal" type="password" value={newUserForm.temporaryPassword} onChange={(e) => setNewUserForm((prev) => ({ ...prev, temporaryPassword: e.target.value }))} />
+                <select className="field-input" value={newUserForm.role} onChange={(e) => setNewUserForm((prev) => ({ ...prev, role: e.target.value }))}>
                   <option value="USER">USER</option>
                   <option value="TENANT_ADMIN">TENANT_ADMIN</option>
                   <option value="ADMIN">ADMIN</option>
                 </select>
                 <div className="md:col-span-5">
-                  <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg" type="submit">Crear usuario</button>
+                  <button className="btn-primary" type="submit">Crear usuario</button>
                 </div>
               </form>
             </section>
 
-            <section className="bg-white rounded-lg shadow overflow-hidden">
+            <section className="app-card overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-200">
                 <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
                   <div>
@@ -460,7 +460,7 @@ export default function UserManagementPage() {
                         <td className="px-4 py-3 text-sm text-gray-700">
                           {user.role === "SUPER_ADMIN" ? user.name : (
                             <input
-                              className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                              className="field-input"
                               value={editable?.name || ""}
                               onChange={(e) => setEditUsers((prev) => ({ ...prev, [user.id]: { ...prev[user.id], name: e.target.value } }))}
                             />
@@ -469,7 +469,7 @@ export default function UserManagementPage() {
                         <td className="px-4 py-3 text-sm text-gray-700">
                           {user.role === "SUPER_ADMIN" ? (user.lastName || "") : (
                             <input
-                              className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                              className="field-input"
                               value={editable?.lastName || ""}
                               onChange={(e) => setEditUsers((prev) => ({ ...prev, [user.id]: { ...prev[user.id], lastName: e.target.value } }))}
                             />
@@ -478,7 +478,7 @@ export default function UserManagementPage() {
                         <td className="px-4 py-3 text-sm text-gray-700">
                           {user.role === "SUPER_ADMIN" ? user.email : (
                             <input
-                              className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                              className="field-input"
                               type="email"
                               value={editable?.email || ""}
                               onChange={(e) => setEditUsers((prev) => ({ ...prev, [user.id]: { ...prev[user.id], email: e.target.value } }))}
@@ -488,7 +488,7 @@ export default function UserManagementPage() {
                         <td className="px-4 py-3 text-sm text-gray-700">
                           {user.role === "SUPER_ADMIN" ? "SUPER_ADMIN" : (
                             <select
-                              className="rounded-lg border border-gray-300 px-3 py-2"
+                              className="field-input"
                               value={editable?.role || "USER"}
                               onChange={(e) => setEditUsers((prev) => ({ ...prev, [user.id]: { ...prev[user.id], role: e.target.value } }))}
                             >
@@ -528,7 +528,7 @@ export default function UserManagementPage() {
                           ) : (
                             <div className="flex min-w-[320px] items-center gap-2">
                               <input
-                                className="flex-1 rounded-lg border border-gray-300 px-3 py-2"
+                                className="field-input flex-1"
                                 type="password"
                                 placeholder="Nueva temporal"
                                 value={resetPasswords[user.id] || ""}
@@ -564,3 +564,4 @@ export default function UserManagementPage() {
     </div>
   );
 }
+

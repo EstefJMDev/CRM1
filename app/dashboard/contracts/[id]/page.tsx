@@ -1,4 +1,4 @@
-ï»¿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -81,7 +81,7 @@ const STATUS_LABELS: Record<string, string> = {
   ACTIVE: "Activo",
   INACTIVE: "Inactivo",
   CANCELLED: "Cancelado",
-  TRAMITE: "TrÃ¡mite",
+  TRAMITE: "Trámite",
 };
 
 function formatDate(date?: string) {
@@ -156,7 +156,7 @@ export default function ContractDetailPage() {
         const data = await response.json();
         setContract(data);
       } catch (err) {
-        setError("Error de conexiÃ³n");
+        setError("Error de conexión");
         console.error(err);
       } finally {
         setLoading(false);
@@ -194,7 +194,7 @@ export default function ContractDetailPage() {
       );
 
       if (!response.ok) {
-        throw new Error("Error al agregar interacciÃ³n");
+        throw new Error("Error al agregar interacción");
       }
 
       const interaction = await response.json();
@@ -209,7 +209,7 @@ export default function ContractDetailPage() {
       setNewInteraction({ type: "", notes: "" });
       setShowInteractionForm(false);
     } catch (err) {
-      alert("Error al agregar interacciÃ³n");
+      alert("Error al agregar interacción");
       console.error(err);
     } finally {
       setInteractionLoading(false);
@@ -272,15 +272,15 @@ export default function ContractDetailPage() {
 
   if (error || !contract) {
     return (
-      <div className="min-h-screen bg-gray-100">
-        <header className="bg-white shadow">
+      <div className="app-shell">
+        <header className="app-header">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <Link href="/dashboard" className="text-blue-600 hover:text-blue-900">
               ? Volver al Dashboard
             </Link>
           </div>
         </header>
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="app-main max-w-7xl">
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
             {error}
           </div>
@@ -292,9 +292,9 @@ export default function ContractDetailPage() {
   const importedContract = isImportedContract(contract);
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+    <div className="app-shell">
+      <header className="app-header">
+        <div className="app-header-inner">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">{contract.contractNumber}</h1>
             <p className="text-gray-600 text-sm mt-1">{contract.clientName}</p>
@@ -302,7 +302,7 @@ export default function ContractDetailPage() {
           <div className="flex items-center gap-4">
             <Link
               href={`/dashboard/contracts/${contract.id}/edit`}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded-lg"
+              className="btn-primary text-sm"
             >
               Editar
             </Link>
@@ -313,10 +313,10 @@ export default function ContractDetailPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="app-main max-w-7xl">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <div className="app-card p-6 mb-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-4">Datos del Cliente</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -336,7 +336,7 @@ export default function ContractDetailPage() {
                   <p className="font-medium text-gray-900">{contract.clientDNI || "-"}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">TelÃ©fono</p>
+                  <p className="text-sm text-gray-600">Teléfono</p>
                   <p className="font-medium text-gray-900">{contract.clientPhone || "-"}</p>
                 </div>
                 <div>
@@ -350,7 +350,7 @@ export default function ContractDetailPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <div className="app-card p-6 mb-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-4">Punto de Suministro</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -366,15 +366,15 @@ export default function ContractDetailPage() {
                   <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.province)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Tipo VÃ­a</p>
+                  <p className="text-sm text-gray-600">Tipo Vía</p>
                   <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.roadType)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Nombre VÃ­a</p>
+                  <p className="text-sm text-gray-600">Nombre Vía</p>
                   <p className="font-medium text-gray-900">{contract.roadName || "-"}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">NÃºmero</p>
+                  <p className="text-sm text-gray-600">Número</p>
                   <p className="font-medium text-gray-900">{contract.roadNumber || "-"}</p>
                 </div>
               </div>
@@ -394,21 +394,21 @@ export default function ContractDetailPage() {
                   <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.secondaryProvince)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Tipo VÃ­a</p>
+                  <p className="text-sm text-gray-600">Tipo Vía</p>
                   <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.secondaryRoadType)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Nombre VÃ­a</p>
+                  <p className="text-sm text-gray-600">Nombre Vía</p>
                   <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.secondaryRoadName)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">NÃºmero</p>
+                  <p className="text-sm text-gray-600">Número</p>
                   <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.secondaryRoadNumber)}</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <div className="app-card p-6 mb-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-4">Datos del Contrato</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -440,7 +440,7 @@ export default function ContractDetailPage() {
                   <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.gasTariff)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Fecha ActivaciÃ³n</p>
+                  <p className="text-sm text-gray-600">Fecha Activación</p>
                   <p className="font-medium text-gray-900">{formatDate(contract.activationDate)}</p>
                 </div>
                 <div>
@@ -448,7 +448,7 @@ export default function ContractDetailPage() {
                   <p className="font-medium text-gray-900">{formatDate(contract.inactiveDate)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Fecha prevista locuciÃ³n</p>
+                  <p className="text-sm text-gray-600">Fecha prevista locución</p>
                   <p className="font-medium text-gray-900">{formatDate(contract.scheduledCallDate)}</p>
                 </div>
                 <div>
@@ -482,14 +482,14 @@ export default function ContractDetailPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="app-card p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold text-gray-900">Seguimiento de Interacciones</h2>
                 <button
                   onClick={() => setShowInteractionForm(!showInteractionForm)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-1 px-4 rounded-lg text-sm"
+                  className="btn-primary text-sm py-1"
                 >
-                  + Agregar InteracciÃ³n
+                  + Agregar Interacción
                 </button>
               </div>
 
@@ -520,7 +520,7 @@ export default function ContractDetailPage() {
                         notes: e.target.value,
                       })
                     }
-                    placeholder="Notas de la interacciÃ³n..."
+                    placeholder="Notas de la interacción..."
                     rows={4}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
@@ -529,13 +529,13 @@ export default function ContractDetailPage() {
                     <button
                       onClick={handleAddInteraction}
                       disabled={interactionLoading}
-                      className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg"
+                      className="rounded-xl bg-green-600 px-4 py-2 font-medium text-white hover:bg-green-700 disabled:bg-slate-400"
                     >
                       {interactionLoading ? "Guardando..." : "Guardar"}
                     </button>
                     <button
                       onClick={() => setShowInteractionForm(false)}
-                      className="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg"
+                      className="btn-secondary"
                     >
                       Cancelar
                     </button>
@@ -599,13 +599,13 @@ export default function ContractDetailPage() {
                   </table>
                 </div>
               ) : (
-                <p className="text-sm text-gray-600">Sin cambios de estado registrados todavÃ­a.</p>
+                <p className="text-sm text-gray-600">Sin cambios de estado registrados todavía.</p>
               )}
             </div>
           </div>
 
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <div className="app-card p-6 mb-6">
               <h3 className="text-lg font-bold text-gray-900 mb-4">Estado</h3>
               <span
                 className={`px-4 py-2 rounded-full text-sm font-medium inline-block ${
@@ -622,7 +622,7 @@ export default function ContractDetailPage() {
               </span>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <div className="app-card p-6 mb-6">
               <h3 className="text-lg font-bold text-gray-900 mb-4">Documentos</h3>
               <label className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg cursor-pointer mb-4">
                 {uploading ? "Subiendo..." : "Adjuntar documento"}
@@ -650,12 +650,12 @@ export default function ContractDetailPage() {
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-gray-600">Sin documentos todavÃ­a</p>
+                <p className="text-sm text-gray-600">Sin documentos todavía</p>
               )}
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6 mb-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">InformaciÃ³n</h3>
+            <div className="app-card p-6 mb-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Información</h3>
               <div className="space-y-3">
                 <div>
                   <p className="text-sm text-gray-600">Creado por</p>
@@ -663,18 +663,18 @@ export default function ContractDetailPage() {
                   <p className="text-sm text-gray-500">{contract.user.email}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Fecha CreaciÃ³n</p>
+                  <p className="text-sm text-gray-600">Fecha Creación</p>
                   <p className="font-medium text-gray-900">{formatDate(contract.createdAt)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Ãšltima ActualizaciÃ³n</p>
+                  <p className="text-sm text-gray-600">Última Actualización</p>
                   <p className="font-medium text-gray-900">{formatDate(contract.updatedAt)}</p>
                 </div>
               </div>
             </div>
 
             {contract.observations && (
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="app-card p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Observaciones</h3>
                 <p className="whitespace-pre-line text-gray-700">{cleanImportedText(contract.observations)}</p>
               </div>
@@ -685,4 +685,5 @@ export default function ContractDetailPage() {
     </div>
   );
 }
+
 

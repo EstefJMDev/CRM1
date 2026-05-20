@@ -79,8 +79,8 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-8">
+    <div className="app-shell flex items-center justify-center p-4">
+      <div className="app-card w-full max-w-md p-8">
         <h1 className="text-3xl font-bold text-center text-gray-800 mb-4">Registro inicial</h1>
         <p className="text-sm text-gray-500 text-center mb-6">Solo disponible para crear el primer Super Admin.</p>
 
@@ -91,16 +91,16 @@ export default function RegisterPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input id="name" type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Nombre" required className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-          <input id="lastName" type="text" name="lastName" value={formData.lastName} onChange={handleChange} placeholder="Apellidos" className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-          <input id="email" type="email" name="email" value={formData.email} onChange={handleChange} placeholder="tu@email.com" required className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-          <input id="password" type="password" name="password" value={formData.password} onChange={handleChange} placeholder="Contrasena" required className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-          <input id="confirmPassword" type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} placeholder="Confirmar contrasena" required className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+          <input id="name" type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Nombre" required className="field-input" />
+          <input id="lastName" type="text" name="lastName" value={formData.lastName} onChange={handleChange} placeholder="Apellidos" className="field-input" />
+          <input id="email" type="email" name="email" value={formData.email} onChange={handleChange} placeholder="tu@email.com" required className="field-input" />
+          <input id="password" type="password" name="password" value={formData.password} onChange={handleChange} placeholder="Contrasena" required className="field-input" />
+          <input id="confirmPassword" type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} placeholder="Confirmar contrasena" required className="field-input" />
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium py-2 rounded-lg transition duration-200"
+            className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-400"
           >
             {loading ? "Registrando..." : "Crear Super Admin"}
           </button>

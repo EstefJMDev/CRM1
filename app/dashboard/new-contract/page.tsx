@@ -1,4 +1,4 @@
-ï»¿"use client";
+"use client";
 
 import { useEffect, useMemo, useRef, useState, FormEvent, ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -360,9 +360,9 @@ export default function NewContractPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+    <div className="app-shell">
+      <header className="app-header">
+        <div className="app-header-inner">
           <h1 className="text-3xl font-bold text-gray-900">Nuevo Contrato</h1>
           <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">
             Volver al Dashboard
@@ -370,14 +370,14 @@ export default function NewContractPage() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow p-8">
+      <main className="app-main max-w-5xl">
+        <div className="app-card p-6 sm:p-8">
           {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">{error}</div>}
           {success && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6">Contrato creado exitosamente</div>}
 
           <form onSubmit={handleSubmit} className="space-y-8">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Contrato nÂ°</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Contrato n°</label>
               <input type="text" value={formData.contractNumber} disabled className="w-full md:w-52 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50" />
             </div>
 
@@ -386,33 +386,33 @@ export default function NewContractPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de cliente</label>
-                  <select name="clientType" value={formData.clientType} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                  <select name="clientType" value={formData.clientType} onChange={handleChange} className="field-input">
                     {CLIENT_TYPES.map((item) => <option key={item} value={item}>{item}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Nombre cliente</label>
-                  <input type="text" name="clientName" value={formData.clientName} onChange={handleChange} required className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                  <input type="text" name="clientName" value={formData.clientName} onChange={handleChange} required className="field-input" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Apellidos cliente</label>
-                  <input type="text" name="clientLastName" value={formData.clientLastName} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                  <input type="text" name="clientLastName" value={formData.clientLastName} onChange={handleChange} className="field-input" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">DNI/CIF</label>
-                  <input type="text" name="clientDNI" value={formData.clientDNI} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                  <input type="text" name="clientDNI" value={formData.clientDNI} onChange={handleChange} className="field-input" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Telefono</label>
-                  <input type="tel" name="clientPhone" value={formData.clientPhone} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                  <input type="tel" name="clientPhone" value={formData.clientPhone} onChange={handleChange} className="field-input" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                  <input type="email" name="clientEmail" value={formData.clientEmail} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                  <input type="email" name="clientEmail" value={formData.clientEmail} onChange={handleChange} className="field-input" />
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">IBAN</label>
-                  <input type="text" name="clientIBAN" value={formData.clientIBAN} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                  <input type="text" name="clientIBAN" value={formData.clientIBAN} onChange={handleChange} className="field-input" />
                 </div>
               </div>
             </section>
@@ -422,32 +422,32 @@ export default function NewContractPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Cod. Postal</label>
-                  <input type="text" name="zipCode" value={formData.zipCode} onChange={handleChange} maxLength={5} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                  <input type="text" name="zipCode" value={formData.zipCode} onChange={handleChange} maxLength={5} className="field-input" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Municipio</label>
-                  <input type="text" name="municipality" value={formData.municipality} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                  <input type="text" name="municipality" value={formData.municipality} onChange={handleChange} className="field-input" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Provincia</label>
-                  <select name="province" value={formData.province} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                  <select name="province" value={formData.province} onChange={handleChange} className="field-input">
                     <option value="">Seleccionar valor</option>
                     {PROVINCES.map((item) => <option key={item} value={item}>{item}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Tipo Via</label>
-                  <select name="roadType" value={formData.roadType} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                  <select name="roadType" value={formData.roadType} onChange={handleChange} className="field-input">
                     {ROAD_TYPES.map((item) => <option key={item} value={item}>{item}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Nombre Via</label>
-                  <input type="text" name="roadName" value={formData.roadName} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                  <input type="text" name="roadName" value={formData.roadName} onChange={handleChange} className="field-input" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Numero</label>
-                  <input type="text" name="roadNumber" value={formData.roadNumber} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                  <input type="text" name="roadNumber" value={formData.roadNumber} onChange={handleChange} className="field-input" />
                 </div>
               </div>
 
@@ -461,32 +461,32 @@ export default function NewContractPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Cod. Postal</label>
-                    <input type="text" name="secondaryZipCode" value={formData.secondaryZipCode} onChange={handleChange} maxLength={5} disabled={sameSupplyPoint} className="w-full px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-50" />
+                    <input type="text" name="secondaryZipCode" value={formData.secondaryZipCode} onChange={handleChange} maxLength={5} disabled={sameSupplyPoint} className="field-input disabled:bg-gray-50" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Municipio</label>
-                    <input type="text" name="secondaryMunicipality" value={formData.secondaryMunicipality} onChange={handleChange} disabled={sameSupplyPoint} className="w-full px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-50" />
+                    <input type="text" name="secondaryMunicipality" value={formData.secondaryMunicipality} onChange={handleChange} disabled={sameSupplyPoint} className="field-input disabled:bg-gray-50" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Provincia</label>
-                    <select name="secondaryProvince" value={formData.secondaryProvince} onChange={handleChange} disabled={sameSupplyPoint} className="w-full px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-50">
+                    <select name="secondaryProvince" value={formData.secondaryProvince} onChange={handleChange} disabled={sameSupplyPoint} className="field-input disabled:bg-gray-50">
                       <option value="">Seleccionar valor</option>
                       {PROVINCES.map((item) => <option key={item} value={item}>{item}</option>)}
                     </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Tipo Via</label>
-                    <select name="secondaryRoadType" value={formData.secondaryRoadType} onChange={handleChange} disabled={sameSupplyPoint} className="w-full px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-50">
+                    <select name="secondaryRoadType" value={formData.secondaryRoadType} onChange={handleChange} disabled={sameSupplyPoint} className="field-input disabled:bg-gray-50">
                       {ROAD_TYPES.map((item) => <option key={item} value={item}>{item}</option>)}
                     </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Nombre Via</label>
-                    <input type="text" name="secondaryRoadName" value={formData.secondaryRoadName} onChange={handleChange} disabled={sameSupplyPoint} className="w-full px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-50" />
+                    <input type="text" name="secondaryRoadName" value={formData.secondaryRoadName} onChange={handleChange} disabled={sameSupplyPoint} className="field-input disabled:bg-gray-50" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Numero</label>
-                    <input type="text" name="secondaryRoadNumber" value={formData.secondaryRoadNumber} onChange={handleChange} disabled={sameSupplyPoint} className="w-full px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-50" />
+                    <input type="text" name="secondaryRoadNumber" value={formData.secondaryRoadNumber} onChange={handleChange} disabled={sameSupplyPoint} className="field-input disabled:bg-gray-50" />
                   </div>
                 </div>
               </div>
@@ -497,35 +497,35 @@ export default function NewContractPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Comercializadora</label>
-                  <select name="commercializer" value={formData.commercializer} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                  <select name="commercializer" value={formData.commercializer} onChange={handleChange} className="field-input">
                     {COMMERCIALIZERS.map((item) => <option key={item} value={item}>{item}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Tipo Solicitud</label>
-                  <select name="requestType" value={formData.requestType} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                  <select name="requestType" value={formData.requestType} onChange={handleChange} className="field-input">
                     {REQUEST_TYPES.map((item) => <option key={item} value={item}>{item}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">CUPS Luz</label>
-                  <input type="text" name="cups" value={formData.cups} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                  <input type="text" name="cups" value={formData.cups} onChange={handleChange} className="field-input" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Tarifa Luz</label>
-                  <select name="lightTariff" value={formData.lightTariff} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                  <select name="lightTariff" value={formData.lightTariff} onChange={handleChange} className="field-input">
                     {LIGHT_TARIFFS.map((item) => <option key={item} value={item}>{item}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Tarifa Gas</label>
-                  <select name="gasTariff" value={formData.gasTariff} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                  <select name="gasTariff" value={formData.gasTariff} onChange={handleChange} className="field-input">
                     {GAS_TARIFFS.map((item) => <option key={item} value={item}>{item}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">CUPS Gas</label>
-                  <input type="text" name="cupsGas" value={formData.cupsGas} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                  <input type="text" name="cupsGas" value={formData.cupsGas} onChange={handleChange} className="field-input" />
                 </div>
               </div>
 
@@ -544,26 +544,26 @@ export default function NewContractPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Fecha Activacion</label>
-                  <input type="date" name="activationDate" value={formData.activationDate} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                  <input type="date" name="activationDate" value={formData.activationDate} onChange={handleChange} className="field-input" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Fecha Baja</label>
-                  <input type="date" name="inactiveDate" value={formData.inactiveDate} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                  <input type="date" name="inactiveDate" value={formData.inactiveDate} onChange={handleChange} className="field-input" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Fecha prevista locucion</label>
-                  <input type="date" name="scheduledCallDate" value={formData.scheduledCallDate} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                  <input type="date" name="scheduledCallDate" value={formData.scheduledCallDate} onChange={handleChange} className="field-input" />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">PDV</label>
-                  <input type="text" name="pdv" value={formData.pdv} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                  <input type="text" name="pdv" value={formData.pdv} onChange={handleChange} className="field-input" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Estado</label>
-                  <select name="status" value={formData.status} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                  <select name="status" value={formData.status} onChange={handleChange} className="field-input">
                     {STATUS_OPTIONS.map((status) => <option key={status} value={status}>{status}</option>)}
                   </select>
                 </div>
@@ -587,7 +587,7 @@ export default function NewContractPage() {
                 className="w-full border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/40 transition"
               >
                 <p className="text-sm text-gray-700 font-medium">
-                  Arrastra archivos aquÃ­ o haz clic para subir
+                  Arrastra archivos aquí o haz clic para subir
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
                   Formatos permitidos: PNG, JPG, DOCX, PDF
@@ -613,14 +613,14 @@ export default function NewContractPage() {
 
             <section>
               <label className="block text-sm font-medium text-gray-700 mb-2">Observaciones</label>
-              <textarea name="observations" value={formData.observations} onChange={handleChange} rows={3} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+              <textarea name="observations" value={formData.observations} onChange={handleChange} rows={3} className="field-input" />
             </section>
 
             <div className="flex gap-4">
-              <button type="submit" disabled={loading} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium py-3 rounded-lg">
+              <button type="submit" disabled={loading} className="btn-primary flex-1 disabled:cursor-not-allowed disabled:bg-slate-400">
                 {loading ? "Enviando..." : "Enviar"}
               </button>
-              <Link href="/dashboard" className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 rounded-lg text-center">
+              <Link href="/dashboard" className="btn-secondary flex-1 text-center">
                 Cancelar
               </Link>
             </div>
@@ -630,4 +630,5 @@ export default function NewContractPage() {
     </div>
   );
 }
+
 
