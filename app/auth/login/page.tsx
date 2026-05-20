@@ -45,14 +45,17 @@ export default function LoginPage() {
         return;
       }
 
-      // Guardar token en localStorage
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      // Redirigir al dashboard
+      if (data.user.mustChangePassword) {
+        router.push("/dashboard/user-management");
+        return;
+      }
+
       router.push("/dashboard");
     } catch (err) {
-      setError("Error de conexión");
+      setError("Error de conexion");
       console.error(err);
     } finally {
       setLoading(false);
@@ -91,7 +94,7 @@ export default function LoginPage() {
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-              Contraseña
+              Contrasena
             </label>
             <input
               id="password"
@@ -99,7 +102,7 @@ export default function LoginPage() {
               name="password"
               value={formData.password}
               onChange={handleChange}
-              placeholder="••••••••"
+              placeholder="********"
               required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -116,11 +119,11 @@ export default function LoginPage() {
 
         <div className="mt-6 text-center">
           <p className="text-gray-600 text-sm">
-            ¿No tienes cuenta?{" "}
-            <Link href="/auth/register" className="text-blue-600 hover:text-blue-700 font-medium">
-              Registrarse
-            </Link>
+            Si no tienes acceso, solicita alta al Super Admin.
           </p>
+          <Link href="/auth/register" className="text-xs text-gray-500 hover:text-gray-700 mt-2 inline-block">
+            Registro inicial del sistema
+          </Link>
         </div>
       </div>
     </div>

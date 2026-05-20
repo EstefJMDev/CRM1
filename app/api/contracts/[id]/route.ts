@@ -2,6 +2,10 @@ import { prisma } from "@/lib/db";
 import { getAuthUser } from "@/lib/session";
 import { NextRequest, NextResponse } from "next/server";
 
+function canViewAllContracts(role: string) {
+  return role === "SUPER_ADMIN" || role === "TENANT_ADMIN";
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -16,7 +20,7 @@ export async function GET(
 
     let contract;
 
-    if (user.role === "ADMIN") {
+    if (canViewAllContracts(user.role)) {
       contract = await prisma.contract.findUnique({
         where: { id },
         include: {
@@ -90,7 +94,7 @@ export async function PUT(
       select: { userId: true },
     });
 
-    if (!contract || (user.role !== "ADMIN" && contract.userId !== user.id)) {
+    if (!contract || (!canViewAllContracts(user.role) && contract.userId !== user.id)) {
       return NextResponse.json(
         { error: "No tienes permiso para actualizar este contrato" },
         { status: 403 }
@@ -167,19 +171,24 @@ export async function DELETE(
     if (!user) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
+    if (user.role !== "SUPER_ADMIN") {
+      return NextResponse.json(
+        { error: "Solo Super Admin puede eliminar contratos" },
+        { status: 403 }
+      );
+    }
 
     const { id } = await params;
 
-    // Verificar que el usuario es el propietario o es admin
     const contract = await prisma.contract.findUnique({
       where: { id },
-      select: { userId: true },
+      select: { id: true },
     });
 
-    if (!contract || (user.role !== "ADMIN" && contract.userId !== user.id)) {
+    if (!contract) {
       return NextResponse.json(
-        { error: "No tienes permiso para eliminar este contrato" },
-        { status: 403 }
+        { error: "Contrato no encontrado" },
+        { status: 404 }
       );
     }
 

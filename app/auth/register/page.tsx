@@ -8,6 +8,7 @@ interface FormData {
   email: string;
   password: string;
   name: string;
+  lastName: string;
   confirmPassword: string;
 }
 
@@ -19,6 +20,7 @@ export default function RegisterPage() {
     email: "",
     password: "",
     name: "",
+    lastName: "",
     confirmPassword: "",
   });
 
@@ -35,12 +37,12 @@ export default function RegisterPage() {
     setError("");
 
     if (formData.password !== formData.confirmPassword) {
-      setError("Las contraseñas no coinciden");
+      setError("Las contrasenas no coinciden");
       return;
     }
 
     if (formData.password.length < 6) {
-      setError("La contraseña debe tener al menos 6 caracteres");
+      setError("La contrasena debe tener al menos 6 caracteres");
       return;
     }
 
@@ -54,7 +56,7 @@ export default function RegisterPage() {
           email: formData.email,
           password: formData.password,
           name: formData.name,
-          role: "USER",
+          lastName: formData.lastName,
         }),
       });
 
@@ -65,14 +67,11 @@ export default function RegisterPage() {
         return;
       }
 
-      // Guardar token en localStorage
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
-
-      // Redirigir al dashboard
       router.push("/dashboard");
     } catch (err) {
-      setError("Error de conexión");
+      setError("Error de conexion");
       console.error(err);
     } finally {
       setLoading(false);
@@ -82,9 +81,8 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-8">
-        <h1 className="text-3xl font-bold text-center text-gray-800 mb-8">
-          Crear Cuenta
-        </h1>
+        <h1 className="text-3xl font-bold text-center text-gray-800 mb-4">Registro inicial</h1>
+        <p className="text-sm text-gray-500 text-center mb-6">Solo disponible para crear el primer Super Admin.</p>
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
@@ -92,87 +90,26 @@ export default function RegisterPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-              Nombre
-            </label>
-            <input
-              id="name"
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Tu nombre"
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="tu@email.com"
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-              Contraseña
-            </label>
-            <input
-              id="password"
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="••••••••"
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-              Confirmar Contraseña
-            </label>
-            <input
-              id="confirmPassword"
-              type="password"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              placeholder="••••••••"
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input id="name" type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Nombre" required className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+          <input id="lastName" type="text" name="lastName" value={formData.lastName} onChange={handleChange} placeholder="Apellidos" className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+          <input id="email" type="email" name="email" value={formData.email} onChange={handleChange} placeholder="tu@email.com" required className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+          <input id="password" type="password" name="password" value={formData.password} onChange={handleChange} placeholder="Contrasena" required className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+          <input id="confirmPassword" type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} placeholder="Confirmar contrasena" required className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
 
           <button
             type="submit"
             disabled={loading}
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium py-2 rounded-lg transition duration-200"
           >
-            {loading ? "Registrando..." : "Registrarse"}
+            {loading ? "Registrando..." : "Crear Super Admin"}
           </button>
         </form>
 
         <div className="mt-6 text-center">
-          <p className="text-gray-600 text-sm">
-            ¿Ya tienes cuenta?{" "}
-            <Link href="/auth/login" className="text-blue-600 hover:text-blue-700 font-medium">
-              Inicia sesión
-            </Link>
-          </p>
+          <Link href="/auth/login" className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+            Volver al login
+          </Link>
         </div>
       </div>
     </div>

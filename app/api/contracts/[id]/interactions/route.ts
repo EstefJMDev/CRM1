@@ -2,6 +2,10 @@ import { prisma } from "@/lib/db";
 import { getAuthUser } from "@/lib/session";
 import { NextRequest, NextResponse } from "next/server";
 
+function canViewAllContracts(role: string) {
+  return role === "SUPER_ADMIN" || role === "TENANT_ADMIN";
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -21,7 +25,7 @@ export async function POST(
       select: { userId: true },
     });
 
-    if (!contract || (user.role !== "ADMIN" && contract.userId !== user.id)) {
+    if (!contract || (!canViewAllContracts(user.role) && contract.userId !== user.id)) {
       return NextResponse.json(
         { error: "No tienes permiso para agregar interacciones" },
         { status: 403 }
@@ -46,3 +50,4 @@ export async function POST(
     );
   }
 }
+

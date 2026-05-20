@@ -3,6 +3,10 @@ import { getAuthUser } from "@/lib/session";
 import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
+function canViewAllContracts(role: string) {
+  return role === "SUPER_ADMIN" || role === "TENANT_ADMIN";
+}
+
 function parseDate(date?: string | null) {
   if (!date) return null;
   const parsed = new Date(date);
@@ -81,7 +85,7 @@ export async function GET(request: NextRequest) {
     }
 
     const contracts = await prisma.contract.findMany({
-      where: user.role === "ADMIN" ? undefined : { userId: user.id },
+      where: canViewAllContracts(user.role) ? undefined : { userId: user.id },
       include: {
         interactions: true,
         documents: true,

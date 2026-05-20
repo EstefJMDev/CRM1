@@ -4,17 +4,18 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, name } = await request.json();
+    const { email, password, name, lastName } = await request.json();
     const normalizedEmail = String(email || "").trim().toLowerCase();
+    const normalizedName = String(name || "").trim();
+    const normalizedLastName = String(lastName || "").trim() || null;
 
-    if (!normalizedEmail || !password || !name) {
+    if (!normalizedEmail || !password || !normalizedName) {
       return NextResponse.json(
-        { error: "Email, nombre y contraseña son requeridos" },
+        { error: "Email, nombre y contrasena son requeridos" },
         { status: 400 }
       );
     }
 
-    // Validar que el email no exista
     const existingUser = await prisma.user.findUnique({
       where: { email: normalizedEmail },
     });
@@ -26,25 +27,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Hash password
-    const hashedPassword = await hashPassword(password);
-
-    // Crear usuario
     const usersCount = await prisma.user.count();
+    if (usersCount > 0) {
+      return NextResponse.json(
+        { error: "El registro directo esta deshabilitado. Contacta con Super Admin." },
+        { status: 403 }
+      );
+    }
+
+    const hashedPassword = await hashPassword(password);
 
     const user = await prisma.user.create({
       data: {
         email: normalizedEmail,
         password: hashedPassword,
-        name,
-        // Primer usuario del sistema será ADMIN, resto USER
-        role: usersCount === 0 ? "ADMIN" : "USER",
+        name: normalizedName,
+        lastName: normalizedLastName,
+        role: "SUPER_ADMIN",
+        mustChangePassword: false,
+        isActive: true,
       },
       select: {
         id: true,
         email: true,
         name: true,
+        lastName: true,
         role: true,
+        mustChangePassword: true,
+        isActive: true,
       },
     });
 

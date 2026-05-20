@@ -6,6 +6,9 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+function canViewAllContracts(role: string) {
+  return role === "SUPER_ADMIN" || role === "TENANT_ADMIN";
+}
 
 export async function POST(
   request: NextRequest,
@@ -30,7 +33,7 @@ export async function POST(
       );
     }
 
-    if (user.role !== "ADMIN" && contract.userId !== user.id) {
+    if (!canViewAllContracts(user.role) && contract.userId !== user.id) {
       return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
     }
 
@@ -78,3 +81,4 @@ export async function POST(
     );
   }
 }
+

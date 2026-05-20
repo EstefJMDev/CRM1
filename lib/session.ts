@@ -17,8 +17,18 @@ export async function getAuthUser(request: NextRequest) {
     const decoded = jwt.verify(token, JWT_SECRET) as TokenPayload;
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { id: true, role: true, email: true, name: true },
+      select: {
+        id: true,
+        role: true,
+        email: true,
+        name: true,
+        lastName: true,
+        mustChangePassword: true,
+        isActive: true,
+      },
     });
+
+    if (!user?.isActive) return null;
 
     return user;
   } catch {

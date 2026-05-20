@@ -20,7 +20,10 @@ export async function POST(request: NextRequest) {
         id: true,
         email: true,
         name: true,
+        lastName: true,
         role: true,
+        mustChangePassword: true,
+        isActive: true,
         password: true,
       },
     });
@@ -29,6 +32,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Credenciales inválidas" },
         { status: 401 }
+      );
+    }
+
+    if (!user.isActive) {
+      return NextResponse.json(
+        { error: "Usuario desactivado. Contacta con el Super Admin." },
+        { status: 403 }
       );
     }
 
@@ -41,6 +51,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
+
     const token = generateToken(user.id, user.email);
 
     return NextResponse.json(
@@ -50,7 +65,10 @@ export async function POST(request: NextRequest) {
           id: user.id,
           email: user.email,
           name: user.name,
+          lastName: user.lastName,
           role: user.role,
+          mustChangePassword: user.mustChangePassword,
+          isActive: user.isActive,
         },
         token,
       },

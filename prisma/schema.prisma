@@ -16,7 +16,11 @@ model User {
   email     String     @unique
   password  String
   name      String
+  lastName  String?
   role      Role       @default(USER)
+  mustChangePassword Boolean @default(false)
+  isActive  Boolean    @default(true)
+  lastLoginAt DateTime?
   contracts Contract[]
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
@@ -132,6 +136,8 @@ model Interaction {
 }
 
 enum Role {
+  SUPER_ADMIN
+  TENANT_ADMIN
   ADMIN
   USER
 }

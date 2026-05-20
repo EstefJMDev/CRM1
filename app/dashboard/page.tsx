@@ -25,8 +25,10 @@ interface Contract {
 interface User {
   id: string;
   name: string;
+  lastName?: string;
   email: string;
   role: string;
+  mustChangePassword?: boolean;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -101,7 +103,13 @@ export default function DashboardPage() {
         return;
       }
 
-      setUser(JSON.parse(userData));
+      const parsedUser = JSON.parse(userData) as User;
+      if (parsedUser.mustChangePassword) {
+        router.push("/dashboard/user-management");
+        return;
+      }
+
+      setUser(parsedUser);
       fetchContracts(token);
     };
 
@@ -202,15 +210,29 @@ export default function DashboardPage() {
             <h1 className="text-3xl font-bold text-gray-900">CRM Contratos</h1>
             <p className="text-gray-600 text-sm mt-1">
               Bienvenido, {user?.name}
-              {user?.role === "ADMIN" && " (Admin)"}
+              {user?.role === "SUPER_ADMIN"
+                ? " (Super Admin)"
+                : user?.role === "TENANT_ADMIN"
+                ? " (Tenant Admin)"
+                : user?.role === "ADMIN"
+                ? " (Admin)"
+                : ""}
             </p>
           </div>
-          <button
+          <div className="flex items-center gap-3">
+            <Link
+              href="/dashboard/user-management"
+              className="bg-gray-700 hover:bg-gray-800 text-white font-medium py-2 px-4 rounded-lg"
+            >
+              Gestion de usuario
+            </Link>
+            <button
             onClick={handleLogout}
             className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg"
           >
             Cerrar Sesión
           </button>
+          </div>
         </div>
       </header>
 
@@ -377,4 +399,6 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+
 
