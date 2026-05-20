@@ -91,6 +91,31 @@ function formatDate(date?: string) {
   return parsed.toLocaleDateString("es-ES");
 }
 
+function isImportedContract(contract: Contract) {
+  return Boolean(contract.observations?.includes("[IMPORT_ID:"));
+}
+
+function stripHtml(value?: string) {
+  if (!value) return "";
+  return value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function cleanImportedText(value?: string) {
+  if (!value) return "-";
+  const lines = value
+    .split("\n")
+    .map((line) => stripHtml(line))
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("[IMPORT_ID:"));
+
+  return lines.length > 0 ? lines.join("\n") : "-";
+}
+
+function emptyImportedValue(contract: Contract, value?: string) {
+  if (value && value.trim()) return value;
+  return isImportedContract(contract) ? "No disponible en el archivo importado" : "-";
+}
+
 export default function ContractDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -264,6 +289,8 @@ export default function ContractDetailPage() {
     );
   }
 
+  const importedContract = isImportedContract(contract);
+
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-white shadow">
@@ -332,15 +359,15 @@ export default function ContractDetailPage() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Municipio</p>
-                  <p className="font-medium text-gray-900">{contract.municipality || "-"}</p>
+                  <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.municipality)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Provincia</p>
-                  <p className="font-medium text-gray-900">{contract.province || "-"}</p>
+                  <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.province)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Tipo Vía</p>
-                  <p className="font-medium text-gray-900">{contract.roadType || "-"}</p>
+                  <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.roadType)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Nombre Vía</p>
@@ -356,27 +383,27 @@ export default function ContractDetailPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-gray-600">Cod. Postal</p>
-                  <p className="font-medium text-gray-900">{contract.secondaryZipCode || "-"}</p>
+                  <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.secondaryZipCode)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Municipio</p>
-                  <p className="font-medium text-gray-900">{contract.secondaryMunicipality || "-"}</p>
+                  <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.secondaryMunicipality)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Provincia</p>
-                  <p className="font-medium text-gray-900">{contract.secondaryProvince || "-"}</p>
+                  <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.secondaryProvince)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Tipo Vía</p>
-                  <p className="font-medium text-gray-900">{contract.secondaryRoadType || "-"}</p>
+                  <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.secondaryRoadType)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Nombre Vía</p>
-                  <p className="font-medium text-gray-900">{contract.secondaryRoadName || "-"}</p>
+                  <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.secondaryRoadName)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Número</p>
-                  <p className="font-medium text-gray-900">{contract.secondaryRoadNumber || "-"}</p>
+                  <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.secondaryRoadNumber)}</p>
                 </div>
               </div>
             </div>
@@ -390,7 +417,11 @@ export default function ContractDetailPage() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Tipo Solicitud</p>
-                  <p className="font-medium text-gray-900">{contract.requestType || contract.supplyType || "-"}</p>
+                  <p className="font-medium text-gray-900">{contract.requestType || emptyImportedValue(contract, undefined)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Tipo de suministro</p>
+                  <p className="font-medium text-gray-900">{contract.supplyType || "-"}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">CUPS Luz</p>
@@ -398,7 +429,7 @@ export default function ContractDetailPage() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Tarifa Luz</p>
-                  <p className="font-medium text-gray-900">{contract.lightTariff || contract.tariff || "-"}</p>
+                  <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.lightTariff || contract.tariff)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">CUPS Gas</p>
@@ -406,7 +437,7 @@ export default function ContractDetailPage() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Tarifa Gas</p>
-                  <p className="font-medium text-gray-900">{contract.gasTariff || "-"}</p>
+                  <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.gasTariff)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Fecha Activación</p>
@@ -425,6 +456,12 @@ export default function ContractDetailPage() {
                   <p className="font-medium text-gray-900">{contract.pdv || "-"}</p>
                 </div>
               </div>
+
+              {importedContract && (
+                <div className="mt-5 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                  Este contrato procede de una importacion. Los campos que aparecen como no disponibles no existian como columnas separadas en el Excel original.
+                </div>
+              )}
 
               <div className="mt-5">
                 <p className="text-sm text-gray-600 mb-1">Productos</p>
@@ -555,7 +592,7 @@ export default function ContractDetailPage() {
                           <td className="px-4 py-2 text-sm text-gray-700">
                             {STATUS_LABELS[item.status] || item.status}
                           </td>
-                          <td className="px-4 py-2 text-sm text-gray-700">{item.observations || "-"}</td>
+                          <td className="px-4 py-2 text-sm whitespace-pre-line text-gray-700">{cleanImportedText(item.observations)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -639,7 +676,7 @@ export default function ContractDetailPage() {
             {contract.observations && (
               <div className="bg-white rounded-lg shadow p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Observaciones</h3>
-                <p className="text-gray-700">{contract.observations}</p>
+                <p className="whitespace-pre-line text-gray-700">{cleanImportedText(contract.observations)}</p>
               </div>
             )}
           </div>

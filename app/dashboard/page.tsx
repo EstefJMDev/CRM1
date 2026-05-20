@@ -47,12 +47,14 @@ function toDateOnly(date?: string) {
 }
 
 export default function DashboardPage() {
+  const ITEMS_PER_PAGE = 10;
   const router = useRouter();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isExporting, setIsExporting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -191,6 +193,7 @@ export default function DashboardPage() {
     setFromCreatedDate("");
     setToCreatedDate("");
     setCommercializerFilters([]);
+    setCurrentPage(1);
   };
 
   const filteredContracts = contracts.filter((contract) => {
@@ -235,6 +238,27 @@ export default function DashboardPage() {
       matchesToCreated
     );
   });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    searchTerm,
+    statusFilter,
+    agentFilter,
+    showAdvancedFilters,
+    fromActivationDate,
+    toActivationDate,
+    fromInactiveDate,
+    toInactiveDate,
+    fromCreatedDate,
+    toCreatedDate,
+    commercializerFilters,
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredContracts.length / ITEMS_PER_PAGE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedContracts = filteredContracts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   if (loading) {
     return (
@@ -340,7 +364,14 @@ export default function DashboardPage() {
             </div>
           )}
 
-          <div className="text-sm text-gray-600">Total de Registros: {filteredContracts.length}</div>
+          <div className="text-sm text-gray-600">
+            Total de Registros: {filteredContracts.length}
+            {filteredContracts.length > 0 && (
+              <span className="ml-2 text-gray-500">
+                Mostrando {startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, filteredContracts.length)}
+              </span>
+            )}
+          </div>
         </div>
 
         {error && (
@@ -373,6 +404,7 @@ export default function DashboardPage() {
 
         <div className="bg-white rounded-lg shadow overflow-hidden">
           {filteredContracts.length > 0 ? (
+            <>
             <table className="w-full table-fixed divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -391,7 +423,7 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredContracts.map((contract) => (
+                {paginatedContracts.map((contract) => (
                   <tr key={contract.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 text-sm">
                       <div className="flex items-center gap-2">
@@ -446,6 +478,30 @@ export default function DashboardPage() {
                 ))}
               </tbody>
             </table>
+            <div className="flex items-center justify-between border-t border-gray-200 bg-gray-50 px-6 py-4">
+              <div className="text-sm text-gray-600">
+                Pagina {safeCurrentPage} de {totalPages}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={safeCurrentPage === 1}
+                  className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Anterior
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  disabled={safeCurrentPage === totalPages}
+                  className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Siguiente
+                </button>
+              </div>
+            </div>
+            </>
           ) : (
             <div className="text-center py-12"><p className="text-gray-600">No hay contratos para mostrar</p></div>
           )}
