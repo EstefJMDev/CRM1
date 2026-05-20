@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -267,7 +267,19 @@ export default function UserManagementPage() {
   };
 
   if (loading) {
-    return <div className="min-h-screen bg-gray-100 flex items-center justify-center text-gray-600">Cargando...</div>;
+    return (
+      <div className="app-shell app-main">
+        <div className="app-card p-6 space-y-4 fade-in">
+          <div className="skeleton h-8 w-64" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="skeleton h-11" />
+            <div className="skeleton h-11" />
+            <div className="skeleton h-11" />
+          </div>
+          <div className="skeleton h-52 w-full" />
+        </div>
+      </div>
+    );
   }
 
   if (mustChangePassword) {
@@ -372,7 +384,7 @@ export default function UserManagementPage() {
         {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">{error}</div>}
         {success && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">{success}</div>}
 
-        <section className="app-card p-6">
+        <section className="app-card p-6 slide-up">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Datos personales</h2>
           <form className="grid md:grid-cols-3 gap-4" onSubmit={handleProfileSubmit}>
             <input className="field-input" placeholder="Nombre" value={profileForm.name} onChange={(e) => setProfileForm((prev) => ({ ...prev, name: e.target.value }))} />
@@ -384,7 +396,7 @@ export default function UserManagementPage() {
           </form>
         </section>
 
-        <section className="app-card p-6">
+        <section className="app-card p-6 slide-up" style={{ animationDelay: "80ms" }}>
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Cambiar contrasena</h2>
           <form className="grid md:grid-cols-3 gap-4" onSubmit={handlePasswordSubmit}>
             {!mustChangePassword && (
@@ -406,7 +418,7 @@ export default function UserManagementPage() {
 
         {isSuperAdmin && !mustChangePassword && (
           <>
-            <section className="app-card p-6">
+            <section className="app-card p-6 slide-up" style={{ animationDelay: "120ms" }}>
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Crear usuario</h2>
               <form className="grid md:grid-cols-5 gap-4" onSubmit={handleCreateUser}>
                 <input className="field-input" placeholder="Nombre" value={newUserForm.name} onChange={(e) => setNewUserForm((prev) => ({ ...prev, name: e.target.value }))} />
@@ -424,7 +436,7 @@ export default function UserManagementPage() {
               </form>
             </section>
 
-            <section className="app-card overflow-hidden">
+            <section className="app-card overflow-hidden slide-up" style={{ animationDelay: "160ms" }}>
               <div className="px-6 py-4 border-b border-gray-200">
                 <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
                   <div>
@@ -564,4 +576,5 @@ export default function UserManagementPage() {
     </div>
   );
 }
+
 

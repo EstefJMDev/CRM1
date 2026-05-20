@@ -262,8 +262,16 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-gray-600">Cargando...</div>
+      <div className="app-shell app-main">
+        <div className="app-card p-5 space-y-4 fade-in">
+          <div className="skeleton h-7 w-56" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="skeleton h-11" />
+            <div className="skeleton h-11" />
+            <div className="skeleton h-11" />
+          </div>
+          <div className="skeleton h-72 w-full" />
+        </div>
       </div>
     );
   }
@@ -303,7 +311,7 @@ export default function DashboardPage() {
       </header>
 
       <main className="app-main">
-        <div className="app-card mb-6 space-y-3 p-4">
+        <div className="app-card mb-6 space-y-3 p-4 slide-up">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
             <div className="md:col-span-5">
               <label className="block text-xs font-semibold text-gray-600 mb-1">Buscar</label>
@@ -403,7 +411,7 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        <div className="app-card overflow-hidden">
+        <div className="app-card overflow-hidden slide-up" style={{ animationDelay: "90ms" }}>
           {filteredContracts.length > 0 ? (
             <>
             <div className="overflow-x-auto">
@@ -513,6 +521,7 @@ export default function DashboardPage() {
     </div>
   );
 }
+
 
 
 

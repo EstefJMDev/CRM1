@@ -16,8 +16,11 @@ export default function Home() {
   }, [router]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <p className="text-gray-600">Redirigiendo...</p>
+    <div className="app-shell app-main flex items-center justify-center">
+      <div className="app-card w-full max-w-sm p-6 text-center fade-in">
+        <div className="skeleton h-3 w-24 mx-auto mb-4" />
+        <p className="text-gray-600">Redirigiendo...</p>
+      </div>
     </div>
   );
 }

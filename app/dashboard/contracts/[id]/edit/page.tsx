@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState, FormEvent, ChangeEvent } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -302,7 +302,20 @@ export default function EditContractPage() {
   };
 
   if (loadingData) {
-    return <div className="min-h-screen bg-gray-100 flex items-center justify-center text-gray-600">Cargando...</div>;
+    return (
+      <div className="app-shell app-main">
+        <div className="app-card p-6 space-y-4 fade-in">
+          <div className="skeleton h-8 w-52" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="skeleton h-11" />
+            <div className="skeleton h-11" />
+            <div className="skeleton h-11" />
+            <div className="skeleton h-11" />
+          </div>
+          <div className="skeleton h-64 w-full" />
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -315,13 +328,13 @@ export default function EditContractPage() {
       </header>
 
       <main className="app-main max-w-5xl">
-        <div className="app-card p-6 sm:p-8">
+        <div className="app-card p-6 sm:p-8 slide-up">
           {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">{error}</div>}
           {success && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6">Contrato actualizado</div>}
 
           <form onSubmit={handleSubmit} className="space-y-8">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Contrato n�</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Contrato n°</label>
               <input type="text" value={formData.contractNumber} disabled className="w-full md:w-52 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50" />
             </div>
 
@@ -410,4 +423,6 @@ export default function EditContractPage() {
     </div>
   );
 }
+
+
 

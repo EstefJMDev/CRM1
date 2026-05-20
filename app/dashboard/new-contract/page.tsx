@@ -1,4 +1,4 @@
-"use client";
+ï»¿"use client";
 
 import { useEffect, useMemo, useRef, useState, FormEvent, ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -371,13 +371,13 @@ export default function NewContractPage() {
       </header>
 
       <main className="app-main max-w-5xl">
-        <div className="app-card p-6 sm:p-8">
+        <div className="app-card p-6 sm:p-8 slide-up">
           {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">{error}</div>}
           {success && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6">Contrato creado exitosamente</div>}
 
           <form onSubmit={handleSubmit} className="space-y-8">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Contrato n°</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Contrato nÂ°</label>
               <input type="text" value={formData.contractNumber} disabled className="w-full md:w-52 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50" />
             </div>
 
@@ -587,7 +587,7 @@ export default function NewContractPage() {
                 className="w-full border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/40 transition"
               >
                 <p className="text-sm text-gray-700 font-medium">
-                  Arrastra archivos aquí o haz clic para subir
+                  Arrastra archivos aquÃ­ o haz clic para subir
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
                   Formatos permitidos: PNG, JPG, DOCX, PDF
@@ -630,5 +630,6 @@ export default function NewContractPage() {
     </div>
   );
 }
+
 
 

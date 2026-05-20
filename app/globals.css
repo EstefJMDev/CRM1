@@ -73,7 +73,11 @@ select:-webkit-autofill:focus {
   }
 
   .app-card {
-    @apply rounded-2xl border border-slate-200/80 bg-white shadow-sm;
+    @apply rounded-2xl border border-slate-200/80 bg-white shadow-sm transition duration-300;
+  }
+
+  .app-card:hover {
+    @apply shadow-md;
   }
 
   .field-input {
@@ -86,5 +90,52 @@ select:-webkit-autofill:focus {
 
   .btn-secondary {
     @apply rounded-xl bg-slate-700 px-4 py-2.5 font-medium text-white transition hover:bg-slate-800;
+  }
+
+  .fade-in {
+    animation: fadeIn 380ms ease-out both;
+  }
+
+  .slide-up {
+    animation: slideUp 420ms ease-out both;
+  }
+
+  .skeleton {
+    @apply relative overflow-hidden rounded-xl bg-slate-200/80;
+  }
+
+  .skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+    animation: shimmer 1.3s infinite;
+  }
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

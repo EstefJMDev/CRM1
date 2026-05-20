@@ -80,7 +80,7 @@ export default function RegisterPage() {
 
   return (
     <div className="app-shell flex items-center justify-center p-4">
-      <div className="app-card w-full max-w-md p-8">
+      <div className="app-card w-full max-w-md p-8 slide-up">
         <h1 className="text-3xl font-bold text-center text-gray-800 mb-4">Registro inicial</h1>
         <p className="text-sm text-gray-500 text-center mb-6">Solo disponible para crear el primer Super Admin.</p>
 
