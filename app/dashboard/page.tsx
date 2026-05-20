@@ -52,6 +52,7 @@ export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isExporting, setIsExporting] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -120,6 +121,47 @@ export default function DashboardPage() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     router.push("/auth/login");
+  };
+
+  const handleExport = async () => {
+    const token = localStorage.getItem("token");
+    if (!token || filteredContracts.length === 0) return;
+
+    setIsExporting(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/contracts/export", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ids: filteredContracts.map((contract) => contract.id),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("No se pudo exportar el listado");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const date = new Date().toISOString().slice(0, 10);
+      link.href = url;
+      link.download = `contratos-${date}.xls`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      setError("No se pudo generar el Excel");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const agentOptions = useMemo(
@@ -307,7 +349,20 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <div className="flex justify-end mb-4">
+        <div className="flex justify-end items-center gap-3 mb-4">
+          <button
+            type="button"
+            onClick={handleExport}
+            disabled={isExporting || filteredContracts.length === 0}
+            title="Descargar Excel"
+            aria-label="Descargar Excel"
+            className="inline-flex items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M3 14.25A2.25 2.25 0 015.25 12h1a.75.75 0 010 1.5h-1a.75.75 0 00-.75.75v1.5c0 .414.336.75.75.75h9.5a.75.75 0 00.75-.75v-1.5a.75.75 0 00-.75-.75h-1a.75.75 0 010-1.5h1A2.25 2.25 0 0117 14.25v1.5A2.25 2.25 0 0114.75 18h-9.5A2.25 2.25 0 013 15.75v-1.5z" clipRule="evenodd" />
+              <path fillRule="evenodd" d="M10 2.75a.75.75 0 01.75.75v7.19l1.72-1.72a.75.75 0 111.06 1.06l-3 3a.75.75 0 01-1.06 0l-3-3A.75.75 0 117.53 8.97l1.72 1.72V3.5a.75.75 0 01.75-.75z" clipRule="evenodd" />
+            </svg>
+          </button>
           <Link
             href="/dashboard/new-contract"
             className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg"

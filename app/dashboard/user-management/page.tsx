@@ -147,6 +147,7 @@ export default function UserManagementPage() {
     event.preventDefault();
     setError("");
     setSuccess("");
+    const wasForcedPasswordChange = mustChangePassword;
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       setError("Las contrasenas no coinciden");
@@ -175,6 +176,12 @@ export default function UserManagementPage() {
     const mergedUser = { ...currentUser, mustChangePassword: false } as AppUser;
     setCurrentUser(mergedUser);
     localStorage.setItem("user", JSON.stringify(mergedUser));
+
+    if (wasForcedPasswordChange) {
+      router.push("/dashboard");
+      return;
+    }
+
     setSuccess("Contrasena actualizada");
   };
 
