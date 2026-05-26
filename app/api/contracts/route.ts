@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { getAuthUser } from "@/lib/session";
+import { buildContractsWhere } from "@/lib/contracts-query";
 import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -84,19 +85,57 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    const contracts = await prisma.contract.findMany({
-      where: canViewAllContracts(user.role) ? undefined : { userId: user.id },
-      include: {
-        interactions: true,
-        documents: true,
-        user: {
-          select: { name: true, email: true },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    const params = request.nextUrl.searchParams;
+    const page = Math.max(1, Number.parseInt(params.get("page") || "1", 10) || 1);
+    const pageSize = Math.min(50, Math.max(1, Number.parseInt(params.get("pageSize") || "10", 10) || 10));
+    const where = buildContractsWhere(user, params, canViewAllContracts);
 
-    return NextResponse.json(contracts, { status: 200 });
+    const [total, contracts] = await Promise.all([
+      prisma.contract.count({ where }),
+      prisma.contract.findMany({
+        where,
+        select: {
+          id: true,
+          contractNumber: true,
+          clientName: true,
+          clientLastName: true,
+          clientDNI: true,
+          clientPhone: true,
+          commercializer: true,
+          cups: true,
+          address: true,
+          activationDate: true,
+          inactiveDate: true,
+          status: true,
+          createdAt: true,
+          user: {
+            select: { name: true, email: true },
+          },
+          documents: {
+            select: { id: true },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+    ]);
+
+    return NextResponse.json(
+      {
+        items: contracts,
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
+      },
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": "private, s-maxage=20, stale-while-revalidate=60",
+        },
+      }
+    );
   } catch (error) {
     console.error("Error obteniendo contratos:", error);
     return NextResponse.json(

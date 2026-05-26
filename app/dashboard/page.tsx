@@ -46,6 +46,14 @@ function toDateOnly(date?: string) {
   return parsed.toISOString().slice(0, 10);
 }
 
+interface ContractsResponse {
+  items: Contract[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
 function getIsoWeekLabel(dateInput?: string) {
   if (!dateInput) return "";
   const date = new Date(dateInput);
@@ -81,6 +89,8 @@ export default function DashboardPage() {
   const ITEMS_PER_PAGE = 10;
   const router = useRouter();
   const [contracts, setContracts] = useState<Contract[]>([]);
+  const [totalContracts, setTotalContracts] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -109,7 +119,24 @@ export default function DashboardPage() {
 
   const fetchContracts = useCallback(async (token: string) => {
     try {
-      const response = await fetch("/api/contracts", {
+      const params = new URLSearchParams({
+        page: String(currentPage),
+        pageSize: String(ITEMS_PER_PAGE),
+        search: searchTerm,
+        status: statusFilter,
+        agent: agentFilter,
+        fromActivationDate,
+        toActivationDate,
+        fromInactiveDate,
+        toInactiveDate,
+        fromCreatedDate,
+        toCreatedDate,
+      });
+      if (commercializerFilters.length === 1) {
+        params.set("commercializer", commercializerFilters[0]);
+      }
+
+      const response = await fetch(`/api/contracts?${params.toString()}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -125,15 +152,30 @@ export default function DashboardPage() {
         throw new Error("Error al obtener contratos");
       }
 
-      const data = await response.json();
-      setContracts(data);
+      const data = (await response.json()) as ContractsResponse;
+      setContracts(data.items);
+      setTotalContracts(data.total);
+      setTotalPages(data.totalPages);
     } catch (err) {
       setError("Error al cargar los contratos");
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [
+    router,
+    currentPage,
+    searchTerm,
+    statusFilter,
+    agentFilter,
+    fromActivationDate,
+    toActivationDate,
+    fromInactiveDate,
+    toInactiveDate,
+    fromCreatedDate,
+    toCreatedDate,
+    commercializerFilters,
+  ]);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -152,11 +194,17 @@ export default function DashboardPage() {
       }
 
       setUser(parsedUser);
-      fetchContracts(token);
     };
 
     checkAuth();
-  }, [fetchContracts, router]);
+  }, [router]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token || !user) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchContracts(token);
+  }, [fetchContracts, user]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -167,7 +215,7 @@ export default function DashboardPage() {
   const handleExport = async () => {
     if (!canViewExport) return;
     const token = localStorage.getItem("token");
-    if (!token || exportableContracts.length === 0) return;
+    if (!token) return;
 
     setIsExporting(true);
     setError("");
@@ -180,7 +228,20 @@ export default function DashboardPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          ids: exportableContracts.map((contract) => contract.id),
+          filters: {
+            search: exportClientFilter,
+            status: statusFilter,
+            agent: exportAgentFilter,
+            commercializer: exportCommercializerFilter,
+            fromActivationDate,
+            toActivationDate,
+            fromInactiveDate,
+            toInactiveDate,
+            fromCreatedDate,
+            toCreatedDate,
+            exportMonth: exportMonthFilter,
+            exportWeek: exportWeekFilter,
+          },
         }),
       });
 
@@ -249,6 +310,7 @@ export default function DashboardPage() {
   );
 
   const toggleCommercializer = (name: string) => {
+    setCurrentPage(1);
     setCommercializerFilters((prev) =>
       prev.includes(name) ? prev.filter((item) => item !== name) : [...prev, name]
     );
@@ -268,67 +330,31 @@ export default function DashboardPage() {
     setCurrentPage(1);
   };
 
-  const filteredContracts = contracts.filter((contract) => {
-    const clientFullName = `${contract.clientName || ""} ${contract.clientLastName || ""}`.trim();
-    const contactText = `${contract.address || ""} ${contract.clientPhone || ""}`.trim();
-    const search = searchTerm.toLowerCase();
+  const updateSearchTerm = (value: string) => {
+    setCurrentPage(1);
+    setSearchTerm(value);
+  };
 
-    const matchesSearch =
-      clientFullName.toLowerCase().includes(search) ||
-      contract.contractNumber.toLowerCase().includes(search) ||
-      contract.commercializer.toLowerCase().includes(search) ||
-      (contract.cups || "").toLowerCase().includes(search) ||
-      contract.user.name.toLowerCase().includes(search) ||
-      contactText.toLowerCase().includes(search);
+  const updateStatusFilter = (value: string) => {
+    setCurrentPage(1);
+    setStatusFilter(value);
+  };
 
-    const matchesStatus = statusFilter === "all" || contract.status === statusFilter;
-    const matchesAgent = agentFilter === "all" || contract.user.name === agentFilter;
-    const matchesCommercializer =
-      commercializerFilters.length === 0 || commercializerFilters.includes(contract.commercializer);
+  const updateAgentFilter = (value: string) => {
+    setCurrentPage(1);
+    setAgentFilter(value);
+  };
 
-    const activation = toDateOnly(contract.activationDate);
-    const inactive = toDateOnly(contract.inactiveDate);
-    const created = toDateOnly(contract.createdAt);
+  const updateFromActivationDate = (value: string) => { setCurrentPage(1); setFromActivationDate(value); };
+  const updateToActivationDate = (value: string) => { setCurrentPage(1); setToActivationDate(value); };
+  const updateFromInactiveDate = (value: string) => { setCurrentPage(1); setFromInactiveDate(value); };
+  const updateToInactiveDate = (value: string) => { setCurrentPage(1); setToInactiveDate(value); };
+  const updateFromCreatedDate = (value: string) => { setCurrentPage(1); setFromCreatedDate(value); };
+  const updateToCreatedDate = (value: string) => { setCurrentPage(1); setToCreatedDate(value); };
 
-    const matchesFromActivation = !fromActivationDate || (activation && activation >= fromActivationDate);
-    const matchesToActivation = !toActivationDate || (activation && activation <= toActivationDate);
-    const matchesFromInactive = !fromInactiveDate || (inactive && inactive >= fromInactiveDate);
-    const matchesToInactive = !toInactiveDate || (inactive && inactive <= toInactiveDate);
-    const matchesFromCreated = !fromCreatedDate || created >= fromCreatedDate;
-    const matchesToCreated = !toCreatedDate || created <= toCreatedDate;
-
-    return (
-      matchesSearch &&
-      matchesStatus &&
-      matchesAgent &&
-      matchesCommercializer &&
-      matchesFromActivation &&
-      matchesToActivation &&
-      matchesFromInactive &&
-      matchesToInactive &&
-      matchesFromCreated &&
-      matchesToCreated
-    );
-  });
-
-  const exportableContracts = contracts.filter((contract) => {
-    const month = toDateOnly(contract.createdAt).slice(0, 7);
-    const week = getIsoWeekLabel(contract.createdAt);
-    const fullName = `${contract.clientName || ""} ${contract.clientLastName || ""}`.trim().toLowerCase();
-    const matchesMonth = exportMonthFilter === "all" || month === exportMonthFilter;
-    const matchesWeek = exportWeekFilter === "all" || week === exportWeekFilter;
-    const matchesAgent = exportAgentFilter === "all" || contract.user.name === exportAgentFilter;
-    const matchesCommercializer =
-      exportCommercializerFilter === "all" ||
-      normalizeCommercializer(contract.commercializer) === exportCommercializerFilter;
-    const matchesClient = !exportClientFilter.trim() || fullName.includes(exportClientFilter.toLowerCase());
-    return matchesMonth && matchesWeek && matchesAgent && matchesCommercializer && matchesClient;
-  });
-
-  const totalPages = Math.max(1, Math.ceil(filteredContracts.length / ITEMS_PER_PAGE));
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const startIndex = (safeCurrentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedContracts = filteredContracts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const paginatedContracts = contracts;
 
   if (loading) {
     return (
@@ -427,10 +453,10 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={handleExport}
-              disabled={isExporting || exportableContracts.length === 0}
+              disabled={isExporting}
               className="w-full rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isExporting ? "Exportando..." : `Exportar (${exportableContracts.length})`}
+              {isExporting ? "Exportando..." : "Exportar"}
             </button>
           </div>
         )}
@@ -472,8 +498,8 @@ export default function DashboardPage() {
             {exportCommercializerOptions.map((com) => <option key={com} value={com}>{com}</option>)}
           </select>
           <input type="text" value={exportClientFilter} onChange={(e) => setExportClientFilter(e.target.value)} placeholder="Cliente" className="field-input text-sm" />
-          <button type="button" onClick={handleExport} disabled={isExporting || exportableContracts.length === 0} className="w-full rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50">
-            {isExporting ? "Exportando..." : `Exportar (${exportableContracts.length})`}
+          <button type="button" onClick={handleExport} disabled={isExporting} className="w-full rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50">
+            {isExporting ? "Exportando..." : "Exportar"}
           </button>
         </div>
         )}
@@ -511,13 +537,13 @@ export default function DashboardPage() {
                 type="text"
                 placeholder="Buscar agente, cliente, contacto, CUPS"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => updateSearchTerm(e.target.value)}
                 className="field-input"
               />
             </div>
             <div className="md:col-span-3">
               <label className="block text-xs font-semibold text-gray-600 mb-1">Agente</label>
-              <select value={agentFilter} onChange={(e) => setAgentFilter(e.target.value)} className="field-input">
+              <select value={agentFilter} onChange={(e) => updateAgentFilter(e.target.value)} className="field-input">
                 <option value="all">Todos los agentes</option>
                 {agentOptions.map((agent) => (
                   <option key={agent} value={agent}>{agent}</option>
@@ -526,7 +552,7 @@ export default function DashboardPage() {
             </div>
             <div className="md:col-span-2">
               <label className="block text-xs font-semibold text-gray-600 mb-1">Estado</label>
-              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="field-input">
+              <select value={statusFilter} onChange={(e) => updateStatusFilter(e.target.value)} className="field-input">
                 <option value="all">Todos</option>
                 <option value="PENDING">Pendiente</option>
                 <option value="ACTIVE">Activo</option>
@@ -545,12 +571,12 @@ export default function DashboardPage() {
           {showAdvancedFilters && (
             <div className="border-t pt-3 space-y-3">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div><label className="block text-xs font-semibold text-gray-600 mb-1">Desde Activación</label><input type="date" value={fromActivationDate} onChange={(e) => setFromActivationDate(e.target.value)} className="field-input" /></div>
-                <div><label className="block text-xs font-semibold text-gray-600 mb-1">Hasta Activación</label><input type="date" value={toActivationDate} onChange={(e) => setToActivationDate(e.target.value)} className="field-input" /></div>
-                <div><label className="block text-xs font-semibold text-gray-600 mb-1">Desde Alta</label><input type="date" value={fromCreatedDate} onChange={(e) => setFromCreatedDate(e.target.value)} className="field-input" /></div>
-                <div><label className="block text-xs font-semibold text-gray-600 mb-1">Hasta Alta</label><input type="date" value={toCreatedDate} onChange={(e) => setToCreatedDate(e.target.value)} className="field-input" /></div>
-                <div><label className="block text-xs font-semibold text-gray-600 mb-1">Desde Baja</label><input type="date" value={fromInactiveDate} onChange={(e) => setFromInactiveDate(e.target.value)} className="field-input" /></div>
-                <div><label className="block text-xs font-semibold text-gray-600 mb-1">Hasta Baja</label><input type="date" value={toInactiveDate} onChange={(e) => setToInactiveDate(e.target.value)} className="field-input" /></div>
+                <div><label className="block text-xs font-semibold text-gray-600 mb-1">Desde Activación</label><input type="date" value={fromActivationDate} onChange={(e) => updateFromActivationDate(e.target.value)} className="field-input" /></div>
+                <div><label className="block text-xs font-semibold text-gray-600 mb-1">Hasta Activación</label><input type="date" value={toActivationDate} onChange={(e) => updateToActivationDate(e.target.value)} className="field-input" /></div>
+                <div><label className="block text-xs font-semibold text-gray-600 mb-1">Desde Alta</label><input type="date" value={fromCreatedDate} onChange={(e) => updateFromCreatedDate(e.target.value)} className="field-input" /></div>
+                <div><label className="block text-xs font-semibold text-gray-600 mb-1">Hasta Alta</label><input type="date" value={toCreatedDate} onChange={(e) => updateToCreatedDate(e.target.value)} className="field-input" /></div>
+                <div><label className="block text-xs font-semibold text-gray-600 mb-1">Desde Baja</label><input type="date" value={fromInactiveDate} onChange={(e) => updateFromInactiveDate(e.target.value)} className="field-input" /></div>
+                <div><label className="block text-xs font-semibold text-gray-600 mb-1">Hasta Baja</label><input type="date" value={toInactiveDate} onChange={(e) => updateToInactiveDate(e.target.value)} className="field-input" /></div>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
@@ -565,10 +591,10 @@ export default function DashboardPage() {
           )}
 
           <div className="text-sm text-gray-600">
-            Total de Registros: {filteredContracts.length}
-            {filteredContracts.length > 0 && (
+            Total de Registros: {totalContracts}
+            {totalContracts > 0 && (
               <span className="ml-2 text-gray-500">
-                Mostrando {startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, filteredContracts.length)}
+                Mostrando {startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, totalContracts)}
               </span>
             )}
           </div>
@@ -590,7 +616,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="app-card overflow-hidden slide-up" style={{ animationDelay: "90ms" }}>
-          {filteredContracts.length > 0 ? (
+          {contracts.length > 0 ? (
             <>
             <div className="divide-y divide-gray-200 md:hidden">
               {paginatedContracts.map((contract) => (

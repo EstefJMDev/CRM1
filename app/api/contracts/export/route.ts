@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { getAuthUser } from "@/lib/session";
+import { buildContractsWhere } from "@/lib/contracts-query";
 import { NextRequest, NextResponse } from "next/server";
 
 function canViewAllContracts(role: string) {
@@ -24,6 +25,29 @@ function formatDate(value?: string | Date | null) {
 
 function formatList(values?: string[] | null) {
   return values && values.length > 0 ? values.join(", ") : "";
+}
+
+function toDateOnly(value?: Date | string | null) {
+  if (!value) return "";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0, 10);
+}
+
+function getIsoWeekLabel(dateInput?: Date | string | null) {
+  if (!dateInput) return "";
+  const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+  if (Number.isNaN(date.getTime())) return "";
+  const utc = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = utc.getUTCDay() || 7;
+  utc.setUTCDate(utc.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(utc.getUTCFullYear(), 0, 1));
+  const weekNum = Math.ceil((((utc.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return `${utc.getUTCFullYear()}-W${String(weekNum).padStart(2, "0")}`;
+}
+
+function normalizeCommercializer(value: string) {
+  return value.replace(/^\s*\d+\s*[-.)]?\s*/, "").trim();
 }
 
 type ExportField = {
@@ -178,19 +202,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    const payload = (await request.json()) as { ids?: string[] };
+    const payload = (await request.json()) as { ids?: string[]; filters?: Record<string, string> };
     const ids = Array.isArray(payload.ids)
       ? payload.ids.map((id) => String(id).trim()).filter(Boolean)
       : [];
+    const params = new URLSearchParams(payload.filters || {});
+    const exportMonth = (params.get("exportMonth") || "all").trim();
+    const exportWeek = (params.get("exportWeek") || "all").trim();
+    const exportCommercializer = (params.get("commercializer") || "all").trim();
+    const baseWhere = buildContractsWhere(user, params, canViewAllContracts);
 
-    const where = canViewAllContracts(user.role)
-      ? (ids.length > 0 ? { id: { in: ids } } : undefined)
-      : {
-          userId: user.id,
-          ...(ids.length > 0 ? { id: { in: ids } } : {}),
-        };
+    const where = ids.length > 0
+      ? { ...baseWhere, id: { in: ids } }
+      : baseWhere;
 
-    const contracts = await prisma.contract.findMany({
+    let contracts = await prisma.contract.findMany({
       where,
       include: {
         documents: {
@@ -204,6 +230,17 @@ export async function POST(request: NextRequest) {
         },
       },
       orderBy: { createdAt: "desc" },
+    });
+
+    contracts = contracts.filter((contract) => {
+      const month = toDateOnly(contract.createdAt).slice(0, 7);
+      const week = getIsoWeekLabel(contract.createdAt);
+      const monthOk = exportMonth === "all" || month === exportMonth;
+      const weekOk = exportWeek === "all" || week === exportWeek;
+      const commercializerOk =
+        exportCommercializer === "all" ||
+        normalizeCommercializer(contract.commercializer) === exportCommercializer;
+      return monthOk && weekOk && commercializerOk;
     });
 
     const workbook = buildWorkbook(contracts);
