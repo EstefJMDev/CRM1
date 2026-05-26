@@ -58,6 +58,25 @@ function getIsoWeekLabel(dateInput?: string) {
   return `${utc.getUTCFullYear()}-W${String(weekNum).padStart(2, "0")}`;
 }
 
+function toSpanishMonthLabel(monthKey: string) {
+  const [year, month] = monthKey.split("-");
+  const y = Number(year);
+  const m = Number(month);
+  if (!y || !m) return monthKey;
+  const date = new Date(Date.UTC(y, m - 1, 1));
+  return date.toLocaleDateString("es-ES", { month: "long", year: "numeric", timeZone: "UTC" });
+}
+
+function toSpanishWeekLabel(weekKey: string) {
+  const match = weekKey.match(/^(\d{4})-W(\d{2})$/);
+  if (!match) return weekKey;
+  return `Semana ${Number(match[2])} de ${match[1]}`;
+}
+
+function normalizeCommercializer(value: string) {
+  return value.replace(/^\s*\d+\s*[-.)]?\s*/, "").trim();
+}
+
 export default function DashboardPage() {
   const ITEMS_PER_PAGE = 10;
   const router = useRouter();
@@ -195,6 +214,14 @@ export default function DashboardPage() {
     [contracts]
   );
 
+  const exportCommercializerOptions = useMemo(
+    () =>
+      Array.from(new Set(contracts.map((c) => normalizeCommercializer(c.commercializer))))
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b, "es")),
+    [contracts]
+  );
+
   const monthOptions = useMemo(
     () =>
       Array.from(
@@ -282,7 +309,7 @@ export default function DashboardPage() {
     );
   });
 
-  const exportableContracts = filteredContracts.filter((contract) => {
+  const exportableContracts = contracts.filter((contract) => {
     const month = toDateOnly(contract.createdAt).slice(0, 7);
     const week = getIsoWeekLabel(contract.createdAt);
     const fullName = `${contract.clientName || ""} ${contract.clientLastName || ""}`.trim().toLowerCase();
@@ -290,7 +317,8 @@ export default function DashboardPage() {
     const matchesWeek = exportWeekFilter === "all" || week === exportWeekFilter;
     const matchesAgent = exportAgentFilter === "all" || contract.user.name === exportAgentFilter;
     const matchesCommercializer =
-      exportCommercializerFilter === "all" || contract.commercializer === exportCommercializerFilter;
+      exportCommercializerFilter === "all" ||
+      normalizeCommercializer(contract.commercializer) === exportCommercializerFilter;
     const matchesClient = !exportClientFilter.trim() || fullName.includes(exportClientFilter.toLowerCase());
     return matchesMonth && matchesWeek && matchesAgent && matchesCommercializer && matchesClient;
   });
@@ -355,11 +383,11 @@ export default function DashboardPage() {
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Exportacion</p>
             <select value={exportMonthFilter} onChange={(e) => setExportMonthFilter(e.target.value)} className="field-input text-sm">
               <option value="all">Mes de importacion</option>
-              {monthOptions.map((month) => <option key={month} value={month}>{month}</option>)}
+              {monthOptions.map((month) => <option key={month} value={month}>{toSpanishMonthLabel(month)}</option>)}
             </select>
             <select value={exportWeekFilter} onChange={(e) => setExportWeekFilter(e.target.value)} className="field-input text-sm">
               <option value="all">Semana</option>
-              {weekOptions.map((week) => <option key={week} value={week}>{week}</option>)}
+              {weekOptions.map((week) => <option key={week} value={week}>{toSpanishWeekLabel(week)}</option>)}
             </select>
             <select value={exportAgentFilter} onChange={(e) => setExportAgentFilter(e.target.value)} className="field-input text-sm">
               <option value="all">Nombre de agente</option>
@@ -367,7 +395,7 @@ export default function DashboardPage() {
             </select>
             <select value={exportCommercializerFilter} onChange={(e) => setExportCommercializerFilter(e.target.value)} className="field-input text-sm">
               <option value="all">Comercializadora</option>
-              {commercializerOptions.map((com) => <option key={com} value={com}>{com}</option>)}
+              {exportCommercializerOptions.map((com) => <option key={com} value={com}>{com}</option>)}
             </select>
             <input
               type="text"
@@ -408,11 +436,11 @@ export default function DashboardPage() {
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Exportacion</p>
           <select value={exportMonthFilter} onChange={(e) => setExportMonthFilter(e.target.value)} className="field-input text-sm">
             <option value="all">Mes de importacion</option>
-            {monthOptions.map((month) => <option key={month} value={month}>{month}</option>)}
+            {monthOptions.map((month) => <option key={month} value={month}>{toSpanishMonthLabel(month)}</option>)}
           </select>
           <select value={exportWeekFilter} onChange={(e) => setExportWeekFilter(e.target.value)} className="field-input text-sm">
             <option value="all">Semana</option>
-            {weekOptions.map((week) => <option key={week} value={week}>{week}</option>)}
+            {weekOptions.map((week) => <option key={week} value={week}>{toSpanishWeekLabel(week)}</option>)}
           </select>
           <select value={exportAgentFilter} onChange={(e) => setExportAgentFilter(e.target.value)} className="field-input text-sm">
             <option value="all">Nombre de agente</option>
@@ -420,7 +448,7 @@ export default function DashboardPage() {
           </select>
           <select value={exportCommercializerFilter} onChange={(e) => setExportCommercializerFilter(e.target.value)} className="field-input text-sm">
             <option value="all">Comercializadora</option>
-            {commercializerOptions.map((com) => <option key={com} value={com}>{com}</option>)}
+            {exportCommercializerOptions.map((com) => <option key={com} value={com}>{com}</option>)}
           </select>
           <input type="text" value={exportClientFilter} onChange={(e) => setExportClientFilter(e.target.value)} placeholder="Cliente" className="field-input text-sm" />
           <button type="button" onClick={handleExport} disabled={isExporting || exportableContracts.length === 0} className="w-full rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50">

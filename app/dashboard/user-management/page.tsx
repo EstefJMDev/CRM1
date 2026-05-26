@@ -59,6 +59,10 @@ export default function UserManagementPage() {
   const [newUserForm, setNewUserForm] = useState({ name: "", lastName: "", email: "", temporaryPassword: "", role: "USER" });
   const [resetPasswords, setResetPasswords] = useState<Record<string, string>>({});
   const [editUsers, setEditUsers] = useState<Record<string, { name: string; lastName: string; email: string; role: string; isActive: boolean }>>({});
+  const [userSearch, setUserSearch] = useState("");
+  const [savingUserId, setSavingUserId] = useState<string | null>(null);
+  const [savedUserId, setSavedUserId] = useState<string | null>(null);
+  const [resettingPasswordUserId, setResettingPasswordUserId] = useState<string | null>(null);
 
   const isSuperAdmin = currentUser?.role === "SUPER_ADMIN";
   const mustChangePassword = Boolean(currentUser?.mustChangePassword);
@@ -67,6 +71,14 @@ export default function UserManagementPage() {
     () => [...users].sort((a, b) => Number(new Date(b.createdAt)) - Number(new Date(a.createdAt))),
     [users]
   );
+  const visibleUsers = useMemo(() => {
+    const term = userSearch.trim().toLowerCase();
+    if (!term) return sortedUsers;
+    return sortedUsers.filter((user) => {
+      const fullName = `${user.name || ""} ${user.lastName || ""}`.toLowerCase();
+      return fullName.includes(term) || user.email.toLowerCase().includes(term) || user.role.toLowerCase().includes(term);
+    });
+  }, [sortedUsers, userSearch]);
 
   const mapEditState = (list: ManagedUser[]) => {
     const next: Record<string, { name: string; lastName: string; email: string; role: string; isActive: boolean }> = {};
@@ -226,25 +238,30 @@ export default function UserManagementPage() {
 
     setError("");
     setSuccess("");
+    setResettingPasswordUserId(userId);
 
-    const response = await fetch(`/api/users/${userId}/reset-password`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ temporaryPassword }),
-    });
+    try {
+      const response = await fetch(`/api/users/${userId}/reset-password`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ temporaryPassword }),
+      });
 
-    const data = await response.json();
-    if (!response.ok) {
-      setError(data.error || "No se pudo resetear la contrasena");
-      return;
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error || "No se pudo resetear la contrasena");
+        return;
+      }
+
+      setResetPasswords((prev) => ({ ...prev, [userId]: "" }));
+      setSuccess("Contrasena temporal aplicada");
+      await refreshUsers();
+    } finally {
+      setResettingPasswordUserId(null);
     }
-
-    setResetPasswords((prev) => ({ ...prev, [userId]: "" }));
-    setSuccess("Contrasena temporal aplicada");
-    await refreshUsers();
   };
 
   const handleUpdateUser = async (userId: string) => {
@@ -253,24 +270,31 @@ export default function UserManagementPage() {
 
     setError("");
     setSuccess("");
+    setSavingUserId(userId);
+    setSavedUserId(null);
 
-    const response = await fetch(`/api/users/${userId}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(editable),
-    });
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(editable),
+      });
 
-    const data = await response.json();
-    if (!response.ok) {
-      setError(data.error || "No se pudo actualizar el usuario");
-      return;
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error || "No se pudo actualizar el usuario");
+        return;
+      }
+
+      setSavedUserId(userId);
+      setSuccess("Usuario actualizado");
+      await refreshUsers();
+    } finally {
+      setSavingUserId(null);
     }
-
-    setSuccess("Usuario actualizado");
-    await refreshUsers();
   };
 
   if (loading) {
@@ -379,7 +403,7 @@ export default function UserManagementPage() {
         <div className="app-header-inner">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Gestion de Usuario</h1>
-            <p className="text-sm text-gray-600">Administra tu perfil y el acceso de los usuarios</p>
+            <p className="text-sm text-gray-600">Perfil, seguridad y administracion de accesos en un solo panel</p>
           </div>
           <Link href="/dashboard" className="btn-secondary">
             Volver al dashboard
@@ -391,70 +415,127 @@ export default function UserManagementPage() {
         {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">{error}</div>}
         {success && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">{success}</div>}
 
-        <section className="app-card p-6 slide-up">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Datos personales</h2>
-          <form className="grid md:grid-cols-3 gap-4" onSubmit={handleProfileSubmit}>
-            <input className="field-input" placeholder="Nombre" value={profileForm.name} onChange={(e) => setProfileForm((prev) => ({ ...prev, name: e.target.value }))} />
-            <input className="field-input" placeholder="Apellidos" value={profileForm.lastName} onChange={(e) => setProfileForm((prev) => ({ ...prev, lastName: e.target.value }))} />
-            <input className="field-input" placeholder="Email" type="email" value={profileForm.email} onChange={(e) => setProfileForm((prev) => ({ ...prev, email: e.target.value }))} />
-            <div className="md:col-span-3">
-              <button className="btn-primary" type="submit">Guardar perfil</button>
-            </div>
-          </form>
+        <section className="grid gap-4 md:grid-cols-3 slide-up">
+          <article className="app-card p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Rol actual</p>
+            <p className="mt-2 text-lg font-bold text-slate-900">{currentUser?.role || "-"}</p>
+          </article>
+          <article className="app-card p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Usuarios registrados</p>
+            <p className="mt-2 text-lg font-bold text-slate-900">{sortedUsers.length}</p>
+          </article>
+          <article className="app-card p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Pendiente cambio clave</p>
+            <p className="mt-2 text-lg font-bold text-slate-900">{sortedUsers.filter((u) => u.mustChangePassword).length}</p>
+          </article>
         </section>
 
-        <section className="app-card p-6 slide-up" style={{ animationDelay: "80ms" }}>
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Cambiar contrasena</h2>
-          <form className="grid md:grid-cols-3 gap-4" onSubmit={handlePasswordSubmit}>
-            {!mustChangePassword && (
-              <input
-                className="field-input"
-                type="password"
-                placeholder="Contrasena actual"
-                value={passwordForm.currentPassword}
-                onChange={(e) => setPasswordForm((prev) => ({ ...prev, currentPassword: e.target.value }))}
-              />
-            )}
-            <input className="field-input" type="password" placeholder="Nueva contrasena" value={passwordForm.newPassword} onChange={(e) => setPasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))} />
-            <input className="field-input" type="password" placeholder="Confirmar nueva contrasena" value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm((prev) => ({ ...prev, confirmPassword: e.target.value }))} />
-            <div className="md:col-span-3">
+        <section className="grid gap-6 lg:grid-cols-2">
+          <section className="app-card p-6 slide-up" style={{ animationDelay: "80ms" }}>
+            <h2 className="mb-1 text-xl font-semibold text-gray-900">Datos personales</h2>
+            <p className="mb-4 text-sm text-gray-500">Actualiza la informacion basica de tu cuenta.</p>
+            <form className="space-y-4" onSubmit={handleProfileSubmit}>
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Nombre</label>
+                <input className="field-input" value={profileForm.name} onChange={(e) => setProfileForm((prev) => ({ ...prev, name: e.target.value }))} />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Apellidos</label>
+                <input className="field-input" value={profileForm.lastName} onChange={(e) => setProfileForm((prev) => ({ ...prev, lastName: e.target.value }))} />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Email</label>
+                <input className="field-input" type="email" value={profileForm.email} onChange={(e) => setProfileForm((prev) => ({ ...prev, email: e.target.value }))} />
+              </div>
+              <button className="btn-primary" type="submit">Guardar perfil</button>
+            </form>
+          </section>
+
+          <section className="app-card p-6 slide-up" style={{ animationDelay: "120ms" }}>
+            <h2 className="mb-1 text-xl font-semibold text-gray-900">Cambiar contrasena</h2>
+            <p className="mb-4 text-sm text-gray-500">Usa una contrasena robusta y unica para esta plataforma.</p>
+            <form className="space-y-4" onSubmit={handlePasswordSubmit}>
+              {!mustChangePassword && (
+                <div>
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Contrasena actual</label>
+                  <input
+                    className="field-input"
+                    type="password"
+                    value={passwordForm.currentPassword}
+                    onChange={(e) => setPasswordForm((prev) => ({ ...prev, currentPassword: e.target.value }))}
+                  />
+                </div>
+              )}
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Nueva contrasena</label>
+                <input className="field-input" type="password" value={passwordForm.newPassword} onChange={(e) => setPasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))} />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Confirmar contrasena</label>
+                <input className="field-input" type="password" value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm((prev) => ({ ...prev, confirmPassword: e.target.value }))} />
+              </div>
               <button className="btn-primary" type="submit">Actualizar contrasena</button>
-            </div>
-          </form>
+            </form>
+          </section>
         </section>
 
         {isSuperAdmin && !mustChangePassword && (
           <>
-            <section className="app-card p-6 slide-up" style={{ animationDelay: "120ms" }}>
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Crear usuario</h2>
-              <form className="grid md:grid-cols-5 gap-4" onSubmit={handleCreateUser}>
-                <input className="field-input" placeholder="Nombre" value={newUserForm.name} onChange={(e) => setNewUserForm((prev) => ({ ...prev, name: e.target.value }))} />
-                <input className="field-input" placeholder="Apellidos" value={newUserForm.lastName} onChange={(e) => setNewUserForm((prev) => ({ ...prev, lastName: e.target.value }))} />
-                <input className="field-input" placeholder="Email" type="email" value={newUserForm.email} onChange={(e) => setNewUserForm((prev) => ({ ...prev, email: e.target.value }))} />
-                <input className="field-input" placeholder="Contrasena temporal" type="password" value={newUserForm.temporaryPassword} onChange={(e) => setNewUserForm((prev) => ({ ...prev, temporaryPassword: e.target.value }))} />
-                <select className="field-input" value={newUserForm.role} onChange={(e) => setNewUserForm((prev) => ({ ...prev, role: e.target.value }))}>
-                  <option value="USER">USER</option>
-                  <option value="TENANT_ADMIN">TENANT_ADMIN</option>
-                  <option value="ADMIN">ADMIN</option>
-                </select>
-                <div className="md:col-span-5">
-                  <button className="btn-primary" type="submit">Crear usuario</button>
+            <section className="app-card p-6 slide-up" style={{ animationDelay: "150ms" }}>
+              <h2 className="mb-1 text-xl font-semibold text-gray-900">Alta de usuario</h2>
+              <p className="mb-4 text-sm text-gray-500">Completa los datos para dar de alta un nuevo acceso.</p>
+              <form className="grid gap-4 md:grid-cols-2 lg:grid-cols-3" onSubmit={handleCreateUser}>
+                <div>
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Nombre</label>
+                  <input className="field-input" value={newUserForm.name} onChange={(e) => setNewUserForm((prev) => ({ ...prev, name: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Apellidos</label>
+                  <input className="field-input" value={newUserForm.lastName} onChange={(e) => setNewUserForm((prev) => ({ ...prev, lastName: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Email</label>
+                  <input className="field-input" type="email" value={newUserForm.email} onChange={(e) => setNewUserForm((prev) => ({ ...prev, email: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Contrasena temporal</label>
+                  <input className="field-input" type="password" value={newUserForm.temporaryPassword} onChange={(e) => setNewUserForm((prev) => ({ ...prev, temporaryPassword: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Rol</label>
+                  <select className="field-input" value={newUserForm.role} onChange={(e) => setNewUserForm((prev) => ({ ...prev, role: e.target.value }))}>
+                    <option value="USER">USER</option>
+                    <option value="TENANT_ADMIN">TENANT_ADMIN</option>
+                    <option value="ADMIN">ADMIN</option>
+                  </select>
+                </div>
+                <div className="flex items-end">
+                  <button className="btn-primary w-full" type="submit">Crear usuario</button>
                 </div>
               </form>
             </section>
 
             <section className="app-card overflow-hidden slide-up" style={{ animationDelay: "160ms" }}>
               <div className="px-6 py-4 border-b border-gray-200">
-                <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <div>
-                    <h2 className="font-semibold text-gray-900">Usuarios</h2>
-                    <p className="text-sm text-gray-500">Edita datos, estado, rol y cambio de contrasena temporal.</p>
+                    <h2 className="font-semibold text-gray-900">Usuarios y permisos</h2>
+                    <p className="text-sm text-gray-500">Edita datos de cuenta, rol, estado y restablecimiento de clave.</p>
                   </div>
-                  <div className="text-sm text-gray-500">Total: {sortedUsers.length}</div>
+                  <div className="flex w-full gap-3 md:w-auto">
+                    <input
+                      type="text"
+                      value={userSearch}
+                      onChange={(e) => setUserSearch(e.target.value)}
+                      placeholder="Buscar por nombre, email o rol"
+                      className="field-input md:w-72"
+                    />
+                    <div className="text-sm text-gray-500 self-center whitespace-nowrap">Total: {visibleUsers.length}</div>
+                  </div>
                 </div>
               </div>
               <div className="divide-y divide-gray-200 md:hidden">
-                {sortedUsers.map((user) => {
+                {visibleUsers.map((user) => {
                   const editable = editUsers[user.id];
                   const lastLoginLabel = user.lastLoginAt
                     ? new Date(user.lastLoginAt).toLocaleString("es-ES")
@@ -532,17 +613,22 @@ export default function UserManagementPage() {
                               className="flex-1 rounded-lg bg-amber-500 px-3 py-2 text-sm font-medium text-white hover:bg-amber-600"
                               onClick={() => void handleResetPassword(user.id)}
                               type="button"
+                              disabled={resettingPasswordUserId === user.id || !resetPasswords[user.id]?.trim()}
                             >
-                              Cambio clave
+                              {resettingPasswordUserId === user.id ? "Aplicando..." : "Cambio clave"}
                             </button>
                             <button
                               className="flex-1 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
                               onClick={() => void handleUpdateUser(user.id)}
                               type="button"
+                              disabled={savingUserId === user.id}
                             >
-                              Guardar
+                              {savingUserId === user.id ? "Guardando..." : "Guardar datos"}
                             </button>
                           </div>
+                          {savedUserId === user.id && (
+                            <p className="text-xs font-medium text-green-700">Datos guardados correctamente.</p>
+                          )}
                         </div>
                       )}
                     </article>
@@ -553,18 +639,17 @@ export default function UserManagementPage() {
               <table className="w-full min-w-[1180px] divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Nombre</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Apellidos</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Nombre y apellidos</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Email</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Rol</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Estado</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Ultima conexion</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Clave</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Cambio de contrasena</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Estado clave</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
-                  {sortedUsers.map((user) => {
+                  {visibleUsers.map((user) => {
                     const editable = editUsers[user.id];
                     const lastLoginLabel = user.lastLoginAt
                       ? new Date(user.lastLoginAt).toLocaleString("es-ES")
@@ -573,21 +658,26 @@ export default function UserManagementPage() {
                     return (
                       <tr key={user.id} className="hover:bg-gray-50 align-top">
                         <td className="px-4 py-3 text-sm text-gray-700">
-                          {user.role === "SUPER_ADMIN" ? user.name : (
-                            <input
-                              className="field-input"
-                              value={editable?.name || ""}
-                              onChange={(e) => setEditUsers((prev) => ({ ...prev, [user.id]: { ...prev[user.id], name: e.target.value } }))}
-                            />
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-700">
-                          {user.role === "SUPER_ADMIN" ? (user.lastName || "") : (
-                            <input
-                              className="field-input"
-                              value={editable?.lastName || ""}
-                              onChange={(e) => setEditUsers((prev) => ({ ...prev, [user.id]: { ...prev[user.id], lastName: e.target.value } }))}
-                            />
+                          {user.role === "SUPER_ADMIN" ? (
+                            <div>
+                              <p className="font-medium">{user.name} {user.lastName || ""}</p>
+                              <p className="text-xs text-gray-500">Super administrador</p>
+                            </div>
+                          ) : (
+                            <div className="grid gap-2">
+                              <input
+                                className="field-input"
+                                value={editable?.name || ""}
+                                onChange={(e) => setEditUsers((prev) => ({ ...prev, [user.id]: { ...prev[user.id], name: e.target.value } }))}
+                                placeholder="Nombre"
+                              />
+                              <input
+                                className="field-input"
+                                value={editable?.lastName || ""}
+                                onChange={(e) => setEditUsers((prev) => ({ ...prev, [user.id]: { ...prev[user.id], lastName: e.target.value } }))}
+                                placeholder="Apellidos"
+                              />
+                            </div>
                           )}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-700">
@@ -653,17 +743,22 @@ export default function UserManagementPage() {
                                 className="whitespace-nowrap rounded-lg bg-amber-500 px-3 py-2 text-white hover:bg-amber-600"
                                 onClick={() => void handleResetPassword(user.id)}
                                 type="button"
+                                disabled={resettingPasswordUserId === user.id || !resetPasswords[user.id]?.trim()}
                               >
-                                Cambio de contrasena
+                                {resettingPasswordUserId === user.id ? "Aplicando..." : "Cambio de contrasena"}
                               </button>
                               <button
                                 className="rounded-lg bg-blue-600 px-3 py-2 text-white hover:bg-blue-700"
                                 onClick={() => void handleUpdateUser(user.id)}
                                 type="button"
+                                disabled={savingUserId === user.id}
                               >
-                                Guardar
+                                {savingUserId === user.id ? "Guardando..." : "Guardar datos"}
                               </button>
                             </div>
+                          )}
+                          {savedUserId === user.id && (
+                            <p className="mt-2 text-xs font-medium text-green-700">Datos guardados correctamente.</p>
                           )}
                         </td>
                       </tr>
