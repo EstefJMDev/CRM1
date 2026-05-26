@@ -28,14 +28,33 @@ type ManagedUser = {
 
 export default function UserManagementPage() {
   const router = useRouter();
-  const [token, setToken] = useState("");
-  const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
+  const readAuthBootstrap = () => {
+    if (typeof window === "undefined") {
+      return { token: "", user: null as AppUser | null };
+    }
+    const localToken = localStorage.getItem("token") || "";
+    const localUser = localStorage.getItem("user");
+    if (!localToken || !localUser) {
+      return { token: "", user: null as AppUser | null };
+    }
+    return { token: localToken, user: JSON.parse(localUser) as AppUser };
+  };
+
+  const [token] = useState(() => readAuthBootstrap().token);
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(() => readAuthBootstrap().user);
   const [users, setUsers] = useState<ManagedUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const [profileForm, setProfileForm] = useState({ name: "", lastName: "", email: "" });
+  const [profileForm, setProfileForm] = useState(() => {
+    const user = readAuthBootstrap().user;
+    return {
+      name: user?.name || "",
+      lastName: user?.lastName || "",
+      email: user?.email || "",
+    };
+  });
   const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [newUserForm, setNewUserForm] = useState({ name: "", lastName: "", email: "", temporaryPassword: "", role: "USER" });
   const [resetPasswords, setResetPasswords] = useState<Record<string, string>>({});
@@ -64,32 +83,20 @@ export default function UserManagementPage() {
   };
 
   useEffect(() => {
-    const localToken = localStorage.getItem("token") || "";
-    const localUser = localStorage.getItem("user");
-
-    if (!localToken || !localUser) {
+    if (!token || !currentUser) {
       router.push("/auth/login");
       return;
     }
 
-    const parsedUser = JSON.parse(localUser) as AppUser;
-    setToken(localToken);
-    setCurrentUser(parsedUser);
-    setProfileForm({
-      name: parsedUser.name || "",
-      lastName: parsedUser.lastName || "",
-      email: parsedUser.email || "",
-    });
-
     const loadUsers = async () => {
-      if (parsedUser.role !== "SUPER_ADMIN") {
+      if (currentUser.role !== "SUPER_ADMIN") {
         setLoading(false);
         return;
       }
 
       try {
         const response = await fetch("/api/users", {
-          headers: { Authorization: `Bearer ${localToken}` },
+          headers: { Authorization: `Bearer ${token}` },
         });
         if (!response.ok) throw new Error("No se pudo cargar usuarios");
         const data = (await response.json()) as ManagedUser[];
@@ -104,7 +111,7 @@ export default function UserManagementPage() {
     };
 
     void loadUsers();
-  }, [router]);
+  }, [router, token, currentUser]);
 
   const refreshUsers = async () => {
     if (!isSuperAdmin || !token) return;

@@ -46,6 +46,18 @@ function toDateOnly(date?: string) {
   return parsed.toISOString().slice(0, 10);
 }
 
+function getIsoWeekLabel(dateInput?: string) {
+  if (!dateInput) return "";
+  const date = new Date(dateInput);
+  if (Number.isNaN(date.getTime())) return "";
+  const utc = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = utc.getUTCDay() || 7;
+  utc.setUTCDate(utc.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(utc.getUTCFullYear(), 0, 1));
+  const weekNum = Math.ceil((((utc.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return `${utc.getUTCFullYear()}-W${String(weekNum).padStart(2, "0")}`;
+}
+
 export default function DashboardPage() {
   const ITEMS_PER_PAGE = 10;
   const router = useRouter();
@@ -54,7 +66,14 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isExporting, setIsExporting] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [exportMonthFilter, setExportMonthFilter] = useState("all");
+  const [exportWeekFilter, setExportWeekFilter] = useState("all");
+  const [exportAgentFilter, setExportAgentFilter] = useState("all");
+  const [exportCommercializerFilter, setExportCommercializerFilter] = useState("all");
+  const [exportClientFilter, setExportClientFilter] = useState("");
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -127,7 +146,7 @@ export default function DashboardPage() {
 
   const handleExport = async () => {
     const token = localStorage.getItem("token");
-    if (!token || filteredContracts.length === 0) return;
+    if (!token || exportableContracts.length === 0) return;
 
     setIsExporting(true);
     setError("");
@@ -140,7 +159,7 @@ export default function DashboardPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          ids: filteredContracts.map((contract) => contract.id),
+          ids: exportableContracts.map((contract) => contract.id),
         }),
       });
 
@@ -173,6 +192,30 @@ export default function DashboardPage() {
 
   const commercializerOptions = useMemo(
     () => Array.from(new Set(contracts.map((c) => c.commercializer))).sort(),
+    [contracts]
+  );
+
+  const monthOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          contracts
+            .map((contract) => toDateOnly(contract.createdAt).slice(0, 7))
+            .filter(Boolean)
+        )
+      ).sort((a, b) => b.localeCompare(a)),
+    [contracts]
+  );
+
+  const weekOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          contracts
+            .map((contract) => getIsoWeekLabel(contract.createdAt))
+            .filter(Boolean)
+        )
+      ).sort((a, b) => b.localeCompare(a)),
     [contracts]
   );
 
@@ -239,21 +282,18 @@ export default function DashboardPage() {
     );
   });
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [
-    searchTerm,
-    statusFilter,
-    agentFilter,
-    showAdvancedFilters,
-    fromActivationDate,
-    toActivationDate,
-    fromInactiveDate,
-    toInactiveDate,
-    fromCreatedDate,
-    toCreatedDate,
-    commercializerFilters,
-  ]);
+  const exportableContracts = filteredContracts.filter((contract) => {
+    const month = toDateOnly(contract.createdAt).slice(0, 7);
+    const week = getIsoWeekLabel(contract.createdAt);
+    const fullName = `${contract.clientName || ""} ${contract.clientLastName || ""}`.trim().toLowerCase();
+    const matchesMonth = exportMonthFilter === "all" || month === exportMonthFilter;
+    const matchesWeek = exportWeekFilter === "all" || week === exportWeekFilter;
+    const matchesAgent = exportAgentFilter === "all" || contract.user.name === exportAgentFilter;
+    const matchesCommercializer =
+      exportCommercializerFilter === "all" || contract.commercializer === exportCommercializerFilter;
+    const matchesClient = !exportClientFilter.trim() || fullName.includes(exportClientFilter.toLowerCase());
+    return matchesMonth && matchesWeek && matchesAgent && matchesCommercializer && matchesClient;
+  });
 
   const totalPages = Math.max(1, Math.ceil(filteredContracts.length / ITEMS_PER_PAGE));
   const safeCurrentPage = Math.min(currentPage, totalPages);
@@ -277,38 +317,140 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="app-shell">
-      <header className="app-header">
-        <div className="app-header-inner">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">CRM Contratos</h1>
-            <p className="text-gray-600 text-sm mt-1">
-              Bienvenido, {user?.name}
-              {user?.role === "SUPER_ADMIN"
-                ? " (Super Admin)"
-                : user?.role === "TENANT_ADMIN"
-                ? " (Tenant Admin)"
-                : user?.role === "ADMIN"
-                ? " (Admin)"
-                : ""}
-            </p>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Link
-              href="/dashboard/user-management"
-              className="btn-secondary text-sm"
-            >
-              Gestion de usuario
-            </Link>
-            <button
-            onClick={handleLogout}
-            className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+    <div className="app-shell flex min-h-screen">
+      {isMobileMenuOpen && (
+        <button
+          type="button"
+          aria-label="Cerrar menu"
+          onClick={() => setIsMobileMenuOpen(false)}
+          className="fixed inset-0 z-30 bg-slate-900/35 md:hidden"
+        />
+      )}
+      <aside className={`${isSidebarCollapsed ? "w-[88px]" : "w-[320px]"} hidden border-r border-slate-200/90 bg-white/90 p-4 transition-all duration-300 md:block`}>
+        <div className="mb-4 flex items-center justify-between">
+          {!isSidebarCollapsed && <h2 className="text-sm font-bold uppercase tracking-wide text-slate-700">Menu</h2>}
+          <button
+            type="button"
+            onClick={() => setIsSidebarCollapsed((prev) => !prev)}
+            className="rounded-lg border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:bg-slate-100"
           >
-            Cerrar Sesión
+            {isSidebarCollapsed ? ">" : "<"}
           </button>
-          </div>
         </div>
-      </header>
+
+        <nav className="space-y-2">
+          <Link href="/dashboard" className="block rounded-lg bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-800">
+            {isSidebarCollapsed ? "C" : "Contratos"}
+          </Link>
+          <Link href="/dashboard/consentimientos-historico" className="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">
+            {isSidebarCollapsed ? "CH" : "Consentimientos Historico"}
+          </Link>
+          <Link href="/dashboard/documentos" className="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">
+            {isSidebarCollapsed ? "D" : "Documentos"}
+          </Link>
+        </nav>
+
+        {!isSidebarCollapsed && (
+          <div className="mt-5 space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Exportacion</p>
+            <select value={exportMonthFilter} onChange={(e) => setExportMonthFilter(e.target.value)} className="field-input text-sm">
+              <option value="all">Mes de importacion</option>
+              {monthOptions.map((month) => <option key={month} value={month}>{month}</option>)}
+            </select>
+            <select value={exportWeekFilter} onChange={(e) => setExportWeekFilter(e.target.value)} className="field-input text-sm">
+              <option value="all">Semana</option>
+              {weekOptions.map((week) => <option key={week} value={week}>{week}</option>)}
+            </select>
+            <select value={exportAgentFilter} onChange={(e) => setExportAgentFilter(e.target.value)} className="field-input text-sm">
+              <option value="all">Nombre de agente</option>
+              {agentOptions.map((agent) => <option key={agent} value={agent}>{agent}</option>)}
+            </select>
+            <select value={exportCommercializerFilter} onChange={(e) => setExportCommercializerFilter(e.target.value)} className="field-input text-sm">
+              <option value="all">Comercializadora</option>
+              {commercializerOptions.map((com) => <option key={com} value={com}>{com}</option>)}
+            </select>
+            <input
+              type="text"
+              value={exportClientFilter}
+              onChange={(e) => setExportClientFilter(e.target.value)}
+              placeholder="Cliente"
+              className="field-input text-sm"
+            />
+            <button
+              type="button"
+              onClick={handleExport}
+              disabled={isExporting || exportableContracts.length === 0}
+              className="w-full rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isExporting ? "Exportando..." : `Exportar (${exportableContracts.length})`}
+            </button>
+          </div>
+        )}
+      </aside>
+
+      <aside className={`fixed left-0 top-0 z-40 h-full w-[88vw] max-w-[330px] overflow-y-auto border-r border-slate-200/90 bg-white p-4 shadow-xl transition-transform duration-300 md:hidden ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-slate-700">Menu</h2>
+          <button
+            type="button"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="rounded-lg border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:bg-slate-100"
+          >
+            X
+          </button>
+        </div>
+        <nav className="space-y-2">
+          <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="block rounded-lg bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-800">Contratos</Link>
+          <Link href="/dashboard/consentimientos-historico" onClick={() => setIsMobileMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">Consentimientos Historico</Link>
+          <Link href="/dashboard/documentos" onClick={() => setIsMobileMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">Documentos</Link>
+        </nav>
+        <div className="mt-5 space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Exportacion</p>
+          <select value={exportMonthFilter} onChange={(e) => setExportMonthFilter(e.target.value)} className="field-input text-sm">
+            <option value="all">Mes de importacion</option>
+            {monthOptions.map((month) => <option key={month} value={month}>{month}</option>)}
+          </select>
+          <select value={exportWeekFilter} onChange={(e) => setExportWeekFilter(e.target.value)} className="field-input text-sm">
+            <option value="all">Semana</option>
+            {weekOptions.map((week) => <option key={week} value={week}>{week}</option>)}
+          </select>
+          <select value={exportAgentFilter} onChange={(e) => setExportAgentFilter(e.target.value)} className="field-input text-sm">
+            <option value="all">Nombre de agente</option>
+            {agentOptions.map((agent) => <option key={agent} value={agent}>{agent}</option>)}
+          </select>
+          <select value={exportCommercializerFilter} onChange={(e) => setExportCommercializerFilter(e.target.value)} className="field-input text-sm">
+            <option value="all">Comercializadora</option>
+            {commercializerOptions.map((com) => <option key={com} value={com}>{com}</option>)}
+          </select>
+          <input type="text" value={exportClientFilter} onChange={(e) => setExportClientFilter(e.target.value)} placeholder="Cliente" className="field-input text-sm" />
+          <button type="button" onClick={handleExport} disabled={isExporting || exportableContracts.length === 0} className="w-full rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50">
+            {isExporting ? "Exportando..." : `Exportar (${exportableContracts.length})`}
+          </button>
+        </div>
+      </aside>
+
+      <div className="min-w-0 flex-1">
+        <header className="app-header">
+          <div className="app-header-inner">
+            <div>
+              <button
+                type="button"
+                onClick={() => setIsMobileMenuOpen(true)}
+                className="mb-2 inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 md:hidden"
+              >
+                <span className="text-base leading-none">≡</span> Menu
+              </button>
+              <h1 className="text-3xl font-bold text-gray-900">CRM Contratos</h1>
+              <p className="text-gray-600 text-sm mt-1">Bienvenido, {user?.name}</p>
+            </div>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Link href="/dashboard/user-management" className="btn-secondary text-sm">Gestion de usuario</Link>
+              <button onClick={handleLogout} className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">
+                Cerrar Sesion
+              </button>
+            </div>
+          </div>
+        </header>
 
       <main className="app-main">
         <div className="app-card mb-6 space-y-3 p-4 slide-up">
@@ -388,21 +530,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <div className="flex justify-end items-center gap-3 mb-4">
-          <button
-            type="button"
-            onClick={handleExport}
-            disabled={isExporting || filteredContracts.length === 0}
-            title="Exportación masiva"
-            aria-label="Exportación masiva"
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M3 14.25A2.25 2.25 0 015.25 12h1a.75.75 0 010 1.5h-1a.75.75 0 00-.75.75v1.5c0 .414.336.75.75.75h9.5a.75.75 0 00.75-.75v-1.5a.75.75 0 00-.75-.75h-1a.75.75 0 010-1.5h1A2.25 2.25 0 0117 14.25v1.5A2.25 2.25 0 0114.75 18h-9.5A2.25 2.25 0 013 15.75v-1.5z" clipRule="evenodd" />
-              <path fillRule="evenodd" d="M10 2.75a.75.75 0 01.75.75v7.19l1.72-1.72a.75.75 0 111.06 1.06l-3 3a.75.75 0 01-1.06 0l-3-3A.75.75 0 117.53 8.97l1.72 1.72V3.5a.75.75 0 01.75-.75z" clipRule="evenodd" />
-            </svg>
-            <span>{isExporting ? "Exportando..." : "Exportación masiva"}</span>
-          </button>
+        <div className="mb-4 flex justify-end items-center gap-3">
           <Link
             href="/dashboard/new-contract"
             className="btn-primary"
@@ -463,14 +591,16 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-2 pt-1">
                     <Link
                       href={`/dashboard/contracts/${contract.id}`}
-                      className="flex-1 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-center text-sm font-medium text-blue-700"
+                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-center text-sm font-medium text-blue-700"
                     >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8"><path strokeLinecap="round" strokeLinejoin="round" d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12Z" /><circle cx="12" cy="12" r="3.2" /></svg>
                       Ver
                     </Link>
                     <Link
                       href={`/dashboard/contracts/${contract.id}/edit`}
-                      className="flex-1 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-center text-sm font-medium text-green-700"
+                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-center text-sm font-medium text-green-700"
                     >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8"><path strokeLinecap="round" strokeLinejoin="round" d="m15.232 5.232 3.536 3.536M9 18l-4 1 1-4L15.5 5.5a2.121 2.121 0 1 1 3 3L9 18Z" /></svg>
                       Editar
                     </Link>
                   </div>
@@ -504,17 +634,17 @@ export default function DashboardPage() {
                           href={`/dashboard/contracts/${contract.id}`}
                           title="Ver contrato"
                           aria-label="Ver contrato"
-                          className="inline-flex items-center px-2 py-1 rounded border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
+                          className="inline-flex items-center justify-center rounded-lg border border-blue-200 bg-blue-50 p-2 text-blue-700 hover:bg-blue-100"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 3C5 3 1.73 7.11.46 9.5a1 1 0 000 .99C1.73 12.89 5 17 10 17s8.27-4.11 9.54-6.51a1 1 0 000-.99C18.27 7.11 15 3 10 3zm0 11a4.5 4.5 0 110-9 4.5 4.5 0 010 9zm0-7a2.5 2.5 0 100 5 2.5 2.5 0 000-5z" /></svg>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8"><path strokeLinecap="round" strokeLinejoin="round" d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12Z" /><circle cx="12" cy="12" r="3.2" /></svg>
                         </Link>
                         <Link
                           href={`/dashboard/contracts/${contract.id}/edit`}
                           title="Editar contrato"
                           aria-label="Editar contrato"
-                          className="inline-flex items-center px-2 py-1 rounded border border-green-200 bg-green-50 text-green-700 hover:bg-green-100"
+                          className="inline-flex items-center justify-center rounded-lg border border-green-200 bg-green-50 p-2 text-green-700 hover:bg-green-100"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13.59 3.59a2 2 0 112.82 2.82l-8.3 8.3a1 1 0 01-.46.26l-3 1a1 1 0 01-1.26-1.26l1-3a1 1 0 01.26-.46l8.3-8.3zM3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" /></svg>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8"><path strokeLinecap="round" strokeLinejoin="round" d="m15.232 5.232 3.536 3.536M9 18l-4 1 1-4L15.5 5.5a2.121 2.121 0 1 1 3 3L9 18Z" /></svg>
                         </Link>
                       </div>
                     </td>
@@ -581,6 +711,7 @@ export default function DashboardPage() {
           )}
         </div>
       </main>
+      </div>
     </div>
   );
 }
