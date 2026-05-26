@@ -81,7 +81,7 @@ const STATUS_LABELS: Record<string, string> = {
   ACTIVE: "Activo",
   INACTIVE: "Inactivo",
   CANCELLED: "Cancelado",
-  TRAMITE: "TrÃ¡mite",
+  TRAMITE: "Trámite",
 };
 
 function formatDate(date?: string) {
@@ -156,7 +156,7 @@ export default function ContractDetailPage() {
         const data = await response.json();
         setContract(data);
       } catch (err) {
-        setError("Error de conexiÃ³n");
+        setError("Error de conexión");
         console.error(err);
       } finally {
         setLoading(false);
@@ -194,7 +194,7 @@ export default function ContractDetailPage() {
       );
 
       if (!response.ok) {
-        throw new Error("Error al agregar interacciÃ³n");
+        throw new Error("Error al agregar interacción");
       }
 
       const interaction = await response.json();
@@ -209,7 +209,7 @@ export default function ContractDetailPage() {
       setNewInteraction({ type: "", notes: "" });
       setShowInteractionForm(false);
     } catch (err) {
-      alert("Error al agregar interacciÃ³n");
+      alert("Error al agregar interacción");
       console.error(err);
     } finally {
       setInteractionLoading(false);
@@ -346,7 +346,7 @@ export default function ContractDetailPage() {
                   <p className="font-medium text-gray-900">{contract.clientDNI || "-"}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">TelÃ©fono</p>
+                  <p className="text-sm text-gray-600">Teléfono</p>
                   <p className="font-medium text-gray-900">{contract.clientPhone || "-"}</p>
                 </div>
                 <div>
@@ -376,15 +376,15 @@ export default function ContractDetailPage() {
                   <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.province)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Tipo VÃ­a</p>
+                  <p className="text-sm text-gray-600">Tipo Vía</p>
                   <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.roadType)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Nombre VÃ­a</p>
+                  <p className="text-sm text-gray-600">Nombre Vía</p>
                   <p className="font-medium text-gray-900">{contract.roadName || "-"}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">NÃºmero</p>
+                  <p className="text-sm text-gray-600">Número</p>
                   <p className="font-medium text-gray-900">{contract.roadNumber || "-"}</p>
                 </div>
               </div>
@@ -404,15 +404,15 @@ export default function ContractDetailPage() {
                   <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.secondaryProvince)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Tipo VÃ­a</p>
+                  <p className="text-sm text-gray-600">Tipo Vía</p>
                   <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.secondaryRoadType)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Nombre VÃ­a</p>
+                  <p className="text-sm text-gray-600">Nombre Vía</p>
                   <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.secondaryRoadName)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">NÃºmero</p>
+                  <p className="text-sm text-gray-600">Número</p>
                   <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.secondaryRoadNumber)}</p>
                 </div>
               </div>
@@ -450,7 +450,7 @@ export default function ContractDetailPage() {
                   <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.gasTariff)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Fecha ActivaciÃ³n</p>
+                  <p className="text-sm text-gray-600">Fecha Activación</p>
                   <p className="font-medium text-gray-900">{formatDate(contract.activationDate)}</p>
                 </div>
                 <div>
@@ -458,7 +458,7 @@ export default function ContractDetailPage() {
                   <p className="font-medium text-gray-900">{formatDate(contract.inactiveDate)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Fecha prevista locuciÃ³n</p>
+                  <p className="text-sm text-gray-600">Fecha prevista locución</p>
                   <p className="font-medium text-gray-900">{formatDate(contract.scheduledCallDate)}</p>
                 </div>
                 <div>
@@ -469,7 +469,7 @@ export default function ContractDetailPage() {
 
               {importedContract && (
                 <div className="mt-5 rounded-lg border border-teal-100 bg-teal-50 px-4 py-3 text-sm text-teal-900">
-                  Este contrato procede de una importacion. Los campos que aparecen como no disponibles no existian como columnas separadas en el Excel original.
+                  Este contrato procede de una importación. Los campos que aparecen como no disponibles no existían como columnas separadas en el Excel original.
                 </div>
               )}
 
@@ -499,7 +499,7 @@ export default function ContractDetailPage() {
                   onClick={() => setShowInteractionForm(!showInteractionForm)}
                   className="btn-primary text-sm py-1"
                 >
-                  + Agregar InteracciÃ³n
+                  + Agregar Interacción
                 </button>
               </div>
 
@@ -530,7 +530,7 @@ export default function ContractDetailPage() {
                         notes: e.target.value,
                       })
                     }
-                    placeholder="Notas de la interacciÃ³n..."
+                    placeholder="Notas de la interacción..."
                     rows={4}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
@@ -609,7 +609,7 @@ export default function ContractDetailPage() {
                   </table>
                 </div>
               ) : (
-                <p className="text-sm text-gray-600">Sin cambios de estado registrados todavÃ­a.</p>
+                <p className="text-sm text-gray-600">Sin cambios de estado registrados todavía.</p>
               )}
             </div>
           </div>
@@ -660,12 +660,12 @@ export default function ContractDetailPage() {
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-gray-600">Sin documentos todavÃ­a</p>
+                <p className="text-sm text-gray-600">Sin documentos todavía</p>
               )}
             </div>
 
             <div className="app-card p-6 mb-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">InformaciÃ³n</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Información</h3>
               <div className="space-y-3">
                 <div>
                   <p className="text-sm text-gray-600">Creado por</p>
@@ -673,11 +673,11 @@ export default function ContractDetailPage() {
                   <p className="text-sm text-gray-500">{contract.user.email}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Fecha CreaciÃ³n</p>
+                  <p className="text-sm text-gray-600">Fecha Creación</p>
                   <p className="font-medium text-gray-900">{formatDate(contract.createdAt)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Ãšltima ActualizaciÃ³n</p>
+                  <p className="text-sm text-gray-600">Última Actualización</p>
                   <p className="font-medium text-gray-900">{formatDate(contract.updatedAt)}</p>
                 </div>
               </div>
@@ -695,6 +695,7 @@ export default function ContractDetailPage() {
     </div>
   );
 }
+
 
 
 

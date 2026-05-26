@@ -403,7 +403,7 @@ export default function NewContractPage() {
 
           <form onSubmit={handleSubmit} className="space-y-8">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Contrato nÂ°</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Contrato n°</label>
               <input type="text" value={formData.contractNumber} disabled className="w-full md:w-52 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50" />
             </div>
 
@@ -613,7 +613,7 @@ export default function NewContractPage() {
                 className="w-full border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-teal-400 hover:bg-teal-50/40 transition"
               >
                 <p className="text-sm text-gray-700 font-medium">
-                  Arrastra archivos aquÃ­ o haz clic para subir
+                  Arrastra archivos aquí o haz clic para subir
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
                   Formatos permitidos: PNG, JPG, DOCX, PDF
@@ -656,6 +656,7 @@ export default function NewContractPage() {
     </div>
   );
 }
+
 
 
 

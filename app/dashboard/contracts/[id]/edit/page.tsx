@@ -375,7 +375,7 @@ export default function EditContractPage() {
 
           <form onSubmit={handleSubmit} className="space-y-8">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Contrato nÂ°</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Contrato n°</label>
               <input type="text" value={formData.contractNumber} disabled className="w-full md:w-52 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50" />
             </div>
 
@@ -464,6 +464,7 @@ export default function EditContractPage() {
     </div>
   );
 }
+
 
 
 

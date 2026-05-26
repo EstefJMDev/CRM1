@@ -428,7 +428,7 @@ export default function DashboardPage() {
           <div className="mt-5 space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Exportacion</p>
             <select value={exportMonthFilter} onChange={(e) => setExportMonthFilter(e.target.value)} className="field-input text-sm">
-              <option value="all">Mes de importacion</option>
+              <option value="all">Mes de importación</option>
               {monthOptions.map((month) => <option key={month} value={month}>{toSpanishMonthLabel(month)}</option>)}
             </select>
             <select value={exportWeekFilter} onChange={(e) => setExportWeekFilter(e.target.value)} className="field-input text-sm">
@@ -482,7 +482,7 @@ export default function DashboardPage() {
         <div className="mt-5 space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Exportacion</p>
           <select value={exportMonthFilter} onChange={(e) => setExportMonthFilter(e.target.value)} className="field-input text-sm">
-            <option value="all">Mes de importacion</option>
+            <option value="all">Mes de importación</option>
             {monthOptions.map((month) => <option key={month} value={month}>{toSpanishMonthLabel(month)}</option>)}
           </select>
           <select value={exportWeekFilter} onChange={(e) => setExportWeekFilter(e.target.value)} className="field-input text-sm">
@@ -812,6 +812,7 @@ export default function DashboardPage() {
     </div>
   );
 }
+
 
 
 
