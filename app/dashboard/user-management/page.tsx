@@ -415,7 +415,7 @@ export default function UserManagementPage() {
         {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">{error}</div>}
         {success && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">{success}</div>}
 
-        <section className="grid gap-4 md:grid-cols-3 slide-up">
+        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 slide-up">
           <article className="app-card p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Rol actual</p>
             <p className="mt-2 text-lg font-bold text-slate-900">{currentUser?.role || "-"}</p>
@@ -431,7 +431,7 @@ export default function UserManagementPage() {
         </section>
 
         <section className="grid gap-6 lg:grid-cols-2">
-          <section className="app-card p-6 slide-up" style={{ animationDelay: "80ms" }}>
+          <section className="app-card p-4 sm:p-6 slide-up" style={{ animationDelay: "80ms" }}>
             <h2 className="mb-1 text-xl font-semibold text-gray-900">Datos personales</h2>
             <p className="mb-4 text-sm text-gray-500">Actualiza la informacion basica de tu cuenta.</p>
             <form className="space-y-4" onSubmit={handleProfileSubmit}>
@@ -451,7 +451,7 @@ export default function UserManagementPage() {
             </form>
           </section>
 
-          <section className="app-card p-6 slide-up" style={{ animationDelay: "120ms" }}>
+          <section className="app-card p-4 sm:p-6 slide-up" style={{ animationDelay: "120ms" }}>
             <h2 className="mb-1 text-xl font-semibold text-gray-900">Cambiar contrasena</h2>
             <p className="mb-4 text-sm text-gray-500">Usa una contrasena robusta y unica para esta plataforma.</p>
             <form className="space-y-4" onSubmit={handlePasswordSubmit}>
@@ -481,7 +481,7 @@ export default function UserManagementPage() {
 
         {isSuperAdmin && !mustChangePassword && (
           <>
-            <section className="app-card p-6 slide-up" style={{ animationDelay: "150ms" }}>
+            <section className="app-card p-4 sm:p-6 slide-up" style={{ animationDelay: "150ms" }}>
               <h2 className="mb-1 text-xl font-semibold text-gray-900">Alta de usuario</h2>
               <p className="mb-4 text-sm text-gray-500">Completa los datos para dar de alta un nuevo acceso.</p>
               <form className="grid gap-4 md:grid-cols-2 lg:grid-cols-3" onSubmit={handleCreateUser}>
@@ -509,28 +509,28 @@ export default function UserManagementPage() {
                     <option value="ADMIN">ADMIN</option>
                   </select>
                 </div>
-                <div className="flex items-end">
+                <div className="flex items-end lg:items-start">
                   <button className="btn-primary w-full" type="submit">Crear usuario</button>
                 </div>
               </form>
             </section>
 
             <section className="app-card overflow-hidden slide-up" style={{ animationDelay: "160ms" }}>
-              <div className="px-6 py-4 border-b border-gray-200">
+              <div className="border-b border-gray-200 px-4 py-4 sm:px-6">
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <div>
                     <h2 className="font-semibold text-gray-900">Usuarios y permisos</h2>
                     <p className="text-sm text-gray-500">Edita datos de cuenta, rol, estado y restablecimiento de clave.</p>
                   </div>
-                  <div className="flex w-full gap-3 md:w-auto">
+                  <div className="flex w-full flex-col gap-2 sm:flex-row md:w-auto">
                     <input
                       type="text"
                       value={userSearch}
                       onChange={(e) => setUserSearch(e.target.value)}
                       placeholder="Buscar por nombre, email o rol"
-                      className="field-input md:w-72"
+                      className="field-input w-full md:w-72"
                     />
-                    <div className="text-sm text-gray-500 self-center whitespace-nowrap">Total: {visibleUsers.length}</div>
+                    <div className="self-start text-sm text-gray-500 sm:self-center whitespace-nowrap">Total: {visibleUsers.length}</div>
                   </div>
                 </div>
               </div>
@@ -542,7 +542,7 @@ export default function UserManagementPage() {
                     : "Nunca";
 
                   return (
-                    <article key={user.id} className="p-4 space-y-3">
+                    <article key={user.id} className="space-y-3 p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <p className="text-base font-semibold text-gray-900">{user.name} {user.lastName || ""}</p>
@@ -557,7 +557,7 @@ export default function UserManagementPage() {
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
                         <div><p className="text-gray-500">Rol</p><p className="font-medium text-gray-800">{user.role}</p></div>
                         <div><p className="text-gray-500">Estado</p><p className="font-medium text-gray-800">{user.isActive ? "Activo" : "Desactivado"}</p></div>
                         <div className="col-span-2"><p className="text-gray-500">Última conexión</p><p className="text-gray-700">{lastLoginLabel}</p></div>
@@ -608,9 +608,9 @@ export default function UserManagementPage() {
                             value={resetPasswords[user.id] || ""}
                             onChange={(e) => setResetPasswords((prev) => ({ ...prev, [user.id]: e.target.value }))}
                           />
-                          <div className="flex gap-2">
+                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                             <button
-                              className="flex-1 rounded-lg bg-amber-500 px-3 py-2 text-sm font-medium text-white hover:bg-amber-600"
+                              className="w-full rounded-lg bg-amber-500 px-3 py-2 text-sm font-medium text-white hover:bg-amber-600 disabled:opacity-50"
                               onClick={() => void handleResetPassword(user.id)}
                               type="button"
                               disabled={resettingPasswordUserId === user.id || !resetPasswords[user.id]?.trim()}
@@ -618,7 +618,7 @@ export default function UserManagementPage() {
                               {resettingPasswordUserId === user.id ? "Aplicando..." : "Cambio clave"}
                             </button>
                             <button
-                              className="flex-1 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                              className="w-full rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
                               onClick={() => void handleUpdateUser(user.id)}
                               type="button"
                               disabled={savingUserId === user.id}
@@ -626,14 +626,15 @@ export default function UserManagementPage() {
                               {savingUserId === user.id ? "Guardando..." : "Guardar datos"}
                             </button>
                           </div>
-                          {savedUserId === user.id && (
-                            <p className="text-xs font-medium text-green-700">Datos guardados correctamente.</p>
-                          )}
+                          {savedUserId === user.id && <p className="text-xs font-medium text-green-700">Datos guardados correctamente.</p>}
                         </div>
                       )}
                     </article>
                   );
                 })}
+                {visibleUsers.length === 0 && (
+                  <div className="p-4 text-sm text-gray-500">No hay usuarios que coincidan con la busqueda.</div>
+                )}
               </div>
               <div className="hidden overflow-x-auto md:block">
               <table className="w-full min-w-[1180px] divide-y divide-gray-200">

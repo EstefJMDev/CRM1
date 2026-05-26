@@ -105,6 +105,7 @@ export default function DashboardPage() {
   const [fromCreatedDate, setFromCreatedDate] = useState("");
   const [toCreatedDate, setToCreatedDate] = useState("");
   const [commercializerFilters, setCommercializerFilters] = useState<string[]>([]);
+  const canViewExport = user?.role !== "USER";
 
   const fetchContracts = useCallback(async (token: string) => {
     try {
@@ -164,6 +165,7 @@ export default function DashboardPage() {
   };
 
   const handleExport = async () => {
+    if (!canViewExport) return;
     const token = localStorage.getItem("token");
     if (!token || exportableContracts.length === 0) return;
 
@@ -354,8 +356,8 @@ export default function DashboardPage() {
           className="fixed inset-0 z-30 bg-slate-900/35 md:hidden"
         />
       )}
-      <aside className={`${isSidebarCollapsed ? "w-[88px]" : "w-[320px]"} hidden border-r border-slate-200/90 bg-white/90 p-4 transition-all duration-300 md:block`}>
-        <div className="mb-4 flex items-center justify-between">
+      <aside className={`${isSidebarCollapsed ? "w-[78px]" : "w-[320px]"} hidden border-r border-slate-200/90 bg-white/90 p-3 transition-all duration-300 md:block`}>
+        <div className={`mb-4 flex items-center ${isSidebarCollapsed ? "justify-center" : "justify-between"}`}>
           {!isSidebarCollapsed && <h2 className="text-sm font-bold uppercase tracking-wide text-slate-700">Menu</h2>}
           <button
             type="button"
@@ -367,18 +369,36 @@ export default function DashboardPage() {
         </div>
 
         <nav className="space-y-2">
-          <Link href="/dashboard" className="block rounded-lg bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-800">
-            {isSidebarCollapsed ? "C" : "Contratos"}
+          <Link
+            href="/dashboard"
+            title="Contratos"
+            className={`block rounded-lg py-2 text-sm font-semibold text-teal-800 ${isSidebarCollapsed ? "px-0 text-center" : "bg-teal-50 px-3"}`}
+          >
+            {isSidebarCollapsed ? (
+              <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8"><path strokeLinecap="round" strokeLinejoin="round" d="M4 7.75A1.75 1.75 0 0 1 5.75 6h12.5A1.75 1.75 0 0 1 20 7.75v8.5A1.75 1.75 0 0 1 18.25 18H5.75A1.75 1.75 0 0 1 4 16.25v-8.5Z" /><path strokeLinecap="round" strokeLinejoin="round" d="M8 10h8M8 14h5" /></svg>
+            ) : "Contratos"}
           </Link>
-          <Link href="/dashboard/consentimientos-historico" className="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">
-            {isSidebarCollapsed ? "CH" : "Consentimientos Historico"}
+          <Link
+            href="/dashboard/consentimientos-historico"
+            title="Consentimientos Historico"
+            className={`block rounded-lg py-2 text-sm text-slate-700 hover:bg-slate-100 ${isSidebarCollapsed ? "px-0 text-center" : "px-3"}`}
+          >
+            {isSidebarCollapsed ? (
+              <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75" /><path strokeLinecap="round" strokeLinejoin="round" d="M21 12c0 4.5-3.5 8-9 10-5.5-2-9-5.5-9-10V7l9-3 9 3v5Z" /></svg>
+            ) : "Consentimientos Historico"}
           </Link>
-          <Link href="/dashboard/documentos" className="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">
-            {isSidebarCollapsed ? "D" : "Documentos"}
+          <Link
+            href="/dashboard/documentos"
+            title="Documentos"
+            className={`block rounded-lg py-2 text-sm text-slate-700 hover:bg-slate-100 ${isSidebarCollapsed ? "px-0 text-center" : "px-3"}`}
+          >
+            {isSidebarCollapsed ? (
+              <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8"><path strokeLinecap="round" strokeLinejoin="round" d="M7.5 3.75h6.879c.464 0 .909.184 1.237.513l2.121 2.12c.328.329.513.774.513 1.238V19.5A1.5 1.5 0 0 1 16.75 21h-9.5a1.5 1.5 0 0 1-1.5-1.5v-14A1.75 1.75 0 0 1 7.5 3.75Z" /><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 3h6m-6-6h3" /></svg>
+            ) : "Documentos"}
           </Link>
         </nav>
 
-        {!isSidebarCollapsed && (
+        {!isSidebarCollapsed && canViewExport && (
           <div className="mt-5 space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Exportacion</p>
             <select value={exportMonthFilter} onChange={(e) => setExportMonthFilter(e.target.value)} className="field-input text-sm">
@@ -432,6 +452,7 @@ export default function DashboardPage() {
           <Link href="/dashboard/consentimientos-historico" onClick={() => setIsMobileMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">Consentimientos Historico</Link>
           <Link href="/dashboard/documentos" onClick={() => setIsMobileMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">Documentos</Link>
         </nav>
+        {canViewExport && (
         <div className="mt-5 space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Exportacion</p>
           <select value={exportMonthFilter} onChange={(e) => setExportMonthFilter(e.target.value)} className="field-input text-sm">
@@ -455,6 +476,7 @@ export default function DashboardPage() {
             {isExporting ? "Exportando..." : `Exportar (${exportableContracts.length})`}
           </button>
         </div>
+        )}
       </aside>
 
       <div className="min-w-0 flex-1">
