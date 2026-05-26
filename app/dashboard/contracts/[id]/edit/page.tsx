@@ -88,10 +88,6 @@ const PRODUCTS = ["SOLO LUZ", "SOLO GAS", "LUZ CON MANTENIMIENTO", "GAS CON MANT
 const COMMERCIALIZERS = ["ADX", "IBERDROLA", "TOTAL", "NORDY", "GESTION ENERGETICA FV", "PLENITUDE", "ENDESA", "GANA ENERGIA", "NATURGY PDV", "ONG", "UNIELECTRICA", "ENDESA PYMES", "REPSOL", "COMPARATIVAS"];
 const PROVINCES = ["Alava", "Albacete", "Alicante", "Almeria", "Asturias", "Avila", "Badajoz", "Barcelona", "Burgos", "Caceres", "Cadiz", "Cantabria", "Castellon", "Ceuta", "Ciudad Real", "Cordoba", "A Coruna", "Cuenca", "Girona", "Granada", "Guadalajara", "Gipuzkoa", "Huelva", "Huesca", "Illes Balears", "Jaen", "Leon", "Lleida", "Lugo", "Madrid", "Malaga", "Melilla", "Murcia", "Navarra", "Ourense", "Palencia", "Las Palmas", "Pontevedra", "La Rioja", "Salamanca", "Segovia", "Sevilla", "Soria", "Tarragona", "Santa Cruz de Tenerife", "Teruel", "Toledo", "Valencia", "Valladolid", "Bizkaia", "Zamora", "Zaragoza"];
 
-const POSTAL_PROVINCE_MAP: Record<string, string> = {
-  "01": "Alava", "02": "Albacete", "03": "Alicante", "04": "Almeria", "05": "Avila", "06": "Badajoz", "07": "Illes Balears", "08": "Barcelona", "09": "Burgos", "10": "Caceres", "11": "Cadiz", "12": "Castellon", "13": "Ciudad Real", "14": "Cordoba", "15": "A Coruna", "16": "Cuenca", "17": "Girona", "18": "Granada", "19": "Guadalajara", "20": "Gipuzkoa", "21": "Huelva", "22": "Huesca", "23": "Jaen", "24": "Leon", "25": "Lleida", "26": "La Rioja", "27": "Lugo", "28": "Madrid", "29": "Malaga", "30": "Murcia", "31": "Navarra", "32": "Ourense", "33": "Asturias", "34": "Palencia", "35": "Las Palmas", "36": "Pontevedra", "37": "Salamanca", "38": "Santa Cruz de Tenerife", "39": "Cantabria", "40": "Segovia", "41": "Sevilla", "42": "Soria", "43": "Tarragona", "44": "Teruel", "45": "Toledo", "46": "Valencia", "47": "Valladolid", "48": "Bizkaia", "49": "Zamora", "50": "Zaragoza", "51": "Ceuta", "52": "Melilla",
-};
-
 function toDateInput(date?: string) {
   if (!date) return "";
   const parsed = new Date(date);
@@ -213,9 +209,15 @@ export default function EditContractPage() {
     }
   }, [contractId, router]);
 
-  const detectProvince = (zipCode: string) => {
-    if (!/^\d{5}$/.test(zipCode)) return "";
-    return POSTAL_PROVINCE_MAP[zipCode.slice(0, 2)] || "";
+  const lookupLocationByPostalCode = async (zipCode: string) => {
+    if (!/^\d{5}$/.test(zipCode)) {
+      return { municipality: "", province: "" };
+    }
+    const response = await fetch(`/api/postal-lookup?zipCode=${zipCode}`);
+    if (!response.ok) {
+      return { municipality: "", province: "" };
+    }
+    return (await response.json()) as { municipality?: string; province?: string };
   };
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -223,11 +225,50 @@ export default function EditContractPage() {
 
     setFormData((prev) => {
       const next = { ...prev, [name]: value };
-      if (name === "zipCode") next.province = detectProvince(value) || prev.province;
-      if (name === "secondaryZipCode") next.secondaryProvince = detectProvince(value) || prev.secondaryProvince;
       return next;
     });
   };
+
+  useEffect(() => {
+    if (!/^\d{5}$/.test(formData.zipCode)) return;
+
+    const timeoutId = window.setTimeout(() => {
+      void (async () => {
+        const location = await lookupLocationByPostalCode(formData.zipCode);
+        setFormData((prev) => ({
+          ...prev,
+          municipality: location.municipality || prev.municipality,
+          province: location.province || prev.province,
+          ...(sameSupplyPoint
+            ? {
+                secondaryZipCode: prev.zipCode,
+                secondaryMunicipality: location.municipality || prev.secondaryMunicipality,
+                secondaryProvince: location.province || prev.secondaryProvince,
+              }
+            : {}),
+        }));
+      })();
+    }, 250);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [formData.zipCode, sameSupplyPoint]);
+
+  useEffect(() => {
+    if (!/^\d{5}$/.test(formData.secondaryZipCode) || sameSupplyPoint) return;
+
+    const timeoutId = window.setTimeout(() => {
+      void (async () => {
+        const location = await lookupLocationByPostalCode(formData.secondaryZipCode);
+        setFormData((prev) => ({
+          ...prev,
+          secondaryMunicipality: location.municipality || prev.secondaryMunicipality,
+          secondaryProvince: location.province || prev.secondaryProvince,
+        }));
+      })();
+    }, 250);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [formData.secondaryZipCode, sameSupplyPoint]);
 
   const handleProductsChange = (product: string) => {
     setFormData((prev) => ({
