@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, FormEvent, ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -70,7 +70,7 @@ export default function LoginPage() {
         </h1>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+          <div className="alert alert-error mb-4">
             {error}
           </div>
         )}
@@ -129,3 +129,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+

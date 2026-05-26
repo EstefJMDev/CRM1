@@ -454,7 +454,7 @@ export default function DashboardPage() {
               type="button"
               onClick={handleExport}
               disabled={isExporting}
-              className="w-full rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+              className="btn-soft w-full text-sm disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isExporting ? "Exportando..." : "Exportar"}
             </button>
@@ -498,7 +498,7 @@ export default function DashboardPage() {
             {exportCommercializerOptions.map((com) => <option key={com} value={com}>{com}</option>)}
           </select>
           <input type="text" value={exportClientFilter} onChange={(e) => setExportClientFilter(e.target.value)} placeholder="Cliente" className="field-input text-sm" />
-          <button type="button" onClick={handleExport} disabled={isExporting} className="w-full rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50">
+          <button type="button" onClick={handleExport} disabled={isExporting} className="btn-soft w-full text-sm disabled:cursor-not-allowed disabled:opacity-50">
             {isExporting ? "Exportando..." : "Exportar"}
           </button>
         </div>
@@ -514,14 +514,14 @@ export default function DashboardPage() {
                 onClick={() => setIsMobileMenuOpen(true)}
                 className="mb-2 inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 md:hidden"
               >
-                <span className="text-base leading-none">≡</span> Menu
+                <span className="text-base leading-none">=</span> Menu
               </button>
               <h1 className="text-3xl font-bold text-gray-900">CRM Contratos</h1>
               <p className="text-gray-600 text-sm mt-1">Bienvenido, {user?.name}</p>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
               <Link href="/dashboard/user-management" className="btn-secondary text-sm">Gestion de usuario</Link>
-              <button onClick={handleLogout} className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">
+              <button onClick={handleLogout} className="btn-danger text-sm">
                 Cerrar Sesion
               </button>
             </div>
@@ -564,7 +564,7 @@ export default function DashboardPage() {
               <button onClick={() => setShowAdvancedFilters((v) => !v)} className="text-gray-700 hover:text-gray-900">
                 {showAdvancedFilters ? "Ocultar filtros" : "Más filtros"}
               </button>
-              <button onClick={clearFilters} className="text-blue-600 hover:text-blue-800">Limpiar</button>
+              <button onClick={clearFilters} className="link-accent">Limpiar</button>
             </div>
           </div>
 
@@ -601,7 +601,7 @@ export default function DashboardPage() {
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+          <div className="alert alert-error mb-4">
             {error}
           </div>
         )}
@@ -628,12 +628,12 @@ export default function DashboardPage() {
                     </div>
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                       contract.status === "ACTIVE"
-                        ? "bg-green-100 text-green-800"
+                        ? "badge-ok"
                         : contract.status === "PENDING"
-                        ? "bg-yellow-100 text-yellow-800"
+                        ? "badge-warn"
                         : contract.status === "INACTIVE"
-                        ? "bg-gray-100 text-gray-800"
-                        : "bg-red-100 text-red-800"
+                        ? "badge-neutral"
+                        : "badge-danger"
                     }`}>
                       {STATUS_LABELS[contract.status] || contract.status}
                     </span>
@@ -667,14 +667,14 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-2 pt-1">
                     <Link
                       href={`/dashboard/contracts/${contract.id}`}
-                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-center text-sm font-medium text-blue-700"
+                      className="btn-soft inline-flex flex-1 items-center justify-center gap-2 px-3 py-2 text-center text-sm"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8"><path strokeLinecap="round" strokeLinejoin="round" d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12Z" /><circle cx="12" cy="12" r="3.2" /></svg>
                       Ver
                     </Link>
                     <Link
                       href={`/dashboard/contracts/${contract.id}/edit`}
-                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-center text-sm font-medium text-green-700"
+                      className="btn-soft inline-flex flex-1 items-center justify-center gap-2 px-3 py-2 text-center text-sm"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8"><path strokeLinecap="round" strokeLinejoin="round" d="m15.232 5.232 3.536 3.536M9 18l-4 1 1-4L15.5 5.5a2.121 2.121 0 1 1 3 3L9 18Z" /></svg>
                       Editar
@@ -710,7 +710,7 @@ export default function DashboardPage() {
                           href={`/dashboard/contracts/${contract.id}`}
                           title="Ver contrato"
                           aria-label="Ver contrato"
-                          className="inline-flex items-center justify-center rounded-lg border border-blue-200 bg-blue-50 p-2 text-blue-700 hover:bg-blue-100"
+                          className="btn-soft-icon"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8"><path strokeLinecap="round" strokeLinejoin="round" d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12Z" /><circle cx="12" cy="12" r="3.2" /></svg>
                         </Link>
@@ -718,7 +718,7 @@ export default function DashboardPage() {
                           href={`/dashboard/contracts/${contract.id}/edit`}
                           title="Editar contrato"
                           aria-label="Editar contrato"
-                          className="inline-flex items-center justify-center rounded-lg border border-green-200 bg-green-50 p-2 text-green-700 hover:bg-green-100"
+                          className="btn-soft-icon"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8"><path strokeLinecap="round" strokeLinejoin="round" d="m15.232 5.232 3.536 3.536M9 18l-4 1 1-4L15.5 5.5a2.121 2.121 0 1 1 3 3L9 18Z" /></svg>
                         </Link>
@@ -743,12 +743,12 @@ export default function DashboardPage() {
                     <td className="px-6 py-4 text-sm">
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                         contract.status === "ACTIVE"
-                          ? "bg-green-100 text-green-800"
+                          ? "badge-ok"
                           : contract.status === "PENDING"
-                          ? "bg-yellow-100 text-yellow-800"
+                          ? "badge-warn"
                           : contract.status === "INACTIVE"
-                          ? "bg-gray-100 text-gray-800"
-                          : "bg-red-100 text-red-800"
+                          ? "badge-neutral"
+                          : "badge-danger"
                       }`}>
                         {STATUS_LABELS[contract.status] || contract.status}
                       </span>
@@ -791,6 +791,8 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+
 
 
 

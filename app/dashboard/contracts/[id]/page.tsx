@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -81,7 +81,7 @@ const STATUS_LABELS: Record<string, string> = {
   ACTIVE: "Activo",
   INACTIVE: "Inactivo",
   CANCELLED: "Cancelado",
-  TRAMITE: "Trámite",
+  TRAMITE: "TrÃ¡mite",
 };
 
 function formatDate(date?: string) {
@@ -156,7 +156,7 @@ export default function ContractDetailPage() {
         const data = await response.json();
         setContract(data);
       } catch (err) {
-        setError("Error de conexión");
+        setError("Error de conexiÃ³n");
         console.error(err);
       } finally {
         setLoading(false);
@@ -194,7 +194,7 @@ export default function ContractDetailPage() {
       );
 
       if (!response.ok) {
-        throw new Error("Error al agregar interacción");
+        throw new Error("Error al agregar interacciÃ³n");
       }
 
       const interaction = await response.json();
@@ -209,7 +209,7 @@ export default function ContractDetailPage() {
       setNewInteraction({ type: "", notes: "" });
       setShowInteractionForm(false);
     } catch (err) {
-      alert("Error al agregar interacción");
+      alert("Error al agregar interacciÃ³n");
       console.error(err);
     } finally {
       setInteractionLoading(false);
@@ -285,13 +285,13 @@ export default function ContractDetailPage() {
       <div className="app-shell">
         <header className="app-header">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <Link href="/dashboard" className="text-blue-600 hover:text-blue-900">
+            <Link href="/dashboard" className="link-accent">
               ? Volver al Dashboard
             </Link>
           </div>
         </header>
         <main className="app-main max-w-7xl">
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          <div className="alert alert-error">
             {error}
           </div>
         </main>
@@ -346,7 +346,7 @@ export default function ContractDetailPage() {
                   <p className="font-medium text-gray-900">{contract.clientDNI || "-"}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Teléfono</p>
+                  <p className="text-sm text-gray-600">TelÃ©fono</p>
                   <p className="font-medium text-gray-900">{contract.clientPhone || "-"}</p>
                 </div>
                 <div>
@@ -376,15 +376,15 @@ export default function ContractDetailPage() {
                   <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.province)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Tipo Vía</p>
+                  <p className="text-sm text-gray-600">Tipo VÃ­a</p>
                   <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.roadType)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Nombre Vía</p>
+                  <p className="text-sm text-gray-600">Nombre VÃ­a</p>
                   <p className="font-medium text-gray-900">{contract.roadName || "-"}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Número</p>
+                  <p className="text-sm text-gray-600">NÃºmero</p>
                   <p className="font-medium text-gray-900">{contract.roadNumber || "-"}</p>
                 </div>
               </div>
@@ -404,15 +404,15 @@ export default function ContractDetailPage() {
                   <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.secondaryProvince)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Tipo Vía</p>
+                  <p className="text-sm text-gray-600">Tipo VÃ­a</p>
                   <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.secondaryRoadType)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Nombre Vía</p>
+                  <p className="text-sm text-gray-600">Nombre VÃ­a</p>
                   <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.secondaryRoadName)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Número</p>
+                  <p className="text-sm text-gray-600">NÃºmero</p>
                   <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.secondaryRoadNumber)}</p>
                 </div>
               </div>
@@ -450,7 +450,7 @@ export default function ContractDetailPage() {
                   <p className="font-medium text-gray-900">{emptyImportedValue(contract, contract.gasTariff)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Fecha Activación</p>
+                  <p className="text-sm text-gray-600">Fecha ActivaciÃ³n</p>
                   <p className="font-medium text-gray-900">{formatDate(contract.activationDate)}</p>
                 </div>
                 <div>
@@ -458,7 +458,7 @@ export default function ContractDetailPage() {
                   <p className="font-medium text-gray-900">{formatDate(contract.inactiveDate)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Fecha prevista locución</p>
+                  <p className="text-sm text-gray-600">Fecha prevista locuciÃ³n</p>
                   <p className="font-medium text-gray-900">{formatDate(contract.scheduledCallDate)}</p>
                 </div>
                 <div>
@@ -468,7 +468,7 @@ export default function ContractDetailPage() {
               </div>
 
               {importedContract && (
-                <div className="mt-5 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                <div className="mt-5 rounded-lg border border-teal-100 bg-teal-50 px-4 py-3 text-sm text-teal-900">
                   Este contrato procede de una importacion. Los campos que aparecen como no disponibles no existian como columnas separadas en el Excel original.
                 </div>
               )}
@@ -480,7 +480,7 @@ export default function ContractDetailPage() {
                     {contract.products.map((product) => (
                       <span
                         key={product}
-                        className="px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200"
+                        className="badge-neutral border border-slate-200"
                       >
                         {product}
                       </span>
@@ -499,7 +499,7 @@ export default function ContractDetailPage() {
                   onClick={() => setShowInteractionForm(!showInteractionForm)}
                   className="btn-primary text-sm py-1"
                 >
-                  + Agregar Interacción
+                  + Agregar InteracciÃ³n
                 </button>
               </div>
 
@@ -513,7 +513,7 @@ export default function ContractDetailPage() {
                         type: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-teal-500"
                   >
                     <option value="">Seleccionar tipo...</option>
                     <option value="LLAMADA">Llamada</option>
@@ -530,16 +530,16 @@ export default function ContractDetailPage() {
                         notes: e.target.value,
                       })
                     }
-                    placeholder="Notas de la interacción..."
+                    placeholder="Notas de la interacciÃ³n..."
                     rows={4}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
 
                   <div className="flex gap-2">
                     <button
                       onClick={handleAddInteraction}
                       disabled={interactionLoading}
-                      className="rounded-xl bg-green-600 px-4 py-2 font-medium text-white hover:bg-green-700 disabled:bg-slate-400"
+                      className="btn-primary disabled:bg-slate-400"
                     >
                       {interactionLoading ? "Guardando..." : "Guardar"}
                     </button>
@@ -609,7 +609,7 @@ export default function ContractDetailPage() {
                   </table>
                 </div>
               ) : (
-                <p className="text-sm text-gray-600">Sin cambios de estado registrados todavía.</p>
+                <p className="text-sm text-gray-600">Sin cambios de estado registrados todavÃ­a.</p>
               )}
             </div>
           </div>
@@ -620,12 +620,12 @@ export default function ContractDetailPage() {
               <span
                 className={`px-4 py-2 rounded-full text-sm font-medium inline-block ${
                   contract.status === "ACTIVE"
-                    ? "bg-green-100 text-green-800"
+                    ? "badge-ok"
                     : contract.status === "PENDING"
                     ? "bg-yellow-100 text-yellow-800"
                     : contract.status === "INACTIVE"
                     ? "bg-gray-100 text-gray-800"
-                    : "bg-red-100 text-red-800"
+                    : "badge-danger"
                 }`}
               >
                 {STATUS_LABELS[contract.status] || contract.status}
@@ -634,7 +634,7 @@ export default function ContractDetailPage() {
 
             <div className="app-card p-6 mb-6">
               <h3 className="text-lg font-bold text-gray-900 mb-4">Documentos</h3>
-              <label className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg cursor-pointer mb-4">
+              <label className="btn-primary inline-block cursor-pointer mb-4 py-2">
                 {uploading ? "Subiendo..." : "Adjuntar documento"}
                 <input
                   type="file"
@@ -652,7 +652,7 @@ export default function ContractDetailPage() {
                         href={doc.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-blue-600 hover:text-blue-800"
+                        className="link-accent"
                       >
                         {doc.name}
                       </a>
@@ -660,12 +660,12 @@ export default function ContractDetailPage() {
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-gray-600">Sin documentos todavía</p>
+                <p className="text-sm text-gray-600">Sin documentos todavÃ­a</p>
               )}
             </div>
 
             <div className="app-card p-6 mb-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Información</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-4">InformaciÃ³n</h3>
               <div className="space-y-3">
                 <div>
                   <p className="text-sm text-gray-600">Creado por</p>
@@ -673,11 +673,11 @@ export default function ContractDetailPage() {
                   <p className="text-sm text-gray-500">{contract.user.email}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Fecha Creación</p>
+                  <p className="text-sm text-gray-600">Fecha CreaciÃ³n</p>
                   <p className="font-medium text-gray-900">{formatDate(contract.createdAt)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Última Actualización</p>
+                  <p className="text-sm text-gray-600">Ãšltima ActualizaciÃ³n</p>
                   <p className="font-medium text-gray-900">{formatDate(contract.updatedAt)}</p>
                 </div>
               </div>
@@ -695,6 +695,8 @@ export default function ContractDetailPage() {
     </div>
   );
 }
+
+
 
 
 

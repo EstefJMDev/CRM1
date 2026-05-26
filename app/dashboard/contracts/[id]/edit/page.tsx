@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState, FormEvent, ChangeEvent } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -370,12 +370,12 @@ export default function EditContractPage() {
 
       <main className="app-main max-w-5xl">
         <div className="app-card p-6 sm:p-8 slide-up">
-          {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">{error}</div>}
-          {success && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6">Contrato actualizado</div>}
+          {error && <div className="alert alert-error mb-6">{error}</div>}
+          {success && <div className="alert alert-success mb-6">Contrato actualizado</div>}
 
           <form onSubmit={handleSubmit} className="space-y-8">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Contrato n°</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Contrato nÂ°</label>
               <input type="text" value={formData.contractNumber} disabled className="w-full md:w-52 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50" />
             </div>
 
@@ -464,6 +464,8 @@ export default function EditContractPage() {
     </div>
   );
 }
+
+
 
 
 

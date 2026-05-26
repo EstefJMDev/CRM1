@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { ContractStatus, Prisma } from "@prisma/client";
 
 type QueryValue = string | null;
 
@@ -42,7 +42,7 @@ export function buildContractsWhere(
   }
 
   if (status !== "all") {
-    where.status = status as Prisma.ContractStatus;
+    where.status = status as ContractStatus;
   }
 
   if (agent !== "all") {
@@ -76,4 +76,3 @@ export function buildContractsWhere(
 
   return where;
 }
-

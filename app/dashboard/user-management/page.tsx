@@ -329,26 +329,26 @@ export default function UserManagementPage() {
         </header>
 
         <main className="max-w-[96vw] mx-auto px-3 sm:px-4 lg:px-5 py-10">
-          {error && <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">{error}</div>}
-          {success && <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">{success}</div>}
+          {error && <div className="mb-6 alert alert-error">{error}</div>}
+          {success && <div className="mb-6 alert alert-success">{success}</div>}
 
           <div className="mx-auto max-w-2xl">
             <section className="overflow-hidden rounded-[28px] border border-white/70 bg-white shadow-[0_28px_80px_rgba(15,23,42,0.10)]">
-              <div className="border-b border-blue-100 bg-[linear-gradient(135deg,#0f172a_0%,#1d4ed8_55%,#60a5fa_100%)] px-8 py-8 text-white">
+              <div className="border-b border-teal-100 bg-[linear-gradient(135deg,#0f172a_0%,#0f766e_55%,#2dd4bf_100%)] px-8 py-8 text-white">
                 <div className="inline-flex rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em]">
                   Seguridad de acceso
                 </div>
                 <h2 className="mt-4 text-3xl font-bold tracking-tight">Cambia tu contrasena temporal</h2>
-                <p className="mt-3 max-w-xl text-sm leading-6 text-blue-50">
+                <p className="mt-3 max-w-xl text-sm leading-6 text-teal-50">
                   Tu cuenta ha sido restablecida por un administrador. Antes de continuar, define una nueva contrasena para proteger tu acceso.
                 </p>
               </div>
 
               <div className="grid gap-8 px-8 py-8 md:grid-cols-[1.1fr_0.9fr]">
                 <div className="space-y-4">
-                  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-amber-900">
+                  <div className="rounded-2xl border border-teal-200 bg-teal-50 px-4 py-4 text-teal-900">
                     <p className="text-sm font-medium">Cambio obligatorio antes de continuar</p>
-                    <p className="mt-1 text-sm text-amber-800">
+                    <p className="mt-1 text-sm text-teal-800">
                       Cuando guardes la nueva contrasena, volveras a tener acceso completo a la plataforma.
                     </p>
                   </div>
@@ -364,7 +364,7 @@ export default function UserManagementPage() {
                   <div>
                     <label className="mb-2 block text-sm font-medium text-gray-700">Nueva contrasena</label>
                     <input
-                      className="w-full rounded-2xl border border-gray-300 px-4 py-3 text-gray-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                      className="w-full rounded-2xl border border-gray-300 px-4 py-3 text-gray-900 shadow-sm outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-100"
                       type="password"
                       placeholder="Escribe tu nueva contrasena"
                       value={passwordForm.newPassword}
@@ -374,7 +374,7 @@ export default function UserManagementPage() {
                   <div>
                     <label className="mb-2 block text-sm font-medium text-gray-700">Confirmar contrasena</label>
                     <input
-                      className="w-full rounded-2xl border border-gray-300 px-4 py-3 text-gray-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                      className="w-full rounded-2xl border border-gray-300 px-4 py-3 text-gray-900 shadow-sm outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-100"
                       type="password"
                       placeholder="Repite la nueva contrasena"
                       value={passwordForm.confirmPassword}
@@ -383,7 +383,7 @@ export default function UserManagementPage() {
                   </div>
 
                   <button
-                    className="w-full rounded-2xl bg-blue-600 px-4 py-3 font-medium text-white shadow-lg shadow-blue-200 transition hover:bg-blue-700"
+                    className="w-full rounded-2xl bg-teal-700 px-4 py-3 font-medium text-white shadow-lg shadow-teal-200 transition hover:bg-teal-800"
                     type="submit"
                   >
                     Guardar nueva contrasena
@@ -412,8 +412,8 @@ export default function UserManagementPage() {
       </header>
 
       <main className="app-main space-y-6">
-        {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">{error}</div>}
-        {success && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">{success}</div>}
+        {error && <div className="alert alert-error">{error}</div>}
+        {success && <div className="alert alert-success">{success}</div>}
 
         <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 slide-up">
           <article className="app-card p-4">
@@ -550,8 +550,8 @@ export default function UserManagementPage() {
                         </div>
                         <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
                           user.mustChangePassword
-                            ? "bg-amber-100 text-amber-800"
-                            : "bg-green-100 text-green-800"
+                            ? "badge-warn"
+                            : "badge-ok"
                         }`}>
                           {user.mustChangePassword ? "Debe cambiar" : "Activa"}
                         </span>
@@ -610,7 +610,7 @@ export default function UserManagementPage() {
                           />
                           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                             <button
-                              className="w-full rounded-lg bg-amber-500 px-3 py-2 text-sm font-medium text-white hover:bg-amber-600 disabled:opacity-50"
+                              className="btn-secondary w-full px-3 py-2 text-sm disabled:opacity-50"
                               onClick={() => void handleResetPassword(user.id)}
                               type="button"
                               disabled={resettingPasswordUserId === user.id || !resetPasswords[user.id]?.trim()}
@@ -618,7 +618,7 @@ export default function UserManagementPage() {
                               {resettingPasswordUserId === user.id ? "Aplicando..." : "Cambio clave"}
                             </button>
                             <button
-                              className="w-full rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                              className="btn-primary w-full px-3 py-2 text-sm disabled:opacity-50"
                               onClick={() => void handleUpdateUser(user.id)}
                               type="button"
                               disabled={savingUserId === user.id}
@@ -626,7 +626,7 @@ export default function UserManagementPage() {
                               {savingUserId === user.id ? "Guardando..." : "Guardar datos"}
                             </button>
                           </div>
-                          {savedUserId === user.id && <p className="text-xs font-medium text-green-700">Datos guardados correctamente.</p>}
+                          {savedUserId === user.id && <p className="text-xs font-medium text-emerald-700">Datos guardados correctamente.</p>}
                         </div>
                       )}
                     </article>
@@ -722,8 +722,8 @@ export default function UserManagementPage() {
                         <td className="px-4 py-3 text-sm text-gray-700">
                           <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
                             user.mustChangePassword
-                              ? "bg-amber-100 text-amber-800"
-                              : "bg-green-100 text-green-800"
+                              ? "badge-warn"
+                              : "badge-ok"
                           }`}>
                             {user.mustChangePassword ? "Debe cambiar" : "Activa"}
                           </span>
@@ -741,7 +741,7 @@ export default function UserManagementPage() {
                                 onChange={(e) => setResetPasswords((prev) => ({ ...prev, [user.id]: e.target.value }))}
                               />
                               <button
-                                className="whitespace-nowrap rounded-lg bg-amber-500 px-3 py-2 text-white hover:bg-amber-600"
+                                className="whitespace-nowrap btn-secondary px-3 py-2"
                                 onClick={() => void handleResetPassword(user.id)}
                                 type="button"
                                 disabled={resettingPasswordUserId === user.id || !resetPasswords[user.id]?.trim()}
@@ -749,7 +749,7 @@ export default function UserManagementPage() {
                                 {resettingPasswordUserId === user.id ? "Aplicando..." : "Cambio de contrasena"}
                               </button>
                               <button
-                                className="rounded-lg bg-blue-600 px-3 py-2 text-white hover:bg-blue-700"
+                                className="btn-primary px-3 py-2"
                                 onClick={() => void handleUpdateUser(user.id)}
                                 type="button"
                                 disabled={savingUserId === user.id}
@@ -759,7 +759,7 @@ export default function UserManagementPage() {
                             </div>
                           )}
                           {savedUserId === user.id && (
-                            <p className="mt-2 text-xs font-medium text-green-700">Datos guardados correctamente.</p>
+                            <p className="mt-2 text-xs font-medium text-emerald-700">Datos guardados correctamente.</p>
                           )}
                         </td>
                       </tr>
@@ -775,5 +775,7 @@ export default function UserManagementPage() {
     </div>
   );
 }
+
+
 
 

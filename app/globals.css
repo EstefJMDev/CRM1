@@ -92,6 +92,54 @@ select:-webkit-autofill:focus {
     @apply rounded-xl bg-slate-700 px-4 py-2.5 font-medium text-white transition hover:bg-slate-800;
   }
 
+  .btn-danger {
+    @apply rounded-xl bg-rose-600 px-4 py-2.5 font-medium text-white transition hover:bg-rose-700;
+  }
+
+  .btn-outline {
+    @apply rounded-xl border border-slate-300 bg-white px-4 py-2.5 font-medium text-slate-700 transition hover:bg-slate-50;
+  }
+
+  .btn-soft {
+    @apply rounded-xl border border-teal-200 bg-teal-50 px-4 py-2.5 font-medium text-teal-800 transition hover:bg-teal-100;
+  }
+
+  .btn-soft-icon {
+    @apply inline-flex items-center justify-center rounded-lg border border-teal-200 bg-teal-50 p-2 text-teal-800 transition hover:bg-teal-100;
+  }
+
+  .alert {
+    @apply rounded-lg border px-4 py-3;
+  }
+
+  .alert-error {
+    @apply border-rose-200 bg-rose-50 text-rose-700;
+  }
+
+  .alert-success {
+    @apply border-emerald-200 bg-emerald-50 text-emerald-700;
+  }
+
+  .link-accent {
+    @apply text-teal-700 transition hover:text-teal-900;
+  }
+
+  .badge-ok {
+    @apply rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800;
+  }
+
+  .badge-warn {
+    @apply rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800;
+  }
+
+  .badge-neutral {
+    @apply rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-800;
+  }
+
+  .badge-danger {
+    @apply rounded-full bg-rose-100 px-3 py-1 text-xs font-medium text-rose-800;
+  }
+
   .fade-in {
     animation: fadeIn 380ms ease-out both;
   }
