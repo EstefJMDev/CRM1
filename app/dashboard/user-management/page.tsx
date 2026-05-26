@@ -509,8 +509,8 @@ export default function UserManagementPage() {
                     <option value="ADMIN">ADMIN</option>
                   </select>
                 </div>
-                <div className="flex items-end lg:items-start">
-                  <button className="btn-primary w-full" type="submit">Crear usuario</button>
+                <div className="md:col-span-2 lg:col-span-3 pt-1">
+                  <button className="btn-primary w-full sm:w-auto sm:min-w-48" type="submit">Crear usuario</button>
                 </div>
               </form>
             </section>
