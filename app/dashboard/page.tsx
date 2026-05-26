@@ -406,12 +406,12 @@ export default function DashboardPage() {
           </Link>
           <Link
             href="/dashboard/consentimientos-historico"
-            title="Consentimientos Historico"
+            title="Consentimientos Histórico"
             className={`block rounded-lg py-2 text-sm text-slate-700 hover:bg-slate-100 ${isSidebarCollapsed ? "px-0 text-center" : "px-3"}`}
           >
             {isSidebarCollapsed ? (
               <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75" /><path strokeLinecap="round" strokeLinejoin="round" d="M21 12c0 4.5-3.5 8-9 10-5.5-2-9-5.5-9-10V7l9-3 9 3v5Z" /></svg>
-            ) : "Consentimientos Historico"}
+            ) : "Consentimientos Histórico"}
           </Link>
           <Link
             href="/dashboard/documentos"
@@ -475,7 +475,7 @@ export default function DashboardPage() {
         </div>
         <nav className="space-y-2">
           <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="block rounded-lg bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-800">Contratos</Link>
-          <Link href="/dashboard/consentimientos-historico" onClick={() => setIsMobileMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">Consentimientos Historico</Link>
+          <Link href="/dashboard/consentimientos-historico" onClick={() => setIsMobileMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">Consentimientos Histórico</Link>
           <Link href="/dashboard/documentos" onClick={() => setIsMobileMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">Documentos</Link>
         </nav>
         {canViewExport && (
@@ -520,11 +520,11 @@ export default function DashboardPage() {
               <p className="text-gray-600 text-sm mt-1">Bienvenido, {user?.name}</p>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
-              <Link href="/dashboard/user-management" className="btn-secondary text-sm">Gestion de usuario</Link>
+              <Link href="/dashboard/user-management" className="btn-secondary text-sm">Gestión de usuario</Link>
               <button
                 onClick={handleLogout}
-                title="Cerrar sesion"
-                aria-label="Cerrar sesion"
+                title="Cerrar sesión"
+                aria-label="Cerrar sesión"
                 className="btn-danger inline-flex items-center justify-center px-3 py-2"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
@@ -573,7 +573,7 @@ export default function DashboardPage() {
                 onClick={() => setShowAdvancedFilters((v) => !v)}
                 className="btn-outline px-3 py-2 text-sm"
               >
-                {showAdvancedFilters ? "Ocultar filtros" : "Mas filtros"}
+                {showAdvancedFilters ? "Ocultar filtros" : "Más filtros"}
               </button>
               <button
                 onClick={clearFilters}
@@ -812,6 +812,7 @@ export default function DashboardPage() {
     </div>
   );
 }
+
 
 
 

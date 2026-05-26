@@ -37,12 +37,12 @@ export default function RegisterPage() {
     setError("");
 
     if (formData.password !== formData.confirmPassword) {
-      setError("Las contrasenas no coinciden");
+      setError("Las contraseñas no coinciden");
       return;
     }
 
     if (formData.password.length < 6) {
-      setError("La contrasena debe tener al menos 6 caracteres");
+      setError("La contraseña debe tener al menos 6 caracteres");
       return;
     }
 
@@ -94,8 +94,8 @@ export default function RegisterPage() {
           <input id="name" type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Nombre" required className="field-input" />
           <input id="lastName" type="text" name="lastName" value={formData.lastName} onChange={handleChange} placeholder="Apellidos" className="field-input" />
           <input id="email" type="email" name="email" value={formData.email} onChange={handleChange} placeholder="tu@email.com" required className="field-input" />
-          <input id="password" type="password" name="password" value={formData.password} onChange={handleChange} placeholder="Contrasena" required className="field-input" />
-          <input id="confirmPassword" type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} placeholder="Confirmar contrasena" required className="field-input" />
+          <input id="password" type="password" name="password" value={formData.password} onChange={handleChange} placeholder="Contraseña" required className="field-input" />
+          <input id="confirmPassword" type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} placeholder="Confirmar contraseña" required className="field-input" />
 
           <button
             type="submit"
@@ -115,5 +115,6 @@ export default function RegisterPage() {
     </div>
   );
 }
+
 
 

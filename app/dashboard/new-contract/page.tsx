@@ -429,7 +429,7 @@ export default function NewContractPage() {
                   <input type="text" name="clientDNI" value={formData.clientDNI} onChange={handleChange} className="field-input" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Telefono</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
                   <input type="tel" name="clientPhone" value={formData.clientPhone} onChange={handleChange} className="field-input" />
                 </div>
                 <div>
@@ -472,7 +472,7 @@ export default function NewContractPage() {
                   <input type="text" name="roadName" value={formData.roadName} onChange={handleChange} className="field-input" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Numero</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Número</label>
                   <input type="text" name="roadNumber" value={formData.roadNumber} onChange={handleChange} className="field-input" />
                 </div>
               </div>
@@ -511,7 +511,7 @@ export default function NewContractPage() {
                     <input type="text" name="secondaryRoadName" value={formData.secondaryRoadName} onChange={handleChange} disabled={sameSupplyPoint} className="field-input disabled:bg-gray-50" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Numero</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Número</label>
                     <input type="text" name="secondaryRoadNumber" value={formData.secondaryRoadNumber} onChange={handleChange} disabled={sameSupplyPoint} className="field-input disabled:bg-gray-50" />
                   </div>
                 </div>
@@ -577,7 +577,7 @@ export default function NewContractPage() {
                   <input type="date" name="inactiveDate" value={formData.inactiveDate} onChange={handleChange} className="field-input" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Fecha prevista locucion</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Fecha prevista locución</label>
                   <input type="date" name="scheduledCallDate" value={formData.scheduledCallDate} onChange={handleChange} className="field-input" />
                 </div>
               </div>
@@ -656,6 +656,7 @@ export default function NewContractPage() {
     </div>
   );
 }
+
 
 
 

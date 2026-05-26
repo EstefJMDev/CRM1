@@ -94,7 +94,7 @@ export default function LoginPage() {
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-              Contrasena
+              Contraseña
             </label>
             <input
               id="password"
@@ -129,5 +129,6 @@ export default function LoginPage() {
     </div>
   );
 }
+
 
 

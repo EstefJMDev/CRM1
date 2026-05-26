@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 
@@ -10,8 +10,9 @@ export default function DocumentosPage() {
           <h1 className="text-2xl font-bold text-gray-900">Documentos</h1>
           <Link href="/dashboard" className="btn-secondary text-sm">Volver a Contratos</Link>
         </div>
-        <p className="text-gray-600">Seccion en construccion.</p>
+        <p className="text-gray-600">Sección en construcción.</p>
       </div>
     </div>
   );
 }
+

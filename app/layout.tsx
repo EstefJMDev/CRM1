@@ -1,9 +1,9 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "CRM Gestión de Contratos",
-  description: "Sistema de gestión de contratos",
+  title: "CRM GestiÃ³n de Contratos",
+  description: "Sistema de gestiÃ³n de contratos",
 };
 
 export default function RootLayout({
@@ -17,3 +17,4 @@ export default function RootLayout({
     </html>
   );
 }
+

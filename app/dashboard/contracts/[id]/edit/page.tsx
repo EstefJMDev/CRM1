@@ -386,7 +386,7 @@ export default function EditContractPage() {
                 <div><label className="block text-sm font-medium text-gray-700 mb-2">Nombre cliente</label><input type="text" name="clientName" value={formData.clientName} onChange={handleChange} required className="field-input" /></div>
                 <div><label className="block text-sm font-medium text-gray-700 mb-2">Apellidos cliente</label><input type="text" name="clientLastName" value={formData.clientLastName} onChange={handleChange} className="field-input" /></div>
                 <div><label className="block text-sm font-medium text-gray-700 mb-2">DNI/CIF</label><input type="text" name="clientDNI" value={formData.clientDNI} onChange={handleChange} className="field-input" /></div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-2">Telefono</label><input type="tel" name="clientPhone" value={formData.clientPhone} onChange={handleChange} className="field-input" /></div>
+                <div><label className="block text-sm font-medium text-gray-700 mb-2">Teléfono</label><input type="tel" name="clientPhone" value={formData.clientPhone} onChange={handleChange} className="field-input" /></div>
                 <div><label className="block text-sm font-medium text-gray-700 mb-2">Email</label><input type="email" name="clientEmail" value={formData.clientEmail} onChange={handleChange} className="field-input" /></div>
                 <div className="md:col-span-2"><label className="block text-sm font-medium text-gray-700 mb-2">IBAN</label><input type="text" name="clientIBAN" value={formData.clientIBAN} onChange={handleChange} className="field-input" /></div>
               </div>
@@ -400,7 +400,7 @@ export default function EditContractPage() {
                 <div><label className="block text-sm font-medium text-gray-700 mb-2">Provincia</label><select name="province" value={formData.province} onChange={handleChange} className="field-input"><option value="">Seleccionar valor</option>{PROVINCES.map((item) => <option key={item} value={item}>{item}</option>)}</select></div>
                 <div><label className="block text-sm font-medium text-gray-700 mb-2">Tipo Via</label><select name="roadType" value={formData.roadType} onChange={handleChange} className="field-input">{ROAD_TYPES.map((item) => <option key={item} value={item}>{item}</option>)}</select></div>
                 <div><label className="block text-sm font-medium text-gray-700 mb-2">Nombre Via</label><input type="text" name="roadName" value={formData.roadName} onChange={handleChange} className="field-input" /></div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-2">Numero</label><input type="text" name="roadNumber" value={formData.roadNumber} onChange={handleChange} className="field-input" /></div>
+                <div><label className="block text-sm font-medium text-gray-700 mb-2">Número</label><input type="text" name="roadNumber" value={formData.roadNumber} onChange={handleChange} className="field-input" /></div>
               </div>
 
               <div className="mt-6 border-t pt-6">
@@ -412,7 +412,7 @@ export default function EditContractPage() {
                   <div><label className="block text-sm font-medium text-gray-700 mb-2">Provincia</label><select name="secondaryProvince" value={formData.secondaryProvince} onChange={handleChange} disabled={sameSupplyPoint} className="field-input disabled:bg-gray-50"><option value="">Seleccionar valor</option>{PROVINCES.map((item) => <option key={item} value={item}>{item}</option>)}</select></div>
                   <div><label className="block text-sm font-medium text-gray-700 mb-2">Tipo Via</label><select name="secondaryRoadType" value={formData.secondaryRoadType} onChange={handleChange} disabled={sameSupplyPoint} className="field-input disabled:bg-gray-50">{ROAD_TYPES.map((item) => <option key={item} value={item}>{item}</option>)}</select></div>
                   <div><label className="block text-sm font-medium text-gray-700 mb-2">Nombre Via</label><input type="text" name="secondaryRoadName" value={formData.secondaryRoadName} onChange={handleChange} disabled={sameSupplyPoint} className="field-input disabled:bg-gray-50" /></div>
-                  <div><label className="block text-sm font-medium text-gray-700 mb-2">Numero</label><input type="text" name="secondaryRoadNumber" value={formData.secondaryRoadNumber} onChange={handleChange} disabled={sameSupplyPoint} className="field-input disabled:bg-gray-50" /></div>
+                  <div><label className="block text-sm font-medium text-gray-700 mb-2">Número</label><input type="text" name="secondaryRoadNumber" value={formData.secondaryRoadNumber} onChange={handleChange} disabled={sameSupplyPoint} className="field-input disabled:bg-gray-50" /></div>
                 </div>
               </div>
             </section>
@@ -440,7 +440,7 @@ export default function EditContractPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5">
                 <div><label className="block text-sm font-medium text-gray-700 mb-2">Fecha Activacion</label><input type="date" name="activationDate" value={formData.activationDate} onChange={handleChange} className="field-input" /></div>
                 <div><label className="block text-sm font-medium text-gray-700 mb-2">Fecha Baja</label><input type="date" name="inactiveDate" value={formData.inactiveDate} onChange={handleChange} className="field-input" /></div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-2">Fecha prevista locucion</label><input type="date" name="scheduledCallDate" value={formData.scheduledCallDate} onChange={handleChange} className="field-input" /></div>
+                <div><label className="block text-sm font-medium text-gray-700 mb-2">Fecha prevista locución</label><input type="date" name="scheduledCallDate" value={formData.scheduledCallDate} onChange={handleChange} className="field-input" /></div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -464,6 +464,7 @@ export default function EditContractPage() {
     </div>
   );
 }
+
 
 
 

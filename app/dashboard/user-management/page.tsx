@@ -169,7 +169,7 @@ export default function UserManagementPage() {
     const wasForcedPasswordChange = mustChangePassword;
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setError("Las contrasenas no coinciden");
+      setError("Las contraseñas no coinciden");
       return;
     }
 
@@ -187,7 +187,7 @@ export default function UserManagementPage() {
 
     const data = await response.json();
     if (!response.ok) {
-      setError(data.error || "No se pudo cambiar la contrasena");
+      setError(data.error || "No se pudo cambiar la contraseña");
       return;
     }
 
@@ -201,7 +201,7 @@ export default function UserManagementPage() {
       return;
     }
 
-    setSuccess("Contrasena actualizada");
+    setSuccess("Contraseña actualizada");
   };
 
   const handleCreateUser = async (event: FormEvent<HTMLFormElement>) => {
@@ -225,14 +225,14 @@ export default function UserManagementPage() {
     }
 
     setNewUserForm({ name: "", lastName: "", email: "", temporaryPassword: "", role: "USER" });
-    setSuccess("Usuario creado con contrasena temporal");
+    setSuccess("Usuario creado con contraseña temporal");
     await refreshUsers();
   };
 
   const handleResetPassword = async (userId: string) => {
     const temporaryPassword = String(resetPasswords[userId] || "");
     if (temporaryPassword.length < 6) {
-      setError("La contrasena temporal debe tener al menos 6 caracteres");
+      setError("La contraseña temporal debe tener al menos 6 caracteres");
       return;
     }
 
@@ -252,12 +252,12 @@ export default function UserManagementPage() {
 
       const data = await response.json();
       if (!response.ok) {
-        setError(data.error || "No se pudo resetear la contrasena");
+        setError(data.error || "No se pudo resetear la contraseña");
         return;
       }
 
       setResetPasswords((prev) => ({ ...prev, [userId]: "" }));
-      setSuccess("Contrasena temporal aplicada");
+      setSuccess("Contraseña temporal aplicada");
       await refreshUsers();
     } finally {
       setResettingPasswordUserId(null);
@@ -319,7 +319,7 @@ export default function UserManagementPage() {
         <header className="bg-white/80 backdrop-blur-sm border-b border-white/60">
           <div className="app-header-inner">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Gestion de Usuario</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Gestión de Usuario</h1>
               <p className="text-sm text-gray-600">{currentUser?.name} {currentUser?.lastName || ""}</p>
             </div>
             <Link href="/dashboard" className="btn-secondary">
@@ -338,9 +338,9 @@ export default function UserManagementPage() {
                 <div className="inline-flex rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em]">
                   Seguridad de acceso
                 </div>
-                <h2 className="mt-4 text-3xl font-bold tracking-tight">Cambia tu contrasena temporal</h2>
+                <h2 className="mt-4 text-3xl font-bold tracking-tight">Cambia tu contraseña temporal</h2>
                 <p className="mt-3 max-w-xl text-sm leading-6 text-teal-50">
-                  Tu cuenta ha sido restablecida por un administrador. Antes de continuar, define una nueva contrasena para proteger tu acceso.
+                  Tu cuenta ha sido restablecida por un administrador. Antes de continuar, define una nueva contraseña para proteger tu acceso.
                 </p>
               </div>
 
@@ -349,7 +349,7 @@ export default function UserManagementPage() {
                   <div className="rounded-2xl border border-teal-200 bg-teal-50 px-4 py-4 text-teal-900">
                     <p className="text-sm font-medium">Cambio obligatorio antes de continuar</p>
                     <p className="mt-1 text-sm text-teal-800">
-                      Cuando guardes la nueva contrasena, volveras a tener acceso completo a la plataforma.
+                      Cuando guardes la nueva contraseña, volveras a tener acceso completo a la plataforma.
                     </p>
                   </div>
 
@@ -362,21 +362,21 @@ export default function UserManagementPage() {
 
                 <form className="space-y-4" onSubmit={handlePasswordSubmit}>
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-gray-700">Nueva contrasena</label>
+                    <label className="mb-2 block text-sm font-medium text-gray-700">Nueva contraseña</label>
                     <input
                       className="w-full rounded-2xl border border-gray-300 px-4 py-3 text-gray-900 shadow-sm outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-100"
                       type="password"
-                      placeholder="Escribe tu nueva contrasena"
+                      placeholder="Escribe tu nueva contraseña"
                       value={passwordForm.newPassword}
                       onChange={(e) => setPasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))}
                     />
                   </div>
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-gray-700">Confirmar contrasena</label>
+                    <label className="mb-2 block text-sm font-medium text-gray-700">Confirmar contraseña</label>
                     <input
                       className="w-full rounded-2xl border border-gray-300 px-4 py-3 text-gray-900 shadow-sm outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-100"
                       type="password"
-                      placeholder="Repite la nueva contrasena"
+                      placeholder="Repite la nueva contraseña"
                       value={passwordForm.confirmPassword}
                       onChange={(e) => setPasswordForm((prev) => ({ ...prev, confirmPassword: e.target.value }))}
                     />
@@ -386,7 +386,7 @@ export default function UserManagementPage() {
                     className="w-full rounded-2xl bg-teal-700 px-4 py-3 font-medium text-white shadow-lg shadow-teal-200 transition hover:bg-teal-800"
                     type="submit"
                   >
-                    Guardar nueva contrasena
+                    Guardar nueva contraseña
                   </button>
                 </form>
               </div>
@@ -402,8 +402,8 @@ export default function UserManagementPage() {
       <header className="app-header">
         <div className="app-header-inner">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Gestion de Usuario</h1>
-            <p className="text-sm text-gray-600">Perfil, seguridad y administracion de accesos en un solo panel</p>
+            <h1 className="text-2xl font-bold text-gray-900">Gestión de Usuario</h1>
+            <p className="text-sm text-gray-600">Perfil, seguridad y administración de accesos en un solo panel</p>
           </div>
           <Link href="/dashboard" className="btn-secondary">
             Volver a contratos
@@ -433,7 +433,7 @@ export default function UserManagementPage() {
         <section className="grid gap-6 lg:grid-cols-2">
           <section className="app-card p-4 sm:p-6 slide-up" style={{ animationDelay: "80ms" }}>
             <h2 className="mb-1 text-xl font-semibold text-gray-900">Datos personales</h2>
-            <p className="mb-4 text-sm text-gray-500">Actualiza la informacion basica de tu cuenta.</p>
+            <p className="mb-4 text-sm text-gray-500">Actualiza la información básica de tu cuenta.</p>
             <form className="space-y-4" onSubmit={handleProfileSubmit}>
               <div>
                 <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Nombre</label>
@@ -452,12 +452,12 @@ export default function UserManagementPage() {
           </section>
 
           <section className="app-card p-4 sm:p-6 slide-up" style={{ animationDelay: "120ms" }}>
-            <h2 className="mb-1 text-xl font-semibold text-gray-900">Cambiar contrasena</h2>
-            <p className="mb-4 text-sm text-gray-500">Usa una contrasena robusta y unica para esta plataforma.</p>
+            <h2 className="mb-1 text-xl font-semibold text-gray-900">Cambiar contraseña</h2>
+            <p className="mb-4 text-sm text-gray-500">Usa una contraseña robusta y única para esta plataforma.</p>
             <form className="space-y-4" onSubmit={handlePasswordSubmit}>
               {!mustChangePassword && (
                 <div>
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Contrasena actual</label>
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Contraseña actual</label>
                   <input
                     className="field-input"
                     type="password"
@@ -467,14 +467,14 @@ export default function UserManagementPage() {
                 </div>
               )}
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Nueva contrasena</label>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Nueva contraseña</label>
                 <input className="field-input" type="password" value={passwordForm.newPassword} onChange={(e) => setPasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))} />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Confirmar contrasena</label>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Confirmar contraseña</label>
                 <input className="field-input" type="password" value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm((prev) => ({ ...prev, confirmPassword: e.target.value }))} />
               </div>
-              <button className="btn-primary" type="submit">Actualizar contrasena</button>
+              <button className="btn-primary" type="submit">Actualizar contraseña</button>
             </form>
           </section>
         </section>
@@ -498,7 +498,7 @@ export default function UserManagementPage() {
                   <input className="field-input" type="email" value={newUserForm.email} onChange={(e) => setNewUserForm((prev) => ({ ...prev, email: e.target.value }))} />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Contrasena temporal</label>
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Contraseña temporal</label>
                   <input className="field-input" type="password" value={newUserForm.temporaryPassword} onChange={(e) => setNewUserForm((prev) => ({ ...prev, temporaryPassword: e.target.value }))} />
                 </div>
                 <div>
@@ -644,7 +644,7 @@ export default function UserManagementPage() {
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Email</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Rol</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Estado</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Ultima conexion</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Última conexión</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Estado clave</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Acciones</th>
                   </tr>
@@ -746,7 +746,7 @@ export default function UserManagementPage() {
                                 type="button"
                                 disabled={resettingPasswordUserId === user.id || !resetPasswords[user.id]?.trim()}
                               >
-                                {resettingPasswordUserId === user.id ? "Aplicando..." : "Cambio de contrasena"}
+                                {resettingPasswordUserId === user.id ? "Aplicando..." : "Cambio de contraseña"}
                               </button>
                               <button
                                 className="btn-primary px-3 py-2"
@@ -775,6 +775,7 @@ export default function UserManagementPage() {
     </div>
   );
 }
+
 
 
 
