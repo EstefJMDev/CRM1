@@ -521,8 +521,16 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
               <Link href="/dashboard/user-management" className="btn-secondary text-sm">Gestion de usuario</Link>
-              <button onClick={handleLogout} className="btn-danger text-sm">
-                Cerrar Sesion
+              <button
+                onClick={handleLogout}
+                title="Cerrar sesion"
+                aria-label="Cerrar sesion"
+                className="btn-danger inline-flex items-center justify-center px-3 py-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14 7V5a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-2" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 12h10m0 0-3-3m3 3-3 3" />
+                </svg>
               </button>
             </div>
           </div>
@@ -560,11 +568,19 @@ export default function DashboardPage() {
                 <option value="CANCELLED">Cancelado</option>
               </select>
             </div>
-            <div className="md:col-span-2 flex md:justify-end gap-3 text-sm">
-              <button onClick={() => setShowAdvancedFilters((v) => !v)} className="text-gray-700 hover:text-gray-900">
-                {showAdvancedFilters ? "Ocultar filtros" : "Más filtros"}
+            <div className="md:col-span-2 flex items-end justify-start md:justify-end gap-2">
+              <button
+                onClick={() => setShowAdvancedFilters((v) => !v)}
+                className="btn-outline px-3 py-2 text-sm"
+              >
+                {showAdvancedFilters ? "Ocultar filtros" : "Mas filtros"}
               </button>
-              <button onClick={clearFilters} className="link-accent">Limpiar</button>
+              <button
+                onClick={clearFilters}
+                className="btn-soft px-3 py-2 text-sm"
+              >
+                Limpiar
+              </button>
             </div>
           </div>
 
@@ -590,10 +606,15 @@ export default function DashboardPage() {
             </div>
           )}
 
-          <div className="text-sm text-gray-600">
+          <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
             Total de Registros: {totalContracts}
             {totalContracts > 0 && (
-              <span className="ml-2 text-gray-500">
+              <span className="text-gray-500">
+                |
+              </span>
+            )}
+            {totalContracts > 0 && (
+              <span className="text-gray-500">
                 Mostrando {startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, totalContracts)}
               </span>
             )}

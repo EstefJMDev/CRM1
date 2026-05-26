@@ -323,7 +323,7 @@ export default function UserManagementPage() {
               <p className="text-sm text-gray-600">{currentUser?.name} {currentUser?.lastName || ""}</p>
             </div>
             <Link href="/dashboard" className="btn-secondary">
-              Volver al dashboard
+              Volver a contratos
             </Link>
           </div>
         </header>
@@ -406,7 +406,7 @@ export default function UserManagementPage() {
             <p className="text-sm text-gray-600">Perfil, seguridad y administracion de accesos en un solo panel</p>
           </div>
           <Link href="/dashboard" className="btn-secondary">
-            Volver al dashboard
+            Volver a contratos
           </Link>
         </div>
       </header>
