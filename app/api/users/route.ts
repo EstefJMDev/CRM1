@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     const lastName = String(payload.lastName || "").trim() || null;
     const temporaryPassword = String(payload.temporaryPassword || "");
     const roleInput = String(payload.role || "USER");
-    const role = roleInput === "ADMIN" || roleInput === "TENANT_ADMIN" ? roleInput : "USER";
+    const role = roleInput === "TENANT_ADMIN" ? roleInput : "USER";
 
     if (!email || !name || !temporaryPassword) {
       return NextResponse.json(

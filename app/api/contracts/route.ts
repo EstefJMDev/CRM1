@@ -22,6 +22,10 @@ function parseStatus(status?: string): "ACTIVE" | "PENDING" | "INACTIVE" | "CANC
   return "ACTIVE";
 }
 
+function parsePaymentStatus(status?: string): "PAID" | "UNPAID" {
+  return status === "PAID" ? "PAID" : "UNPAID";
+}
+
 function mapContractPayload(data: Record<string, unknown>) {
   return {
     clientName: String(data.clientName || "").trim(),
@@ -62,6 +66,11 @@ function mapContractPayload(data: Record<string, unknown>) {
     inactiveDate: parseDate(String(data.inactiveDate || "")),
     scheduledCallDate: parseDate(String(data.scheduledCallDate || "")),
     status: parseStatus(String(data.status || "ACTIVE")),
+    paymentStatus: parsePaymentStatus(String(data.paymentStatus || "UNPAID")),
+    paidAt:
+      parsePaymentStatus(String(data.paymentStatus || "UNPAID")) === "PAID"
+        ? parseDate(String(data.paidAt || "")) || new Date()
+        : null,
   };
 }
 
@@ -88,6 +97,8 @@ export async function GET(request: NextRequest) {
     const params = request.nextUrl.searchParams;
     const page = Math.max(1, Number.parseInt(params.get("page") || "1", 10) || 1);
     const pageSize = Math.min(50, Math.max(1, Number.parseInt(params.get("pageSize") || "10", 10) || 10));
+    const sortBy = params.get("sortBy") === "contractNumber" ? "contractNumber" : "createdAt";
+    const sortDirection = params.get("sortDirection") === "asc" ? "asc" : "desc";
     const where = buildContractsWhere(user, params, canViewAllContracts);
 
     const [total, contracts] = await Promise.all([
@@ -107,15 +118,17 @@ export async function GET(request: NextRequest) {
           activationDate: true,
           inactiveDate: true,
           status: true,
+          paymentStatus: true,
+          paidAt: true,
           createdAt: true,
           user: {
-            select: { name: true, email: true },
+            select: { name: true, lastName: true, email: true },
           },
           documents: {
             select: { id: true },
           },
         },
-        orderBy: { createdAt: "desc" },
+        orderBy: { [sortBy]: sortDirection },
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),

@@ -9,7 +9,7 @@ type AppUser = {
   name: string;
   lastName?: string | null;
   email: string;
-  role: "SUPER_ADMIN" | "TENANT_ADMIN" | "ADMIN" | "USER";
+  role: "SUPER_ADMIN" | "TENANT_ADMIN" | "USER";
   mustChangePassword?: boolean;
   isActive?: boolean;
 };
@@ -19,7 +19,7 @@ type ManagedUser = {
   name: string;
   lastName?: string | null;
   email: string;
-  role: "SUPER_ADMIN" | "TENANT_ADMIN" | "ADMIN" | "USER";
+  role: "SUPER_ADMIN" | "TENANT_ADMIN" | "USER";
   mustChangePassword: boolean;
   isActive: boolean;
   lastLoginAt?: string | null;

@@ -8,6 +8,19 @@ function parseDate(value: QueryValue) {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
+function buildPhoneSearchVariants(value: string) {
+  const digits = value.replace(/\D/g, "");
+  if (digits.length < 6) return [];
+
+  const compact = digits;
+  const grouped3 = digits.replace(/(\d{3})(?=\d)/g, "$1 ").trim();
+  const grouped3Hyphen = grouped3.replaceAll(" ", "-");
+  const grouped3Dot = grouped3.replaceAll(" ", ".");
+  const grouped2 = digits.replace(/(\d{2})(?=\d)/g, "$1 ").trim();
+
+  return Array.from(new Set([compact, grouped3, grouped3Hyphen, grouped3Dot, grouped2]));
+}
+
 export function buildContractsWhere(
   user: { id: string; role: string },
   params: URLSearchParams,
@@ -15,7 +28,7 @@ export function buildContractsWhere(
 ): Prisma.ContractWhereInput {
   const search = (params.get("search") || "").trim();
   const status = (params.get("status") || "all").trim();
-  const agent = (params.get("agent") || "all").trim();
+  const agentId = (params.get("agentId") || params.get("agent") || "all").trim();
   const commercializer = (params.get("commercializer") || "all").trim();
   const fromActivationDate = parseDate(params.get("fromActivationDate"));
   const toActivationDate = parseDate(params.get("toActivationDate"));
@@ -29,24 +42,38 @@ export function buildContractsWhere(
   };
 
   if (search) {
+    const phoneVariants = buildPhoneSearchVariants(search);
     where.OR = [
       { clientName: { contains: search, mode: "insensitive" } },
       { clientLastName: { contains: search, mode: "insensitive" } },
+      { clientDNI: { contains: search, mode: "insensitive" } },
       { contractNumber: { contains: search, mode: "insensitive" } },
       { commercializer: { contains: search, mode: "insensitive" } },
       { cups: { contains: search, mode: "insensitive" } },
       { address: { contains: search, mode: "insensitive" } },
       { clientPhone: { contains: search, mode: "insensitive" } },
+      { clientSMS: { contains: search, mode: "insensitive" } },
       { user: { name: { contains: search, mode: "insensitive" } } },
+      { user: { lastName: { contains: search, mode: "insensitive" } } },
+      ...phoneVariants.map((variant) => ({
+        clientPhone: { contains: variant, mode: "insensitive" as const },
+      })),
+      ...phoneVariants.map((variant) => ({
+        clientSMS: { contains: variant, mode: "insensitive" as const },
+      })),
     ];
   }
 
   if (status !== "all") {
-    where.status = status as ContractStatus;
+    if (status === "PAID" || status === "UNPAID") {
+      where.paymentStatus = status;
+    } else {
+      where.status = status as ContractStatus;
+    }
   }
 
-  if (agent !== "all") {
-    where.user = { name: agent };
+  if (agentId !== "all") {
+    where.userId = agentId;
   }
 
   if (commercializer !== "all") {

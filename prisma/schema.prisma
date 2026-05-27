@@ -68,6 +68,8 @@ model Contract {
   pdv                    String?
   scheduledCallDate      DateTime?
   status                 ContractStatus @default(ACTIVE)
+  paymentStatus          PaymentStatus  @default(UNPAID)
+  paidAt                 DateTime?
   observations           String?
 
   activationDate         DateTime?
@@ -138,7 +140,6 @@ model Interaction {
 enum Role {
   SUPER_ADMIN
   TENANT_ADMIN
-  ADMIN
   USER
 }
 
@@ -147,4 +148,9 @@ enum ContractStatus {
   PENDING
   INACTIVE
   CANCELLED
+}
+
+enum PaymentStatus {
+  PAID
+  UNPAID
 }

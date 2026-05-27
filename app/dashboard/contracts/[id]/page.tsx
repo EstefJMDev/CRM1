@@ -24,6 +24,8 @@ interface Document {
 interface StatusHistoryItem {
   id: string;
   status: string;
+  paymentStatus: "PAID" | "UNPAID";
+  paidAt?: string;
   observations?: string;
   changedBy: string;
   createdAt: string;
@@ -465,6 +467,14 @@ export default function ContractDetailPage() {
                   <p className="text-sm text-gray-600">PDV</p>
                   <p className="font-medium text-gray-900">{contract.pdv || "-"}</p>
                 </div>
+                <div>
+                  <p className="text-sm text-gray-600">Pago</p>
+                  <p className="font-medium text-gray-900">{contract.paymentStatus === "PAID" ? "Pagado" : "No pagado"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Fecha de pago</p>
+                  <p className="font-medium text-gray-900">{contract.paymentStatus === "PAID" ? formatDate(contract.paidAt) : "-"}</p>
+                </div>
               </div>
 
               {importedContract && (
@@ -630,6 +640,12 @@ export default function ContractDetailPage() {
               >
                 {STATUS_LABELS[contract.status] || contract.status}
               </span>
+              <div className="mt-4 text-sm text-gray-700">
+                <p className="text-gray-600">Pago</p>
+                <p className="font-medium text-gray-900">
+                  {contract.paymentStatus === "PAID" ? `Pagado (${formatDate(contract.paidAt)})` : "No pagado"}
+                </p>
+              </div>
             </div>
 
             <div className="app-card p-6 mb-6">

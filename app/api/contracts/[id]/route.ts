@@ -103,7 +103,7 @@ export async function PUT(
 
     const currentContract = await prisma.contract.findUnique({
       where: { id },
-      select: { status: true, observations: true },
+      select: { status: true, observations: true, paymentStatus: true, paidAt: true },
     });
 
     const nextStatus = String(data.status ?? currentContract?.status ?? "");
@@ -113,12 +113,20 @@ export async function PUT(
       String(currentContract?.observations ?? "").trim() || null;
     const didStatusChange = Boolean(currentContract && nextStatus !== currentContract.status);
     const didObservationChange = nextObservations !== previousObservations;
+    const nextPaymentStatus = String(data.paymentStatus ?? currentContract?.paymentStatus ?? "UNPAID");
+    const isPayingNow = currentContract?.paymentStatus !== "PAID" && nextPaymentStatus === "PAID";
+    const inputPaidAt = data.paidAt ? new Date(String(data.paidAt)) : null;
+    const resolvedPaidAt =
+      nextPaymentStatus === "PAID"
+        ? (inputPaidAt && !Number.isNaN(inputPaidAt.getTime()) ? inputPaidAt : (isPayingNow ? new Date() : currentContract?.paidAt ?? new Date()))
+        : null;
 
     const updatedContract = await prisma.$transaction(async (tx) => {
       await tx.contract.update({
         where: { id },
         data: {
           ...data,
+          paidAt: resolvedPaidAt,
         },
         include: {
           interactions: true,

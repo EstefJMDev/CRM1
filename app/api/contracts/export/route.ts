@@ -201,6 +201,9 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
+    if (user.role !== "SUPER_ADMIN") {
+      return NextResponse.json({ error: "Solo Super Admin puede exportar" }, { status: 403 });
+    }
 
     const payload = (await request.json()) as { ids?: string[]; filters?: Record<string, string> };
     const ids = Array.isArray(payload.ids)

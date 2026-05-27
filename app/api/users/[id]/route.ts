@@ -24,7 +24,7 @@ export async function PUT(
     const email = String(payload.email || "").trim().toLowerCase();
     const isActive = Boolean(payload.isActive);
     const roleInput = String(payload.role || "USER");
-    const role = roleInput === "ADMIN" || roleInput === "TENANT_ADMIN" || roleInput === "USER"
+    const role = roleInput === "TENANT_ADMIN" || roleInput === "USER"
       ? roleInput
       : "USER";
 

@@ -37,6 +37,7 @@ interface FormData {
   scheduledCallDate: string;
   pdv: string;
   status: string;
+  paymentStatus: string;
   observations: string;
 }
 
@@ -75,6 +76,8 @@ interface ContractResponse {
   scheduledCallDate?: string;
   pdv?: string;
   status?: string;
+  paymentStatus?: string;
+  paidAt?: string;
   observations?: string;
 }
 
@@ -139,6 +142,7 @@ export default function EditContractPage() {
     scheduledCallDate: "",
     pdv: "",
     status: "ACTIVE",
+    paymentStatus: "UNPAID",
     observations: "",
   });
 
@@ -194,6 +198,7 @@ export default function EditContractPage() {
           scheduledCallDate: toDateInput(data.scheduledCallDate),
           pdv: data.pdv || "",
           status: data.status || "ACTIVE",
+          paymentStatus: data.paymentStatus || "UNPAID",
           observations: data.observations || "",
         });
       } catch (err) {
@@ -374,9 +379,18 @@ export default function EditContractPage() {
           {success && <div className="alert alert-success mb-6">Contrato actualizado</div>}
 
           <form onSubmit={handleSubmit} className="space-y-8">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Contrato n°</label>
-              <input type="text" value={formData.contractNumber} disabled className="w-full md:w-52 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50" />
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Contrato n°</label>
+                <input type="text" value={formData.contractNumber} disabled className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Pagado</label>
+                <select name="paymentStatus" value={formData.paymentStatus} onChange={handleChange} className="field-input">
+                  <option value="UNPAID">No</option>
+                  <option value="PAID">Si</option>
+                </select>
+              </div>
             </div>
 
             <section>

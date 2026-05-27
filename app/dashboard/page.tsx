@@ -18,8 +18,10 @@ interface Contract {
   inactiveDate?: string;
   documents: Array<{ id: string }>;
   status: string;
+  paymentStatus: "PAID" | "UNPAID";
+  paidAt?: string;
   createdAt: string;
-  user: { name: string; email: string };
+  user: { name: string; lastName?: string | null; email: string };
 }
 
 interface User {
@@ -31,12 +33,40 @@ interface User {
   mustChangePassword?: boolean;
 }
 
+type ContractsSummaryFields = {
+  agent: boolean;
+  cups: boolean;
+  commercializer: boolean;
+  client: boolean;
+  contact: boolean;
+  attachments: boolean;
+  createdAt: boolean;
+  activationDate: boolean;
+  inactiveDate: boolean;
+  status: boolean;
+  payment: boolean;
+};
+
 const STATUS_LABELS: Record<string, string> = {
   PENDING: "Pendiente",
   ACTIVE: "Activo",
   INACTIVE: "Inactivo",
   CANCELLED: "Cancelado",
   TRAMITE: "Trámite",
+};
+
+const DEFAULT_SUMMARY_FIELDS: ContractsSummaryFields = {
+  agent: true,
+  cups: true,
+  commercializer: true,
+  client: true,
+  contact: true,
+  attachments: true,
+  createdAt: true,
+  activationDate: true,
+  inactiveDate: true,
+  status: true,
+  payment: true,
 };
 
 function toDateOnly(date?: string) {
@@ -46,6 +76,16 @@ function toDateOnly(date?: string) {
   return parsed.toISOString().slice(0, 10);
 }
 
+function formatDateByPreference(date: string | undefined, format: DateFormatPreference) {
+  if (!date) return "-";
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) return "-";
+  if (format === "long") {
+    return parsed.toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" });
+  }
+  return parsed.toLocaleDateString("es-ES");
+}
+
 interface ContractsResponse {
   items: Contract[];
   page: number;
@@ -53,6 +93,50 @@ interface ContractsResponse {
   total: number;
   totalPages: number;
 }
+
+interface CommercializersResponse {
+  items: string[];
+}
+
+interface AgentsResponse {
+  items: Array<{ id: string; fullName: string }>;
+}
+
+type DefaultFilters = {
+  status: string;
+  agentId: string;
+  commercializers: string[];
+  fromActivationDate: string;
+  toActivationDate: string;
+  fromInactiveDate: string;
+  toInactiveDate: string;
+  fromCreatedDate: string;
+  toCreatedDate: string;
+};
+
+type SortPreference = {
+  field: "createdAt" | "contractNumber";
+  direction: "asc" | "desc";
+};
+
+type DateFormatPreference = "short" | "long";
+
+const DEFAULT_FILTERS: DefaultFilters = {
+  status: "all",
+  agentId: "all",
+  commercializers: [],
+  fromActivationDate: "",
+  toActivationDate: "",
+  fromInactiveDate: "",
+  toInactiveDate: "",
+  fromCreatedDate: "",
+  toCreatedDate: "",
+};
+
+const DEFAULT_SORT: SortPreference = {
+  field: "createdAt",
+  direction: "desc",
+};
 
 function getIsoWeekLabel(dateInput?: string) {
   if (!dateInput) return "";
@@ -86,7 +170,60 @@ function normalizeCommercializer(value: string) {
 }
 
 export default function DashboardPage() {
-  const ITEMS_PER_PAGE = 10;
+  const DEFAULT_ITEMS_PER_PAGE = 10;
+  const readInitialPageSize = () => {
+    if (typeof window === "undefined") return DEFAULT_ITEMS_PER_PAGE;
+    const storedSize = Number.parseInt(localStorage.getItem("contractsPageSize") || "", 10);
+    return [5, 10, 20, 30, 50].includes(storedSize) ? storedSize : DEFAULT_ITEMS_PER_PAGE;
+  };
+  const readSummaryFields = (): ContractsSummaryFields => {
+    if (typeof window === "undefined") return DEFAULT_SUMMARY_FIELDS;
+    try {
+      const raw = localStorage.getItem("contractsSummaryFields");
+      if (!raw) return DEFAULT_SUMMARY_FIELDS;
+      const parsed = JSON.parse(raw) as Partial<ContractsSummaryFields>;
+      return {
+        ...DEFAULT_SUMMARY_FIELDS,
+        ...parsed,
+      };
+    } catch {
+      return DEFAULT_SUMMARY_FIELDS;
+    }
+  };
+  const readDefaultFilters = (): DefaultFilters => {
+    if (typeof window === "undefined") return DEFAULT_FILTERS;
+    try {
+      const raw = localStorage.getItem("contractsDefaultFilters");
+      if (!raw) return DEFAULT_FILTERS;
+      const parsed = JSON.parse(raw) as Partial<DefaultFilters>;
+      return {
+        ...DEFAULT_FILTERS,
+        ...parsed,
+        commercializers: Array.isArray(parsed.commercializers) ? parsed.commercializers : [],
+      };
+    } catch {
+      return DEFAULT_FILTERS;
+    }
+  };
+  const readSortPreference = (): SortPreference => {
+    if (typeof window === "undefined") return DEFAULT_SORT;
+    try {
+      const raw = localStorage.getItem("contractsSortPreference");
+      if (!raw) return DEFAULT_SORT;
+      const parsed = JSON.parse(raw) as Partial<SortPreference>;
+      if ((parsed.field === "createdAt" || parsed.field === "contractNumber") && (parsed.direction === "asc" || parsed.direction === "desc")) {
+        return { field: parsed.field, direction: parsed.direction };
+      }
+      return DEFAULT_SORT;
+    } catch {
+      return DEFAULT_SORT;
+    }
+  };
+  const readDateFormatPreference = (): DateFormatPreference => {
+    if (typeof window === "undefined") return "short";
+    return localStorage.getItem("contractsDateFormat") === "long" ? "long" : "short";
+  };
+  const initialDefaultFilters = readDefaultFilters();
   const router = useRouter();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [totalContracts, setTotalContracts] = useState(0);
@@ -98,6 +235,8 @@ export default function DashboardPage() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(readInitialPageSize);
+  const [summaryFields, setSummaryFields] = useState<ContractsSummaryFields>(readSummaryFields);
   const [exportMonthFilter, setExportMonthFilter] = useState("all");
   const [exportWeekFilter, setExportWeekFilter] = useState("all");
   const [exportAgentFilter, setExportAgentFilter] = useState("all");
@@ -105,32 +244,38 @@ export default function DashboardPage() {
   const [exportClientFilter, setExportClientFilter] = useState("");
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [agentFilter, setAgentFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState(initialDefaultFilters.status);
+  const [agentFilter, setAgentFilter] = useState(initialDefaultFilters.agentId);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [fromActivationDate, setFromActivationDate] = useState("");
-  const [toActivationDate, setToActivationDate] = useState("");
-  const [fromInactiveDate, setFromInactiveDate] = useState("");
-  const [toInactiveDate, setToInactiveDate] = useState("");
-  const [fromCreatedDate, setFromCreatedDate] = useState("");
-  const [toCreatedDate, setToCreatedDate] = useState("");
-  const [commercializerFilters, setCommercializerFilters] = useState<string[]>([]);
-  const canViewExport = user?.role !== "USER";
+  const [fromActivationDate, setFromActivationDate] = useState(initialDefaultFilters.fromActivationDate);
+  const [toActivationDate, setToActivationDate] = useState(initialDefaultFilters.toActivationDate);
+  const [fromInactiveDate, setFromInactiveDate] = useState(initialDefaultFilters.fromInactiveDate);
+  const [toInactiveDate, setToInactiveDate] = useState(initialDefaultFilters.toInactiveDate);
+  const [fromCreatedDate, setFromCreatedDate] = useState(initialDefaultFilters.fromCreatedDate);
+  const [toCreatedDate, setToCreatedDate] = useState(initialDefaultFilters.toCreatedDate);
+  const [commercializerFilters, setCommercializerFilters] = useState<string[]>(initialDefaultFilters.commercializers);
+  const [commercializerOptions, setCommercializerOptions] = useState<string[]>([]);
+  const [agentOptions, setAgentOptions] = useState<Array<{ id: string; fullName: string }>>([]);
+  const [sortPreference, setSortPreference] = useState<SortPreference>(readSortPreference);
+  const [dateFormatPreference, setDateFormatPreference] = useState<DateFormatPreference>(readDateFormatPreference);
+  const canViewExport = user?.role === "SUPER_ADMIN";
 
   const fetchContracts = useCallback(async (token: string) => {
     try {
       const params = new URLSearchParams({
         page: String(currentPage),
-        pageSize: String(ITEMS_PER_PAGE),
+        pageSize: String(itemsPerPage),
         search: searchTerm,
         status: statusFilter,
-        agent: agentFilter,
+        agentId: agentFilter,
         fromActivationDate,
         toActivationDate,
         fromInactiveDate,
         toInactiveDate,
         fromCreatedDate,
         toCreatedDate,
+        sortBy: sortPreference.field,
+        sortDirection: sortPreference.direction,
       });
       if (commercializerFilters.length === 1) {
         params.set("commercializer", commercializerFilters[0]);
@@ -165,6 +310,7 @@ export default function DashboardPage() {
   }, [
     router,
     currentPage,
+    itemsPerPage,
     searchTerm,
     statusFilter,
     agentFilter,
@@ -175,6 +321,7 @@ export default function DashboardPage() {
     fromCreatedDate,
     toCreatedDate,
     commercializerFilters,
+    sortPreference,
   ]);
 
   useEffect(() => {
@@ -200,10 +347,97 @@ export default function DashboardPage() {
   }, [router]);
 
   useEffect(() => {
+    const onStorageChange = (event: StorageEvent) => {
+      if (event.key === "contractsPageSize") {
+        const nextSize = Number.parseInt(event.newValue || "", 10);
+        if ([5, 10, 20, 30, 50].includes(nextSize)) {
+          setCurrentPage(1);
+          setItemsPerPage(nextSize);
+        }
+      }
+      if (event.key === "contractsSummaryFields") {
+        try {
+          const parsed = JSON.parse(event.newValue || "{}") as Partial<ContractsSummaryFields>;
+          setSummaryFields({ ...DEFAULT_SUMMARY_FIELDS, ...parsed });
+        } catch {
+          setSummaryFields(DEFAULT_SUMMARY_FIELDS);
+        }
+      }
+      if (event.key === "contractsDefaultFilters") {
+        try {
+          const parsed = JSON.parse(event.newValue || "{}") as Partial<DefaultFilters>;
+          const next = {
+            ...DEFAULT_FILTERS,
+            ...parsed,
+            commercializers: Array.isArray(parsed.commercializers) ? parsed.commercializers : [],
+          };
+          setStatusFilter(next.status);
+          setAgentFilter(next.agentId);
+          setCommercializerFilters(next.commercializers);
+          setFromActivationDate(next.fromActivationDate);
+          setToActivationDate(next.toActivationDate);
+          setFromInactiveDate(next.fromInactiveDate);
+          setToInactiveDate(next.toInactiveDate);
+          setFromCreatedDate(next.fromCreatedDate);
+          setToCreatedDate(next.toCreatedDate);
+          setCurrentPage(1);
+        } catch {
+          // no-op
+        }
+      }
+      if (event.key === "contractsSortPreference") {
+        try {
+          const parsed = JSON.parse(event.newValue || "{}") as Partial<SortPreference>;
+          if ((parsed.field === "createdAt" || parsed.field === "contractNumber") && (parsed.direction === "asc" || parsed.direction === "desc")) {
+            setSortPreference({ field: parsed.field, direction: parsed.direction });
+            setCurrentPage(1);
+          }
+        } catch {
+          // no-op
+        }
+      }
+      if (event.key === "contractsDateFormat") {
+        setDateFormatPreference(event.newValue === "long" ? "long" : "short");
+      }
+    };
+
+    window.addEventListener("storage", onStorageChange);
+    return () => window.removeEventListener("storage", onStorageChange);
+  }, []);
+
+  useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token || !user) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchContracts(token);
+    void (async () => {
+      try {
+        const [commercializersResponse, agentsResponse] = await Promise.all([
+          fetch("/api/contracts/commercializers", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+          fetch("/api/contracts/agents", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+        ]);
+
+        if (commercializersResponse.ok) {
+          const data = (await commercializersResponse.json()) as CommercializersResponse;
+          setCommercializerOptions(Array.isArray(data.items) ? data.items : []);
+        }
+
+        if (agentsResponse.ok) {
+          const data = (await agentsResponse.json()) as AgentsResponse;
+          setAgentOptions(Array.isArray(data.items) ? data.items : []);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    })();
   }, [fetchContracts, user]);
 
   const handleLogout = () => {
@@ -231,7 +465,7 @@ export default function DashboardPage() {
           filters: {
             search: exportClientFilter,
             status: statusFilter,
-            agent: exportAgentFilter,
+            agentId: exportAgentFilter,
             commercializer: exportCommercializerFilter,
             fromActivationDate,
             toActivationDate,
@@ -267,22 +501,17 @@ export default function DashboardPage() {
     }
   };
 
-  const agentOptions = useMemo(
-    () => Array.from(new Set(contracts.map((c) => c.user.name))).sort(),
-    [contracts]
-  );
-
-  const commercializerOptions = useMemo(
-    () => Array.from(new Set(contracts.map((c) => c.commercializer))).sort(),
-    [contracts]
-  );
-
   const exportCommercializerOptions = useMemo(
     () =>
-      Array.from(new Set(contracts.map((c) => normalizeCommercializer(c.commercializer))))
+      Array.from(new Set(commercializerOptions.map((c) => normalizeCommercializer(c))))
         .filter(Boolean)
         .sort((a, b) => a.localeCompare(b, "es")),
-    [contracts]
+    [commercializerOptions]
+  );
+
+  const commercializerDisplayOptions = useMemo(
+    () => commercializerOptions.map((value) => ({ value, label: normalizeCommercializer(value) || value })),
+    [commercializerOptions]
   );
 
   const monthOptions = useMemo(
@@ -318,15 +547,15 @@ export default function DashboardPage() {
 
   const clearFilters = () => {
     setSearchTerm("");
-    setStatusFilter("all");
-    setAgentFilter("all");
-    setFromActivationDate("");
-    setToActivationDate("");
-    setFromInactiveDate("");
-    setToInactiveDate("");
-    setFromCreatedDate("");
-    setToCreatedDate("");
-    setCommercializerFilters([]);
+    setStatusFilter(initialDefaultFilters.status);
+    setAgentFilter(initialDefaultFilters.agentId);
+    setFromActivationDate(initialDefaultFilters.fromActivationDate);
+    setToActivationDate(initialDefaultFilters.toActivationDate);
+    setFromInactiveDate(initialDefaultFilters.fromInactiveDate);
+    setToInactiveDate(initialDefaultFilters.toInactiveDate);
+    setFromCreatedDate(initialDefaultFilters.fromCreatedDate);
+    setToCreatedDate(initialDefaultFilters.toCreatedDate);
+    setCommercializerFilters(initialDefaultFilters.commercializers);
     setCurrentPage(1);
   };
 
@@ -353,7 +582,7 @@ export default function DashboardPage() {
   const updateToCreatedDate = (value: string) => { setCurrentPage(1); setToCreatedDate(value); };
 
   const safeCurrentPage = Math.min(currentPage, totalPages);
-  const startIndex = (safeCurrentPage - 1) * ITEMS_PER_PAGE;
+  const startIndex = (safeCurrentPage - 1) * itemsPerPage;
   const paginatedContracts = contracts;
 
   if (loading) {
@@ -422,6 +651,15 @@ export default function DashboardPage() {
               <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8"><path strokeLinecap="round" strokeLinejoin="round" d="M7.5 3.75h6.879c.464 0 .909.184 1.237.513l2.121 2.12c.328.329.513.774.513 1.238V19.5A1.5 1.5 0 0 1 16.75 21h-9.5a1.5 1.5 0 0 1-1.5-1.5v-14A1.75 1.75 0 0 1 7.5 3.75Z" /><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 3h6m-6-6h3" /></svg>
             ) : "Documentos"}
           </Link>
+          <Link
+            href="/dashboard/settings"
+            title="Ajustes"
+            className={`block rounded-lg py-2 text-sm text-slate-700 hover:bg-slate-100 ${isSidebarCollapsed ? "px-0 text-center" : "px-3"}`}
+          >
+            {isSidebarCollapsed ? (
+              <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8"><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h3m-7.5 6h12m-10.5 6h9" /></svg>
+            ) : "Ajustes"}
+          </Link>
         </nav>
 
         {!isSidebarCollapsed && canViewExport && (
@@ -437,7 +675,7 @@ export default function DashboardPage() {
             </select>
             <select value={exportAgentFilter} onChange={(e) => setExportAgentFilter(e.target.value)} className="field-input text-sm">
               <option value="all">Nombre de agente</option>
-              {agentOptions.map((agent) => <option key={agent} value={agent}>{agent}</option>)}
+              {agentOptions.map((agent) => <option key={agent.id} value={agent.id}>{agent.fullName}</option>)}
             </select>
             <select value={exportCommercializerFilter} onChange={(e) => setExportCommercializerFilter(e.target.value)} className="field-input text-sm">
               <option value="all">Comercializadora</option>
@@ -477,6 +715,7 @@ export default function DashboardPage() {
           <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="block rounded-lg bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-800">Contratos</Link>
           <Link href="/dashboard/consentimientos-historico" onClick={() => setIsMobileMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">Consentimientos Histórico</Link>
           <Link href="/dashboard/documentos" onClick={() => setIsMobileMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">Documentos</Link>
+          <Link href="/dashboard/settings" onClick={() => setIsMobileMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">Ajustes</Link>
         </nav>
         {canViewExport && (
         <div className="mt-5 space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
@@ -491,7 +730,7 @@ export default function DashboardPage() {
           </select>
           <select value={exportAgentFilter} onChange={(e) => setExportAgentFilter(e.target.value)} className="field-input text-sm">
             <option value="all">Nombre de agente</option>
-            {agentOptions.map((agent) => <option key={agent} value={agent}>{agent}</option>)}
+            {agentOptions.map((agent) => <option key={agent.id} value={agent.id}>{agent.fullName}</option>)}
           </select>
           <select value={exportCommercializerFilter} onChange={(e) => setExportCommercializerFilter(e.target.value)} className="field-input text-sm">
             <option value="all">Comercializadora</option>
@@ -520,7 +759,7 @@ export default function DashboardPage() {
               <p className="text-gray-600 text-sm mt-1">Bienvenido, {user?.name}</p>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
-              <Link href="/dashboard/user-management" className="btn-secondary text-sm">Gestión de usuario</Link>
+              <Link href="/dashboard/settings" className="btn-secondary text-sm">Ajustes</Link>
               <button
                 onClick={handleLogout}
                 title="Cerrar sesión"
@@ -554,7 +793,7 @@ export default function DashboardPage() {
               <select value={agentFilter} onChange={(e) => updateAgentFilter(e.target.value)} className="field-input">
                 <option value="all">Todos los agentes</option>
                 {agentOptions.map((agent) => (
-                  <option key={agent} value={agent}>{agent}</option>
+                  <option key={agent.id} value={agent.id}>{agent.fullName}</option>
                 ))}
               </select>
             </div>
@@ -566,6 +805,8 @@ export default function DashboardPage() {
                 <option value="ACTIVE">Activo</option>
                 <option value="INACTIVE">Inactivo</option>
                 <option value="CANCELLED">Cancelado</option>
+                <option value="PAID">Pagado</option>
+                <option value="UNPAID">No pagado</option>
               </select>
             </div>
             <div className="md:col-span-2 flex items-end justify-start md:justify-end gap-2">
@@ -596,10 +837,10 @@ export default function DashboardPage() {
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
-                {commercializerOptions.map((com) => (
-                  <label key={com} className="inline-flex items-center gap-2 text-xs text-gray-700">
-                    <input type="checkbox" checked={commercializerFilters.includes(com)} onChange={() => toggleCommercializer(com)} />
-                    {com}
+                {commercializerDisplayOptions.map((com) => (
+                  <label key={com.value} className="inline-flex items-center gap-2 text-xs text-gray-700">
+                    <input type="checkbox" checked={commercializerFilters.includes(com.value)} onChange={() => toggleCommercializer(com.value)} />
+                    {com.label}
                   </label>
                 ))}
               </div>
@@ -615,7 +856,7 @@ export default function DashboardPage() {
             )}
             {totalContracts > 0 && (
               <span className="text-gray-500">
-                Mostrando {startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, totalContracts)}
+                Mostrando {startIndex + 1}-{Math.min(startIndex + itemsPerPage, totalContracts)}
               </span>
             )}
           </div>
@@ -661,29 +902,33 @@ export default function DashboardPage() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div><p className="text-gray-500">Agente</p><p className="text-gray-800 font-medium">{contract.user.name}</p></div>
-                    <div><p className="text-gray-500">Comercializadora</p><p className="text-gray-800 font-medium">{contract.commercializer}</p></div>
-                    <div><p className="text-gray-500">CUPS</p><p className="text-gray-800">{contract.cups || "-"}</p></div>
-                    <div><p className="text-gray-500">Adjuntos</p><p className="text-gray-800">{contract.documents?.length || 0}</p></div>
+                    {summaryFields.agent && <div><p className="text-gray-500">Agente</p><p className="text-gray-800 font-medium">{`${contract.user.name} ${contract.user.lastName || ""}`.trim()}</p></div>}
+                    {summaryFields.commercializer && <div><p className="text-gray-500">Comercializadora</p><p className="text-gray-800 font-medium">{contract.commercializer}</p></div>}
+                    {summaryFields.cups && <div><p className="text-gray-500">CUPS</p><p className="text-gray-800">{contract.cups || "-"}</p></div>}
+                    {summaryFields.attachments && <div><p className="text-gray-500">Adjuntos</p><p className="text-gray-800">{contract.documents?.length || 0}</p></div>}
                   </div>
 
-                  <div className="text-sm">
+                  {summaryFields.client && <div className="text-sm">
                     <p className="text-gray-500">Cliente</p>
                     <p className="font-medium text-gray-800">{contract.clientName} {contract.clientLastName || ""}</p>
                     <p className="text-xs text-gray-500">{contract.clientDNI || "-"}</p>
-                  </div>
+                  </div>}
 
-                  <div className="text-sm">
+                  {summaryFields.contact && <div className="text-sm">
                     <p className="text-gray-500">Contacto</p>
                     <p className="text-gray-700">{contract.address || "-"}</p>
                     <p className="text-xs text-gray-500">{contract.clientPhone || "-"}</p>
-                  </div>
+                  </div>}
 
                   <div className="grid grid-cols-3 gap-2 text-xs text-gray-600">
-                    <div><p className="text-gray-500">Alta</p><p>{new Date(contract.createdAt).toLocaleDateString("es-ES")}</p></div>
-                    <div><p className="text-gray-500">Activación</p><p>{contract.activationDate ? new Date(contract.activationDate).toLocaleDateString("es-ES") : "-"}</p></div>
-                    <div><p className="text-gray-500">Baja</p><p>{contract.inactiveDate ? new Date(contract.inactiveDate).toLocaleDateString("es-ES") : "-"}</p></div>
+                    {summaryFields.createdAt && <div><p className="text-gray-500">Alta</p><p>{formatDateByPreference(contract.createdAt, dateFormatPreference)}</p></div>}
+                    {summaryFields.activationDate && <div><p className="text-gray-500">Activación</p><p>{formatDateByPreference(contract.activationDate, dateFormatPreference)}</p></div>}
+                    {summaryFields.inactiveDate && <div><p className="text-gray-500">Baja</p><p>{formatDateByPreference(contract.inactiveDate, dateFormatPreference)}</p></div>}
                   </div>
+                  {summaryFields.payment && <div className="text-xs text-gray-600">
+                    <p className="text-gray-500">Pago</p>
+                    <p>{contract.paymentStatus === "PAID" ? `Pagado (${formatDateByPreference(contract.paidAt, dateFormatPreference)})` : "No pagado"}</p>
+                  </div>}
 
                   <div className="flex items-center gap-2 pt-1">
                     <Link
@@ -710,16 +955,17 @@ export default function DashboardPage() {
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">N°</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Agente</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CUPS</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comercializadora</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contacto</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Archivos</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Alta</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activación</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Baja</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                  {summaryFields.agent && <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Agente</th>}
+                  {summaryFields.cups && <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CUPS</th>}
+                  {summaryFields.commercializer && <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comercializadora</th>}
+                  {summaryFields.client && <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>}
+                  {summaryFields.contact && <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contacto</th>}
+                  {summaryFields.attachments && <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Archivos</th>}
+                  {summaryFields.createdAt && <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Alta</th>}
+                  {summaryFields.activationDate && <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activación</th>}
+                  {summaryFields.inactiveDate && <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Baja</th>}
+                  {summaryFields.status && <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>}
+                  {summaryFields.payment && <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pago</th>}
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -746,22 +992,22 @@ export default function DashboardPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">{contract.contractNumber}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{contract.user.name}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{contract.cups || "-"}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{contract.commercializer}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
+                    {summaryFields.agent && <td className="px-6 py-4 text-sm text-gray-600">{`${contract.user.name} ${contract.user.lastName || ""}`.trim()}</td>}
+                    {summaryFields.cups && <td className="px-6 py-4 text-sm text-gray-600">{contract.cups || "-"}</td>}
+                    {summaryFields.commercializer && <td className="px-6 py-4 text-sm text-gray-600">{contract.commercializer}</td>}
+                    {summaryFields.client && <td className="px-6 py-4 text-sm text-gray-600">
                       <div className="font-medium text-gray-800">{contract.clientName} {contract.clientLastName || ""}</div>
                       <div className="text-xs text-gray-500">{contract.clientDNI || "-"}</div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
+                    </td>}
+                    {summaryFields.contact && <td className="px-6 py-4 text-sm text-gray-600">
                       <div>{contract.address || "-"}</div>
                       <div className="text-xs text-gray-500">{contract.clientPhone || "-"}</div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{contract.documents?.length || 0} adjuntos</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{new Date(contract.createdAt).toLocaleDateString("es-ES")}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{contract.activationDate ? new Date(contract.activationDate).toLocaleDateString("es-ES") : "-"}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{contract.inactiveDate ? new Date(contract.inactiveDate).toLocaleDateString("es-ES") : "-"}</td>
-                    <td className="px-6 py-4 text-sm">
+                    </td>}
+                    {summaryFields.attachments && <td className="px-6 py-4 text-sm text-gray-600">{contract.documents?.length || 0} adjuntos</td>}
+                    {summaryFields.createdAt && <td className="px-6 py-4 text-sm text-gray-600">{formatDateByPreference(contract.createdAt, dateFormatPreference)}</td>}
+                    {summaryFields.activationDate && <td className="px-6 py-4 text-sm text-gray-600">{formatDateByPreference(contract.activationDate, dateFormatPreference)}</td>}
+                    {summaryFields.inactiveDate && <td className="px-6 py-4 text-sm text-gray-600">{formatDateByPreference(contract.inactiveDate, dateFormatPreference)}</td>}
+                    {summaryFields.status && <td className="px-6 py-4 text-sm">
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                         contract.status === "ACTIVE"
                           ? "badge-ok"
@@ -773,7 +1019,10 @@ export default function DashboardPage() {
                       }`}>
                         {STATUS_LABELS[contract.status] || contract.status}
                       </span>
-                    </td>
+                    </td>}
+                    {summaryFields.payment && <td className="px-6 py-4 text-sm text-gray-600">
+                      {contract.paymentStatus === "PAID" ? `Pagado (${formatDateByPreference(contract.paidAt, dateFormatPreference)})` : "No pagado"}
+                    </td>}
                   </tr>
                 ))}
               </tbody>
