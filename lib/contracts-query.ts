@@ -1,12 +1,9 @@
-import { ContractStatus, Prisma } from "@prisma/client";
-
-type QueryValue = string | null;
-
-function parseDate(value: QueryValue) {
-  if (!value) return null;
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
+import { Prisma } from "@prisma/client";
+import {
+  canViewAllContracts,
+  parseContractStatus,
+  parseOptionalDate,
+} from "@/lib/contracts";
 
 function buildPhoneSearchVariants(value: string) {
   const digits = value.replace(/\D/g, "");
@@ -23,19 +20,18 @@ function buildPhoneSearchVariants(value: string) {
 
 export function buildContractsWhere(
   user: { id: string; role: string },
-  params: URLSearchParams,
-  canViewAllContracts: (role: string) => boolean
+  params: URLSearchParams
 ): Prisma.ContractWhereInput {
   const search = (params.get("search") || "").trim();
   const status = (params.get("status") || "all").trim();
   const agentId = (params.get("agentId") || params.get("agent") || "all").trim();
   const commercializer = (params.get("commercializer") || "all").trim();
-  const fromActivationDate = parseDate(params.get("fromActivationDate"));
-  const toActivationDate = parseDate(params.get("toActivationDate"));
-  const fromInactiveDate = parseDate(params.get("fromInactiveDate"));
-  const toInactiveDate = parseDate(params.get("toInactiveDate"));
-  const fromCreatedDate = parseDate(params.get("fromCreatedDate"));
-  const toCreatedDate = parseDate(params.get("toCreatedDate"));
+  const fromActivationDate = parseOptionalDate(params.get("fromActivationDate"));
+  const toActivationDate = parseOptionalDate(params.get("toActivationDate"));
+  const fromInactiveDate = parseOptionalDate(params.get("fromInactiveDate"));
+  const toInactiveDate = parseOptionalDate(params.get("toInactiveDate"));
+  const fromCreatedDate = parseOptionalDate(params.get("fromCreatedDate"));
+  const toCreatedDate = parseOptionalDate(params.get("toCreatedDate"));
 
   const where: Prisma.ContractWhereInput = {
     ...(canViewAllContracts(user.role) ? {} : { userId: user.id }),
@@ -68,11 +64,11 @@ export function buildContractsWhere(
     if (status === "PAID" || status === "UNPAID") {
       where.paymentStatus = status;
     } else {
-      where.status = status as ContractStatus;
+      where.status = parseContractStatus(status);
     }
   }
 
-  if (agentId !== "all") {
+  if (agentId !== "all" && canViewAllContracts(user.role)) {
     where.userId = agentId;
   }
 

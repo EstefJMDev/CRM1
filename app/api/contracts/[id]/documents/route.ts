@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { canViewAllContracts } from "@/lib/contracts";
 import { getAuthUser } from "@/lib/session";
 import { NextRequest, NextResponse } from "next/server";
 import { put } from "@vercel/blob";
@@ -6,9 +7,6 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-function canViewAllContracts(role: string) {
-  return role === "SUPER_ADMIN" || role === "TENANT_ADMIN";
-}
 
 export async function POST(
   request: NextRequest,

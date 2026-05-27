@@ -67,8 +67,6 @@ export default function RegisterPage() {
         return;
       }
 
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
       router.push("/dashboard");
     } catch (err) {
       setError("Error de conexion");

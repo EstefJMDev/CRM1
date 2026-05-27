@@ -1,10 +1,12 @@
 import { prisma } from "@/lib/db";
 import { getAuthUser } from "@/lib/session";
+import {
+  canViewAllContracts,
+  normalizeContractPayload,
+  parseOptionalDate,
+  parsePaymentStatus,
+} from "@/lib/contracts";
 import { NextRequest, NextResponse } from "next/server";
-
-function canViewAllContracts(role: string) {
-  return role === "SUPER_ADMIN" || role === "TENANT_ADMIN";
-}
 
 export async function GET(
   request: NextRequest,
@@ -86,7 +88,15 @@ export async function PUT(
     }
 
     const { id } = await params;
-    const data = await request.json();
+    const payload = (await request.json()) as Record<string, unknown>;
+    const normalizedData = normalizeContractPayload(payload);
+
+    if (!normalizedData.clientName || !normalizedData.commercializer) {
+      return NextResponse.json(
+        { error: "Cliente y comercializadora son obligatorios" },
+        { status: 400 }
+      );
+    }
 
     // Verificar que el usuario es el propietario o es admin
     const contract = await prisma.contract.findUnique({
@@ -106,26 +116,28 @@ export async function PUT(
       select: { status: true, observations: true, paymentStatus: true, paidAt: true },
     });
 
-    const nextStatus = String(data.status ?? currentContract?.status ?? "");
+    const nextStatus = normalizedData.status;
     const nextObservations =
-      String(data.observations ?? currentContract?.observations ?? "").trim() || null;
+      normalizedData.observations;
     const previousObservations =
       String(currentContract?.observations ?? "").trim() || null;
     const didStatusChange = Boolean(currentContract && nextStatus !== currentContract.status);
     const didObservationChange = nextObservations !== previousObservations;
-    const nextPaymentStatus = String(data.paymentStatus ?? currentContract?.paymentStatus ?? "UNPAID");
+    const nextPaymentStatus = parsePaymentStatus(
+      String(payload.paymentStatus ?? currentContract?.paymentStatus ?? "UNPAID")
+    );
     const isPayingNow = currentContract?.paymentStatus !== "PAID" && nextPaymentStatus === "PAID";
-    const inputPaidAt = data.paidAt ? new Date(String(data.paidAt)) : null;
+    const inputPaidAt = parseOptionalDate(String(payload.paidAt || ""));
     const resolvedPaidAt =
       nextPaymentStatus === "PAID"
-        ? (inputPaidAt && !Number.isNaN(inputPaidAt.getTime()) ? inputPaidAt : (isPayingNow ? new Date() : currentContract?.paidAt ?? new Date()))
+        ? (inputPaidAt || (isPayingNow ? new Date() : currentContract?.paidAt ?? new Date()))
         : null;
 
     const updatedContract = await prisma.$transaction(async (tx) => {
       await tx.contract.update({
         where: { id },
         data: {
-          ...data,
+          ...normalizedData,
           paidAt: resolvedPaidAt,
         },
         include: {

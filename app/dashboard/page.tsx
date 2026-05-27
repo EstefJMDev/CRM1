@@ -3,6 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { logoutAndRedirect, useAuthSession } from "@/hooks/use-auth-session";
+import {
+  ContractsSummaryFields,
+  DateFormatPreference,
+  readDashboardPreferences,
+  SortPreference,
+} from "@/lib/dashboard-preferences";
 
 interface Contract {
   id: string;
@@ -24,49 +31,12 @@ interface Contract {
   user: { name: string; lastName?: string | null; email: string };
 }
 
-interface User {
-  id: string;
-  name: string;
-  lastName?: string;
-  email: string;
-  role: string;
-  mustChangePassword?: boolean;
-}
-
-type ContractsSummaryFields = {
-  agent: boolean;
-  cups: boolean;
-  commercializer: boolean;
-  client: boolean;
-  contact: boolean;
-  attachments: boolean;
-  createdAt: boolean;
-  activationDate: boolean;
-  inactiveDate: boolean;
-  status: boolean;
-  payment: boolean;
-};
-
 const STATUS_LABELS: Record<string, string> = {
   PENDING: "Pendiente",
   ACTIVE: "Activo",
   INACTIVE: "Inactivo",
   CANCELLED: "Cancelado",
   TRAMITE: "Trámite",
-};
-
-const DEFAULT_SUMMARY_FIELDS: ContractsSummaryFields = {
-  agent: true,
-  cups: true,
-  commercializer: true,
-  client: true,
-  contact: true,
-  attachments: true,
-  createdAt: true,
-  activationDate: true,
-  inactiveDate: true,
-  status: true,
-  payment: true,
 };
 
 function toDateOnly(date?: string) {
@@ -102,41 +72,6 @@ interface AgentsResponse {
   items: Array<{ id: string; fullName: string }>;
 }
 
-type DefaultFilters = {
-  status: string;
-  agentId: string;
-  commercializers: string[];
-  fromActivationDate: string;
-  toActivationDate: string;
-  fromInactiveDate: string;
-  toInactiveDate: string;
-  fromCreatedDate: string;
-  toCreatedDate: string;
-};
-
-type SortPreference = {
-  field: "createdAt" | "contractNumber";
-  direction: "asc" | "desc";
-};
-
-type DateFormatPreference = "short" | "long";
-
-const DEFAULT_FILTERS: DefaultFilters = {
-  status: "all",
-  agentId: "all",
-  commercializers: [],
-  fromActivationDate: "",
-  toActivationDate: "",
-  fromInactiveDate: "",
-  toInactiveDate: "",
-  fromCreatedDate: "",
-  toCreatedDate: "",
-};
-
-const DEFAULT_SORT: SortPreference = {
-  field: "createdAt",
-  direction: "desc",
-};
 
 function getIsoWeekLabel(dateInput?: string) {
   if (!dateInput) return "";
@@ -170,73 +105,24 @@ function normalizeCommercializer(value: string) {
 }
 
 export default function DashboardPage() {
-  const DEFAULT_ITEMS_PER_PAGE = 10;
-  const readInitialPageSize = () => {
-    if (typeof window === "undefined") return DEFAULT_ITEMS_PER_PAGE;
-    const storedSize = Number.parseInt(localStorage.getItem("contractsPageSize") || "", 10);
-    return [5, 10, 20, 30, 50].includes(storedSize) ? storedSize : DEFAULT_ITEMS_PER_PAGE;
-  };
-  const readSummaryFields = (): ContractsSummaryFields => {
-    if (typeof window === "undefined") return DEFAULT_SUMMARY_FIELDS;
-    try {
-      const raw = localStorage.getItem("contractsSummaryFields");
-      if (!raw) return DEFAULT_SUMMARY_FIELDS;
-      const parsed = JSON.parse(raw) as Partial<ContractsSummaryFields>;
-      return {
-        ...DEFAULT_SUMMARY_FIELDS,
-        ...parsed,
-      };
-    } catch {
-      return DEFAULT_SUMMARY_FIELDS;
-    }
-  };
-  const readDefaultFilters = (): DefaultFilters => {
-    if (typeof window === "undefined") return DEFAULT_FILTERS;
-    try {
-      const raw = localStorage.getItem("contractsDefaultFilters");
-      if (!raw) return DEFAULT_FILTERS;
-      const parsed = JSON.parse(raw) as Partial<DefaultFilters>;
-      return {
-        ...DEFAULT_FILTERS,
-        ...parsed,
-        commercializers: Array.isArray(parsed.commercializers) ? parsed.commercializers : [],
-      };
-    } catch {
-      return DEFAULT_FILTERS;
-    }
-  };
-  const readSortPreference = (): SortPreference => {
-    if (typeof window === "undefined") return DEFAULT_SORT;
-    try {
-      const raw = localStorage.getItem("contractsSortPreference");
-      if (!raw) return DEFAULT_SORT;
-      const parsed = JSON.parse(raw) as Partial<SortPreference>;
-      if ((parsed.field === "createdAt" || parsed.field === "contractNumber") && (parsed.direction === "asc" || parsed.direction === "desc")) {
-        return { field: parsed.field, direction: parsed.direction };
-      }
-      return DEFAULT_SORT;
-    } catch {
-      return DEFAULT_SORT;
-    }
-  };
-  const readDateFormatPreference = (): DateFormatPreference => {
-    if (typeof window === "undefined") return "short";
-    return localStorage.getItem("contractsDateFormat") === "long" ? "long" : "short";
-  };
-  const initialDefaultFilters = readDefaultFilters();
+  const preferences = readDashboardPreferences();
+  const initialDefaultFilters = preferences.defaultFilters;
   const router = useRouter();
+  const { user, loading: authLoading } = useAuthSession({
+    redirectTo: "/auth/login",
+    requirePasswordChangeRedirect: "/dashboard/user-management",
+  });
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [totalContracts, setTotalContracts] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isExporting, setIsExporting] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(readInitialPageSize);
-  const [summaryFields, setSummaryFields] = useState<ContractsSummaryFields>(readSummaryFields);
+  const [itemsPerPage, setItemsPerPage] = useState(preferences.pageSize);
+  const [summaryFields, setSummaryFields] = useState<ContractsSummaryFields>(preferences.summaryFields);
   const [exportMonthFilter, setExportMonthFilter] = useState("all");
   const [exportWeekFilter, setExportWeekFilter] = useState("all");
   const [exportAgentFilter, setExportAgentFilter] = useState("all");
@@ -256,11 +142,11 @@ export default function DashboardPage() {
   const [commercializerFilters, setCommercializerFilters] = useState<string[]>(initialDefaultFilters.commercializers);
   const [commercializerOptions, setCommercializerOptions] = useState<string[]>([]);
   const [agentOptions, setAgentOptions] = useState<Array<{ id: string; fullName: string }>>([]);
-  const [sortPreference, setSortPreference] = useState<SortPreference>(readSortPreference);
-  const [dateFormatPreference, setDateFormatPreference] = useState<DateFormatPreference>(readDateFormatPreference);
+  const [sortPreference, setSortPreference] = useState<SortPreference>(preferences.sortPreference);
+  const [dateFormatPreference, setDateFormatPreference] = useState<DateFormatPreference>(preferences.dateFormat);
   const canViewExport = user?.role === "SUPER_ADMIN";
 
-  const fetchContracts = useCallback(async (token: string) => {
+  const fetchContracts = useCallback(async () => {
     try {
       const params = new URLSearchParams({
         page: String(currentPage),
@@ -281,17 +167,11 @@ export default function DashboardPage() {
         params.set("commercializer", commercializerFilters[0]);
       }
 
-      const response = await fetch(`/api/contracts?${params.toString()}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(`/api/contracts?${params.toString()}`);
 
       if (!response.ok) {
         if (response.status === 401) {
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
-          router.push("/auth/login");
+          await logoutAndRedirect(router);
           return;
         }
         throw new Error("Error al obtener contratos");
@@ -325,79 +205,37 @@ export default function DashboardPage() {
   ]);
 
   useEffect(() => {
-    const checkAuth = () => {
-      const token = localStorage.getItem("token");
-      const userData = localStorage.getItem("user");
-
-      if (!token || !userData) {
-        router.push("/auth/login");
-        return;
-      }
-
-      const parsedUser = JSON.parse(userData) as User;
-      if (parsedUser.mustChangePassword) {
-        router.push("/dashboard/user-management");
-        return;
-      }
-
-      setUser(parsedUser);
-    };
-
-    checkAuth();
-  }, [router]);
-
-  useEffect(() => {
     const onStorageChange = (event: StorageEvent) => {
       if (event.key === "contractsPageSize") {
-        const nextSize = Number.parseInt(event.newValue || "", 10);
-        if ([5, 10, 20, 30, 50].includes(nextSize)) {
-          setCurrentPage(1);
-          setItemsPerPage(nextSize);
-        }
+        const next = readDashboardPreferences();
+        setCurrentPage(1);
+        setItemsPerPage(next.pageSize);
       }
       if (event.key === "contractsSummaryFields") {
-        try {
-          const parsed = JSON.parse(event.newValue || "{}") as Partial<ContractsSummaryFields>;
-          setSummaryFields({ ...DEFAULT_SUMMARY_FIELDS, ...parsed });
-        } catch {
-          setSummaryFields(DEFAULT_SUMMARY_FIELDS);
-        }
+        const next = readDashboardPreferences();
+        setSummaryFields(next.summaryFields);
       }
       if (event.key === "contractsDefaultFilters") {
-        try {
-          const parsed = JSON.parse(event.newValue || "{}") as Partial<DefaultFilters>;
-          const next = {
-            ...DEFAULT_FILTERS,
-            ...parsed,
-            commercializers: Array.isArray(parsed.commercializers) ? parsed.commercializers : [],
-          };
-          setStatusFilter(next.status);
-          setAgentFilter(next.agentId);
-          setCommercializerFilters(next.commercializers);
-          setFromActivationDate(next.fromActivationDate);
-          setToActivationDate(next.toActivationDate);
-          setFromInactiveDate(next.fromInactiveDate);
-          setToInactiveDate(next.toInactiveDate);
-          setFromCreatedDate(next.fromCreatedDate);
-          setToCreatedDate(next.toCreatedDate);
-          setCurrentPage(1);
-        } catch {
-          // no-op
-        }
+        const next = readDashboardPreferences().defaultFilters;
+        setStatusFilter(next.status);
+        setAgentFilter(next.agentId);
+        setCommercializerFilters(next.commercializers);
+        setFromActivationDate(next.fromActivationDate);
+        setToActivationDate(next.toActivationDate);
+        setFromInactiveDate(next.fromInactiveDate);
+        setToInactiveDate(next.toInactiveDate);
+        setFromCreatedDate(next.fromCreatedDate);
+        setToCreatedDate(next.toCreatedDate);
+        setCurrentPage(1);
       }
       if (event.key === "contractsSortPreference") {
-        try {
-          const parsed = JSON.parse(event.newValue || "{}") as Partial<SortPreference>;
-          if ((parsed.field === "createdAt" || parsed.field === "contractNumber") && (parsed.direction === "asc" || parsed.direction === "desc")) {
-            setSortPreference({ field: parsed.field, direction: parsed.direction });
-            setCurrentPage(1);
-          }
-        } catch {
-          // no-op
-        }
+        const next = readDashboardPreferences().sortPreference;
+        setSortPreference(next);
+        setCurrentPage(1);
       }
       if (event.key === "contractsDateFormat") {
-        setDateFormatPreference(event.newValue === "long" ? "long" : "short");
+        const next = readDashboardPreferences();
+        setDateFormatPreference(next.dateFormat);
       }
     };
 
@@ -406,23 +244,14 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token || !user) return;
+    if (authLoading || !user) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchContracts(token);
+    fetchContracts();
     void (async () => {
       try {
         const [commercializersResponse, agentsResponse] = await Promise.all([
-          fetch("/api/contracts/commercializers", {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }),
-          fetch("/api/contracts/agents", {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }),
+          fetch("/api/contracts/commercializers"),
+          fetch("/api/contracts/agents"),
         ]);
 
         if (commercializersResponse.ok) {
@@ -438,18 +267,14 @@ export default function DashboardPage() {
         console.error(error);
       }
     })();
-  }, [fetchContracts, user]);
+  }, [authLoading, fetchContracts, user]);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    router.push("/auth/login");
+    void logoutAndRedirect(router);
   };
 
   const handleExport = async () => {
     if (!canViewExport) return;
-    const token = localStorage.getItem("token");
-    if (!token) return;
 
     setIsExporting(true);
     setError("");
@@ -458,7 +283,6 @@ export default function DashboardPage() {
       const response = await fetch("/api/contracts/export", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -585,7 +409,7 @@ export default function DashboardPage() {
   const startIndex = (safeCurrentPage - 1) * itemsPerPage;
   const paginatedContracts = contracts;
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="app-shell app-main">
         <div className="app-card p-5 space-y-4 fade-in">

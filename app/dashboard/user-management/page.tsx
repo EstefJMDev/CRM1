@@ -3,16 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-
-type AppUser = {
-  id: string;
-  name: string;
-  lastName?: string | null;
-  email: string;
-  role: "SUPER_ADMIN" | "TENANT_ADMIN" | "USER";
-  mustChangePassword?: boolean;
-  isActive?: boolean;
-};
+import { AuthUser, useAuthSession } from "@/hooks/use-auth-session";
 
 type ManagedUser = {
   id: string;
@@ -28,33 +19,15 @@ type ManagedUser = {
 
 export default function UserManagementPage() {
   const router = useRouter();
-  const readAuthBootstrap = () => {
-    if (typeof window === "undefined") {
-      return { token: "", user: null as AppUser | null };
-    }
-    const localToken = localStorage.getItem("token") || "";
-    const localUser = localStorage.getItem("user");
-    if (!localToken || !localUser) {
-      return { token: "", user: null as AppUser | null };
-    }
-    return { token: localToken, user: JSON.parse(localUser) as AppUser };
-  };
-
-  const [token] = useState(() => readAuthBootstrap().token);
-  const [currentUser, setCurrentUser] = useState<AppUser | null>(() => readAuthBootstrap().user);
+  const { user: currentUser, loading: authLoading, setUser: setCurrentUser } = useAuthSession({
+    redirectTo: "/auth/login",
+  });
   const [users, setUsers] = useState<ManagedUser[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingUsers, setLoadingUsers] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const [profileForm, setProfileForm] = useState(() => {
-    const user = readAuthBootstrap().user;
-    return {
-      name: user?.name || "",
-      lastName: user?.lastName || "",
-      email: user?.email || "",
-    };
-  });
+  const [profileForm, setProfileForm] = useState<{ name: string; lastName: string; email: string } | null>(null);
   const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [newUserForm, setNewUserForm] = useState({ name: "", lastName: "", email: "", temporaryPassword: "", role: "USER" });
   const [resetPasswords, setResetPasswords] = useState<Record<string, string>>({});
@@ -95,21 +68,16 @@ export default function UserManagementPage() {
   };
 
   useEffect(() => {
-    if (!token || !currentUser) {
-      router.push("/auth/login");
-      return;
-    }
+    if (authLoading || !currentUser) return;
 
     const loadUsers = async () => {
       if (currentUser.role !== "SUPER_ADMIN") {
-        setLoading(false);
+        setLoadingUsers(false);
         return;
       }
 
       try {
-        const response = await fetch("/api/users", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await fetch("/api/users");
         if (!response.ok) throw new Error("No se pudo cargar usuarios");
         const data = (await response.json()) as ManagedUser[];
         setUsers(data);
@@ -118,18 +86,16 @@ export default function UserManagementPage() {
         console.error(loadError);
         setError("No se pudo cargar la lista de usuarios");
       } finally {
-        setLoading(false);
+        setLoadingUsers(false);
       }
     };
 
     void loadUsers();
-  }, [router, token, currentUser]);
+  }, [authLoading, currentUser]);
 
   const refreshUsers = async () => {
-    if (!isSuperAdmin || !token) return;
-    const response = await fetch("/api/users", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    if (!isSuperAdmin) return;
+    const response = await fetch("/api/users");
     if (!response.ok) return;
     const data = (await response.json()) as ManagedUser[];
     setUsers(data);
@@ -140,14 +106,18 @@ export default function UserManagementPage() {
     event.preventDefault();
     setError("");
     setSuccess("");
+    const effectiveProfileForm = {
+      name: profileForm?.name ?? currentUser?.name ?? "",
+      lastName: profileForm?.lastName ?? currentUser?.lastName ?? "",
+      email: profileForm?.email ?? currentUser?.email ?? "",
+    };
 
     const response = await fetch("/api/users/me", {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(profileForm),
+      body: JSON.stringify(effectiveProfileForm),
     });
 
     const data = await response.json();
@@ -156,9 +126,9 @@ export default function UserManagementPage() {
       return;
     }
 
-    const mergedUser = { ...currentUser, ...data } as AppUser;
+    const mergedUser = { ...currentUser, ...data } as AuthUser;
     setCurrentUser(mergedUser);
-    localStorage.setItem("user", JSON.stringify(mergedUser));
+    setProfileForm(null);
     setSuccess("Perfil actualizado");
   };
 
@@ -177,7 +147,6 @@ export default function UserManagementPage() {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
         currentPassword: passwordForm.currentPassword,
@@ -192,9 +161,8 @@ export default function UserManagementPage() {
     }
 
     setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
-    const mergedUser = { ...currentUser, mustChangePassword: false } as AppUser;
+    const mergedUser = { ...currentUser, mustChangePassword: false } as AuthUser;
     setCurrentUser(mergedUser);
-    localStorage.setItem("user", JSON.stringify(mergedUser));
 
     if (wasForcedPasswordChange) {
       router.push("/dashboard");
@@ -213,7 +181,6 @@ export default function UserManagementPage() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(newUserForm),
     });
@@ -245,7 +212,6 @@ export default function UserManagementPage() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ temporaryPassword }),
       });
@@ -278,7 +244,6 @@ export default function UserManagementPage() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(editable),
       });
@@ -297,7 +262,7 @@ export default function UserManagementPage() {
     }
   };
 
-  if (loading) {
+  if (authLoading || loadingUsers) {
     return (
       <div className="app-shell app-main">
         <div className="app-card p-6 space-y-4 fade-in">
@@ -437,15 +402,15 @@ export default function UserManagementPage() {
             <form className="space-y-4" onSubmit={handleProfileSubmit}>
               <div>
                 <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Nombre</label>
-                <input className="field-input" value={profileForm.name} onChange={(e) => setProfileForm((prev) => ({ ...prev, name: e.target.value }))} />
+                <input className="field-input" value={profileForm?.name ?? currentUser?.name ?? ""} onChange={(e) => setProfileForm((prev) => ({ name: e.target.value, lastName: prev?.lastName ?? currentUser?.lastName ?? "", email: prev?.email ?? currentUser?.email ?? "" }))} />
               </div>
               <div>
                 <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Apellidos</label>
-                <input className="field-input" value={profileForm.lastName} onChange={(e) => setProfileForm((prev) => ({ ...prev, lastName: e.target.value }))} />
+                <input className="field-input" value={profileForm?.lastName ?? currentUser?.lastName ?? ""} onChange={(e) => setProfileForm((prev) => ({ name: prev?.name ?? currentUser?.name ?? "", lastName: e.target.value, email: prev?.email ?? currentUser?.email ?? "" }))} />
               </div>
               <div>
                 <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Email</label>
-                <input className="field-input" type="email" value={profileForm.email} onChange={(e) => setProfileForm((prev) => ({ ...prev, email: e.target.value }))} />
+                <input className="field-input" type="email" value={profileForm?.email ?? currentUser?.email ?? ""} onChange={(e) => setProfileForm((prev) => ({ name: prev?.name ?? currentUser?.name ?? "", lastName: prev?.lastName ?? currentUser?.lastName ?? "", email: e.target.value }))} />
               </div>
               <button className="btn-primary" type="submit">Guardar perfil</button>
             </form>

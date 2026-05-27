@@ -1,10 +1,7 @@
 import { prisma } from "@/lib/db";
+import { canViewAllContracts } from "@/lib/contracts";
 import { getAuthUser } from "@/lib/session";
 import { NextRequest, NextResponse } from "next/server";
-
-function canViewAllContracts(role: string) {
-  return role === "SUPER_ADMIN" || role === "TENANT_ADMIN";
-}
 
 export async function GET(request: NextRequest) {
   try {

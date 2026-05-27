@@ -1,50 +1,20 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-
-type AppUser = {
-  id: string;
-  name: string;
-  lastName?: string | null;
-  email: string;
-  role: "SUPER_ADMIN" | "TENANT_ADMIN" | "USER";
-  mustChangePassword?: boolean;
-};
-
-type ContractsSummaryFields = {
-  agent: boolean;
-  cups: boolean;
-  commercializer: boolean;
-  client: boolean;
-  contact: boolean;
-  attachments: boolean;
-  createdAt: boolean;
-  activationDate: boolean;
-  inactiveDate: boolean;
-  status: boolean;
-  payment: boolean;
-};
-
-type DefaultFilters = {
-  status: string;
-  agentId: string;
-  commercializers: string[];
-  fromActivationDate: string;
-  toActivationDate: string;
-  fromInactiveDate: string;
-  toInactiveDate: string;
-  fromCreatedDate: string;
-  toCreatedDate: string;
-};
-
-type SortPreference = {
-  field: "createdAt" | "contractNumber";
-  direction: "asc" | "desc";
-};
-
-type DateFormatPreference = "short" | "long";
+import { useAuthSession } from "@/hooks/use-auth-session";
+import { useDashboardPreferences } from "@/hooks/use-dashboard-preferences";
+import {
+  ContractsSummaryFields,
+  DateFormatPreference,
+  DefaultFilters,
+  DEFAULT_FILTERS,
+  DEFAULT_SORT,
+  DEFAULT_SUMMARY_FIELDS,
+  PAGE_SIZE_OPTIONS,
+  saveDashboardPreferences,
+  SortPreference,
+} from "@/lib/dashboard-preferences";
 
 type SettingsBundle = {
   contractsPageSize: number;
@@ -54,137 +24,39 @@ type SettingsBundle = {
   contractsDateFormat: DateFormatPreference;
 };
 
-const PAGE_SIZE_OPTIONS = [5, 10, 20, 30, 50];
-
-const DEFAULT_SUMMARY_FIELDS: ContractsSummaryFields = {
-  agent: true,
-  cups: true,
-  commercializer: true,
-  client: true,
-  contact: true,
-  attachments: true,
-  createdAt: true,
-  activationDate: true,
-  inactiveDate: true,
-  status: true,
-  payment: true,
-};
-
-const DEFAULT_FILTERS: DefaultFilters = {
-  status: "all",
-  agentId: "all",
-  commercializers: [],
-  fromActivationDate: "",
-  toActivationDate: "",
-  fromInactiveDate: "",
-  toInactiveDate: "",
-  fromCreatedDate: "",
-  toCreatedDate: "",
-};
-
-const DEFAULT_SORT: SortPreference = {
-  field: "createdAt",
-  direction: "desc",
-};
-
 function normalizeCommercializer(value: string) {
   return value.replace(/^\s*\d+\s*[-.)]?\s*/, "").trim();
 }
 
-function readBootstrap() {
-  if (typeof window === "undefined") {
-    return {
-      token: "",
-      user: null as AppUser | null,
-      pageSize: 10,
-      summaryFields: DEFAULT_SUMMARY_FIELDS,
-      defaultFilters: DEFAULT_FILTERS,
-      sortPreference: DEFAULT_SORT,
-      dateFormat: "short" as DateFormatPreference,
-    };
-  }
-
-  const token = localStorage.getItem("token") || "";
-  const userRaw = localStorage.getItem("user");
-  const storedSize = Number.parseInt(localStorage.getItem("contractsPageSize") || "", 10);
-
-  let summaryFields = DEFAULT_SUMMARY_FIELDS;
-  let defaultFilters = DEFAULT_FILTERS;
-  let sortPreference = DEFAULT_SORT;
-  const dateFormat: DateFormatPreference = localStorage.getItem("contractsDateFormat") === "long" ? "long" : "short";
-
-  try {
-    const raw = localStorage.getItem("contractsSummaryFields");
-    if (raw) {
-      const parsed = JSON.parse(raw) as Partial<ContractsSummaryFields>;
-      summaryFields = { ...DEFAULT_SUMMARY_FIELDS, ...parsed };
-    }
-  } catch {
-    summaryFields = DEFAULT_SUMMARY_FIELDS;
-  }
-
-  try {
-    const raw = localStorage.getItem("contractsDefaultFilters");
-    if (raw) {
-      const parsed = JSON.parse(raw) as Partial<DefaultFilters>;
-      defaultFilters = {
-        ...DEFAULT_FILTERS,
-        ...parsed,
-        commercializers: Array.isArray(parsed.commercializers) ? parsed.commercializers : [],
-      };
-    }
-  } catch {
-    defaultFilters = DEFAULT_FILTERS;
-  }
-
-  try {
-    const raw = localStorage.getItem("contractsSortPreference");
-    if (raw) {
-      const parsed = JSON.parse(raw) as Partial<SortPreference>;
-      if ((parsed.field === "createdAt" || parsed.field === "contractNumber") && (parsed.direction === "asc" || parsed.direction === "desc")) {
-        sortPreference = { field: parsed.field, direction: parsed.direction };
-      }
-    }
-  } catch {
-    sortPreference = DEFAULT_SORT;
-  }
-
-  return {
-    token,
-    user: userRaw ? (JSON.parse(userRaw) as AppUser) : null,
-    pageSize: PAGE_SIZE_OPTIONS.includes(storedSize) ? storedSize : 10,
-    summaryFields,
-    defaultFilters,
-    sortPreference,
-    dateFormat,
-  };
-}
-
 export default function SettingsPage() {
-  const router = useRouter();
-  const bootstrap = readBootstrap();
-  const [user] = useState<AppUser | null>(bootstrap.user);
-  const [pageSize, setPageSize] = useState(bootstrap.pageSize);
-  const [summaryFields, setSummaryFields] = useState<ContractsSummaryFields>(bootstrap.summaryFields);
-  const [defaultFilters, setDefaultFilters] = useState<DefaultFilters>(bootstrap.defaultFilters);
-  const [sortPreference, setSortPreference] = useState<SortPreference>(bootstrap.sortPreference);
-  const [dateFormat, setDateFormat] = useState<DateFormatPreference>(bootstrap.dateFormat);
+  const { user, loading } = useAuthSession({
+    redirectTo: "/auth/login",
+    requirePasswordChangeRedirect: "/dashboard/user-management",
+  });
+  const {
+    pageSize,
+    setPageSize,
+    summaryFields,
+    setSummaryFields,
+    defaultFilters,
+    setDefaultFilters,
+    sortPreference,
+    setSortPreference,
+    dateFormat,
+    setDateFormat,
+  } = useDashboardPreferences();
   const [agents, setAgents] = useState<Array<{ id: string; fullName: string }>>([]);
   const [commercializers, setCommercializers] = useState<string[]>([]);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    const { token, user: bootstrapUser } = readBootstrap();
-    if (!token || !bootstrapUser) {
-      router.push("/auth/login");
-      return;
-    }
+    if (!user) return;
 
     void (async () => {
       try {
         const [agentsResponse, commercializersResponse] = await Promise.all([
-          fetch("/api/contracts/agents", { headers: { Authorization: `Bearer ${token}` } }),
-          fetch("/api/contracts/commercializers", { headers: { Authorization: `Bearer ${token}` } }),
+          fetch("/api/contracts/agents"),
+          fetch("/api/contracts/commercializers"),
         ]);
 
         if (agentsResponse.ok) {
@@ -200,7 +72,7 @@ export default function SettingsPage() {
         console.error(error);
       }
     })();
-  }, [router]);
+  }, [user]);
 
   const commercializerDisplayOptions = useMemo(
     () => commercializers.map((value) => ({ value, label: normalizeCommercializer(value) || value })),
@@ -208,11 +80,13 @@ export default function SettingsPage() {
   );
 
   const saveAll = () => {
-    localStorage.setItem("contractsPageSize", String(pageSize));
-    localStorage.setItem("contractsSummaryFields", JSON.stringify(summaryFields));
-    localStorage.setItem("contractsDefaultFilters", JSON.stringify(defaultFilters));
-    localStorage.setItem("contractsSortPreference", JSON.stringify(sortPreference));
-    localStorage.setItem("contractsDateFormat", dateFormat);
+    saveDashboardPreferences({
+      pageSize,
+      summaryFields,
+      defaultFilters,
+      sortPreference,
+      dateFormat,
+    });
     setSaved(true);
     setTimeout(() => setSaved(false), 1600);
   };
@@ -223,11 +97,13 @@ export default function SettingsPage() {
     setDefaultFilters(DEFAULT_FILTERS);
     setSortPreference(DEFAULT_SORT);
     setDateFormat("short");
-    localStorage.setItem("contractsPageSize", "10");
-    localStorage.setItem("contractsSummaryFields", JSON.stringify(DEFAULT_SUMMARY_FIELDS));
-    localStorage.setItem("contractsDefaultFilters", JSON.stringify(DEFAULT_FILTERS));
-    localStorage.setItem("contractsSortPreference", JSON.stringify(DEFAULT_SORT));
-    localStorage.setItem("contractsDateFormat", "short");
+    saveDashboardPreferences({
+      pageSize: 10,
+      summaryFields: DEFAULT_SUMMARY_FIELDS,
+      defaultFilters: DEFAULT_FILTERS,
+      sortPreference: DEFAULT_SORT,
+      dateFormat: "short",
+    });
     setSaved(true);
     setTimeout(() => setSaved(false), 1600);
   };
@@ -265,7 +141,13 @@ export default function SettingsPage() {
             : [],
         });
       }
-      if (parsed.contractsSortPreference && (parsed.contractsSortPreference.field === "createdAt" || parsed.contractsSortPreference.field === "contractNumber") && (parsed.contractsSortPreference.direction === "asc" || parsed.contractsSortPreference.direction === "desc")) {
+      if (
+        parsed.contractsSortPreference &&
+        (parsed.contractsSortPreference.field === "createdAt" ||
+          parsed.contractsSortPreference.field === "contractNumber") &&
+        (parsed.contractsSortPreference.direction === "asc" ||
+          parsed.contractsSortPreference.direction === "desc")
+      ) {
         setSortPreference(parsed.contractsSortPreference);
       }
       if (parsed.contractsDateFormat === "short" || parsed.contractsDateFormat === "long") {
@@ -291,6 +173,18 @@ export default function SettingsPage() {
     }));
   };
 
+  if (loading) {
+    return (
+      <div className="app-shell app-main">
+        <div className="app-card p-6 space-y-4 fade-in">
+          <div className="skeleton h-8 w-48" />
+          <div className="skeleton h-12 w-full" />
+          <div className="skeleton h-36 w-full" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="app-shell">
       <header className="app-header">
@@ -300,8 +194,12 @@ export default function SettingsPage() {
             <p className="text-sm text-gray-600">Configura preferencias del panel y accesos</p>
           </div>
           <div className="flex items-center gap-2">
-            <button type="button" onClick={restoreDefaults} className="btn-soft">Restaurar por defecto</button>
-            <Link href="/dashboard" className="btn-secondary">Volver a contratos</Link>
+            <button type="button" onClick={restoreDefaults} className="btn-soft">
+              Restaurar por defecto
+            </button>
+            <Link href="/dashboard" className="btn-secondary">
+              Volver a contratos
+            </Link>
           </div>
         </div>
       </header>
@@ -309,13 +207,19 @@ export default function SettingsPage() {
       <main className="app-main space-y-6">
         <section className="app-card p-6">
           <h2 className="text-lg font-semibold text-gray-900">Listado principal de contratos</h2>
-          <p className="mt-1 text-sm text-gray-500">Define cuántos contratos quieres ver por página en el dashboard.</p>
+          <p className="mt-1 text-sm text-gray-500">
+            Define cuántos contratos quieres ver por página en el dashboard.
+          </p>
 
           <div className="mt-4 w-full sm:w-64">
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Contratos por página</label>
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Contratos por página
+            </label>
             <select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))} className="field-input">
               {PAGE_SIZE_OPTIONS.map((size) => (
-                <option key={size} value={size}>{size}</option>
+                <option key={size} value={size}>
+                  {size}
+                </option>
               ))}
             </select>
           </div>
@@ -323,7 +227,9 @@ export default function SettingsPage() {
 
         <section className="app-card p-6">
           <h2 className="text-lg font-semibold text-gray-900">Resumen de contratos</h2>
-          <p className="mt-1 text-sm text-gray-500">Elige qué información se muestra en la tabla y en las tarjetas del dashboard.</p>
+          <p className="mt-1 text-sm text-gray-500">
+            Elige qué información se muestra en la tabla y en las tarjetas del dashboard.
+          </p>
 
           <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
             <label className="inline-flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" checked={summaryFields.agent} onChange={() => toggleSummaryField("agent")} />Agente</label>

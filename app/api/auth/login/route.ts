@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { verifyPassword, generateToken } from "@/lib/auth";
+import { attachSessionCookie, generateToken, verifyPassword } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
 
     const token = generateToken(user.id, user.email);
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         message: "Login exitoso",
         user: {
@@ -70,10 +70,13 @@ export async function POST(request: NextRequest) {
           mustChangePassword: user.mustChangePassword,
           isActive: user.isActive,
         },
-        token,
       },
       { status: 200 }
     );
+
+    attachSessionCookie(response, token);
+
+    return response;
   } catch (error) {
     console.error("Error en login:", error);
     return NextResponse.json(

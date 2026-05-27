@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { hashPassword, generateToken } from "@/lib/auth";
+import { attachSessionCookie, generateToken, hashPassword } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -60,14 +60,17 @@ export async function POST(request: NextRequest) {
 
     const token = generateToken(user.id, user.email);
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         message: "Usuario creado exitosamente",
         user,
-        token,
       },
       { status: 201 }
     );
+
+    attachSessionCookie(response, token);
+
+    return response;
   } catch (error) {
     console.error("Error en registro:", error);
     return NextResponse.json(

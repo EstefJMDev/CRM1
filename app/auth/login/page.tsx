@@ -45,9 +45,6 @@ export default function LoginPage() {
         return;
       }
 
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
-
       if (data.user.mustChangePassword) {
         router.push("/dashboard/user-management");
         return;

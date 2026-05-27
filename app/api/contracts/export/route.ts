@@ -3,10 +3,6 @@ import { getAuthUser } from "@/lib/session";
 import { buildContractsWhere } from "@/lib/contracts-query";
 import { NextRequest, NextResponse } from "next/server";
 
-function canViewAllContracts(role: string) {
-  return role === "SUPER_ADMIN" || role === "TENANT_ADMIN";
-}
-
 function escapeXml(value: string) {
   return value
     .replaceAll("&", "&amp;")
@@ -213,7 +209,7 @@ export async function POST(request: NextRequest) {
     const exportMonth = (params.get("exportMonth") || "all").trim();
     const exportWeek = (params.get("exportWeek") || "all").trim();
     const exportCommercializer = (params.get("commercializer") || "all").trim();
-    const baseWhere = buildContractsWhere(user, params, canViewAllContracts);
+    const baseWhere = buildContractsWhere(user, params);
 
     const where = ids.length > 0
       ? { ...baseWhere, id: { in: ids } }

@@ -136,17 +136,7 @@ export default function ContractDetailPage() {
   useEffect(() => {
     const fetchContract = async () => {
       try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          router.push("/auth/login");
-          return;
-        }
-
-        const response = await fetch(`/api/contracts/${contractId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await fetch(`/api/contracts/${contractId}`);
 
         if (!response.ok) {
           if (response.status === 404) {
@@ -180,14 +170,12 @@ export default function ContractDetailPage() {
 
     setInteractionLoading(true);
     try {
-      const token = localStorage.getItem("token");
       const response = await fetch(
         `/api/contracts/${contractId}/interactions`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             type: newInteraction.type,
@@ -228,20 +216,11 @@ export default function ContractDetailPage() {
 
     setUploading(true);
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        router.push("/auth/login");
-        return;
-      }
-
       const formData = new FormData();
       formData.append("file", file);
 
       const response = await fetch(`/api/contracts/${contractId}/documents`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
         body: formData,
       });
 

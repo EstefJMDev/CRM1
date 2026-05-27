@@ -1,7 +1,17 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { NextResponse } from "next/server";
 
-const JWT_SECRET = process.env.NEXTAUTH_SECRET || "your-secret-key";
+const JWT_SECRET = process.env.NEXTAUTH_SECRET;
+export const SESSION_COOKIE_NAME = "crm_session";
+
+function getJwtSecret() {
+  if (!JWT_SECRET) {
+    throw new Error("NEXTAUTH_SECRET no está configurado");
+  }
+
+  return JWT_SECRET;
+}
 
 export async function hashPassword(password: string): Promise<string> {
   const salt = await bcrypt.genSalt(10);
@@ -18,15 +28,35 @@ export async function verifyPassword(
 export function generateToken(userId: string, email: string): string {
   return jwt.sign(
     { userId, email },
-    JWT_SECRET,
+    getJwtSecret(),
     { expiresIn: "24h" }
   );
 }
 
 export function verifyToken(token: string): { userId: string; email: string } | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as { userId: string; email: string };
+    return jwt.verify(token, getJwtSecret()) as { userId: string; email: string };
   } catch {
     return null;
   }
+}
+
+export function attachSessionCookie(response: NextResponse, token: string) {
+  response.cookies.set(SESSION_COOKIE_NAME, token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 24,
+  });
+}
+
+export function clearSessionCookie(response: NextResponse) {
+  response.cookies.set(SESSION_COOKIE_NAME, "", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 0,
+  });
 }
