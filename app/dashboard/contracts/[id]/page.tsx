@@ -67,6 +67,8 @@ interface Contract {
   pdv?: string;
   scheduledCallDate?: string;
   status: string;
+  paymentStatus: "PAID" | "UNPAID";
+  paidAt?: string;
   observations?: string;
   activationDate?: string;
   inactiveDate?: string;
