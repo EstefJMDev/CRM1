@@ -24,9 +24,8 @@ export async function PUT(
     const email = String(payload.email || "").trim().toLowerCase();
     const isActive = Boolean(payload.isActive);
     const roleInput = String(payload.role || "USER");
-    const role = roleInput === "TENANT_ADMIN" || roleInput === "USER"
-      ? roleInput
-      : "USER";
+    const role =
+      roleInput === "TENANT_ADMIN" || roleInput === "USER" ? roleInput : "USER";
 
     if (!name || !email) {
       return NextResponse.json({ error: "Nombre y email son obligatorios" }, { status: 400 });
@@ -34,7 +33,7 @@ export async function PUT(
 
     const targetUser = await prisma.user.findUnique({
       where: { id },
-      select: { id: true, role: true },
+      select: { id: true, role: true, email: true, isActive: true },
     });
 
     if (!targetUser) {
@@ -57,6 +56,10 @@ export async function PUT(
       return NextResponse.json({ error: "Ese email ya esta en uso" }, { status: 400 });
     }
 
+    const shouldRotateSession =
+      targetUser.role !== role ||
+      targetUser.isActive !== isActive;
+
     const updated = await prisma.user.update({
       where: { id },
       data: {
@@ -65,6 +68,7 @@ export async function PUT(
         email,
         role,
         isActive,
+        ...(shouldRotateSession ? { sessionVersion: { increment: 1 } } : {}),
       },
       select: {
         id: true,

@@ -2,7 +2,6 @@
 
 import { useState, FormEvent, ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 
 interface FormData {
   email: string;
@@ -118,9 +117,6 @@ export default function LoginPage() {
           <p className="text-gray-600 text-sm">
             Si no tienes acceso, solicita alta al Super Admin.
           </p>
-          <Link href="/auth/register" className="text-xs text-gray-500 hover:text-gray-700 mt-2 inline-block">
-            Registro inicial del sistema
-          </Link>
         </div>
       </div>
     </div>

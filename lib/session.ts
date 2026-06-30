@@ -21,10 +21,19 @@ export async function getAuthUser(request: NextRequest) {
       lastName: true,
       mustChangePassword: true,
       isActive: true,
+      sessionVersion: true,
     },
   });
 
-  if (!user?.isActive) return null;
+  if (!user?.isActive || user.sessionVersion !== decoded.sessionVersion) return null;
 
-  return user;
+  return {
+    id: user.id,
+    role: user.role,
+    email: user.email,
+    name: user.name,
+    lastName: user.lastName,
+    mustChangePassword: user.mustChangePassword,
+    isActive: user.isActive,
+  };
 }

@@ -1,16 +1,42 @@
 import { prisma } from "@/lib/db";
 import { attachSessionCookie, generateToken, verifyPassword } from "@/lib/auth";
+import { buildRateLimitKey } from "@/lib/request-security";
+import {
+  clearRateLimitFailures,
+  getRateLimitState,
+  registerRateLimitFailure,
+} from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
+
+const LOGIN_RATE_LIMIT = {
+  maxAttempts: 5,
+  windowMs: 10 * 60 * 1000,
+  blockMs: 15 * 60 * 1000,
+};
 
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();
     const normalizedEmail = String(email || "").trim().toLowerCase();
+    const rateLimitKey = buildRateLimitKey("login", request, normalizedEmail);
 
     if (!normalizedEmail || !password) {
       return NextResponse.json(
-        { error: "Email y contraseña son requeridos" },
+        { error: "Email y contrasena son requeridos" },
         { status: 400 }
+      );
+    }
+
+    const rateLimitState = getRateLimitState(rateLimitKey, LOGIN_RATE_LIMIT);
+    if (rateLimitState.blocked) {
+      return NextResponse.json(
+        { error: "Demasiados intentos. Intentalo de nuevo mas tarde." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(rateLimitState.retryAfterSeconds),
+          },
+        }
       );
     }
 
@@ -25,12 +51,14 @@ export async function POST(request: NextRequest) {
         mustChangePassword: true,
         isActive: true,
         password: true,
+        sessionVersion: true,
       },
     });
 
     if (!user) {
+      registerRateLimitFailure(rateLimitKey, LOGIN_RATE_LIMIT);
       return NextResponse.json(
-        { error: "Credenciales inválidas" },
+        { error: "Credenciales invalidas" },
         { status: 401 }
       );
     }
@@ -45,18 +73,21 @@ export async function POST(request: NextRequest) {
     const isPasswordValid = await verifyPassword(password, user.password);
 
     if (!isPasswordValid) {
+      registerRateLimitFailure(rateLimitKey, LOGIN_RATE_LIMIT);
       return NextResponse.json(
-        { error: "Credenciales inválidas" },
+        { error: "Credenciales invalidas" },
         { status: 401 }
       );
     }
+
+    clearRateLimitFailures(rateLimitKey);
 
     await prisma.user.update({
       where: { id: user.id },
       data: { lastLoginAt: new Date() },
     });
 
-    const token = generateToken(user.id, user.email);
+    const token = generateToken(user.id, user.email, user.sessionVersion);
 
     const response = NextResponse.json(
       {

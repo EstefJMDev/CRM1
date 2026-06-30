@@ -10,6 +10,7 @@ interface FormData {
   name: string;
   lastName: string;
   confirmPassword: string;
+  setupToken: string;
 }
 
 export default function RegisterPage() {
@@ -22,6 +23,7 @@ export default function RegisterPage() {
     name: "",
     lastName: "",
     confirmPassword: "",
+    setupToken: "",
   });
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -57,6 +59,7 @@ export default function RegisterPage() {
           password: formData.password,
           name: formData.name,
           lastName: formData.lastName,
+          setupToken: formData.setupToken,
         }),
       });
 
@@ -92,6 +95,7 @@ export default function RegisterPage() {
           <input id="name" type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Nombre" required className="field-input" />
           <input id="lastName" type="text" name="lastName" value={formData.lastName} onChange={handleChange} placeholder="Apellidos" className="field-input" />
           <input id="email" type="email" name="email" value={formData.email} onChange={handleChange} placeholder="tu@email.com" required className="field-input" />
+          <input id="setupToken" type="text" name="setupToken" value={formData.setupToken} onChange={handleChange} placeholder="Token de configuración inicial (opcional)" className="field-input" />
           <input id="password" type="password" name="password" value={formData.password} onChange={handleChange} placeholder="Contraseña" required className="field-input" />
           <input id="confirmPassword" type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} placeholder="Confirmar contraseña" required className="field-input" />
 

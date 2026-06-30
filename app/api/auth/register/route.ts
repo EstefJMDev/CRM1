@@ -1,13 +1,26 @@
 import { prisma } from "@/lib/db";
 import { attachSessionCookie, generateToken, hashPassword } from "@/lib/auth";
+import { buildRateLimitKey } from "@/lib/request-security";
+import {
+  clearRateLimitFailures,
+  getRateLimitState,
+  registerRateLimitFailure,
+} from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
+
+const REGISTER_RATE_LIMIT = {
+  maxAttempts: 3,
+  windowMs: 10 * 60 * 1000,
+  blockMs: 30 * 60 * 1000,
+};
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, name, lastName } = await request.json();
+    const { email, password, name, lastName, setupToken } = await request.json();
     const normalizedEmail = String(email || "").trim().toLowerCase();
     const normalizedName = String(name || "").trim();
     const normalizedLastName = String(lastName || "").trim() || null;
+    const rateLimitKey = buildRateLimitKey("register", request, normalizedEmail);
 
     if (!normalizedEmail || !password || !normalizedName) {
       return NextResponse.json(
@@ -16,11 +29,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const rateLimitState = getRateLimitState(rateLimitKey, REGISTER_RATE_LIMIT);
+    if (rateLimitState.blocked) {
+      return NextResponse.json(
+        { error: "Demasiados intentos. Intentalo de nuevo mas tarde." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(rateLimitState.retryAfterSeconds),
+          },
+        }
+      );
+    }
+
     const existingUser = await prisma.user.findUnique({
       where: { email: normalizedEmail },
     });
 
     if (existingUser) {
+      registerRateLimitFailure(rateLimitKey, REGISTER_RATE_LIMIT);
       return NextResponse.json(
         { error: "El usuario ya existe" },
         { status: 400 }
@@ -31,6 +58,15 @@ export async function POST(request: NextRequest) {
     if (usersCount > 0) {
       return NextResponse.json(
         { error: "El registro directo esta deshabilitado. Contacta con Super Admin." },
+        { status: 403 }
+      );
+    }
+
+    const bootstrapToken = process.env.INITIAL_SUPER_ADMIN_SETUP_TOKEN;
+    if (bootstrapToken && String(setupToken || "") !== bootstrapToken) {
+      registerRateLimitFailure(rateLimitKey, REGISTER_RATE_LIMIT);
+      return NextResponse.json(
+        { error: "Token de configuracion inicial invalido" },
         { status: 403 }
       );
     }
@@ -55,15 +91,26 @@ export async function POST(request: NextRequest) {
         role: true,
         mustChangePassword: true,
         isActive: true,
+        sessionVersion: true,
       },
     });
 
-    const token = generateToken(user.id, user.email);
+    clearRateLimitFailures(rateLimitKey);
+
+    const token = generateToken(user.id, user.email, user.sessionVersion);
 
     const response = NextResponse.json(
       {
         message: "Usuario creado exitosamente",
-        user,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          lastName: user.lastName,
+          role: user.role,
+          mustChangePassword: user.mustChangePassword,
+          isActive: user.isActive,
+        },
       },
       { status: 201 }
     );

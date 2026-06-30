@@ -1,6 +1,11 @@
 import { prisma } from "@/lib/db";
 import { canViewAllContracts } from "@/lib/contracts";
+import { withProtectedDocumentUrl } from "@/lib/documents";
 import { getAuthUser } from "@/lib/session";
+import {
+  isDangerousUpload,
+  sanitizeFileName,
+} from "@/lib/request-security";
 import { NextRequest, NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import path from "node:path";
@@ -40,29 +45,38 @@ export async function POST(
 
     if (!(file instanceof File)) {
       return NextResponse.json(
-        { error: "Archivo no válido" },
+        { error: "Archivo no valido" },
         { status: 400 }
       );
     }
 
     if (file.size === 0 || file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { error: "Tamaño de archivo inválido (máximo 10MB)" },
+        { error: "Tamano de archivo invalido (maximo 10MB)" },
         { status: 400 }
       );
     }
 
-    const extension = path.extname(file.name) || "";
+    if (isDangerousUpload(file.name, file.type)) {
+      return NextResponse.json(
+        { error: "Ese tipo de archivo no esta permitido" },
+        { status: 400 }
+      );
+    }
+
+    const safeName = sanitizeFileName(file.name);
+    const extension = path.extname(safeName) || "";
     const blobKey = `contracts/${id}/${randomUUID()}${extension}`;
 
     const blob = await put(blobKey, file, {
       access: "public",
       contentType: file.type || "application/octet-stream",
+      addRandomSuffix: false,
     });
 
     const document = await prisma.document.create({
       data: {
-        name: file.name,
+        name: safeName,
         url: blob.url,
         mimeType: file.type || "application/octet-stream",
         size: file.size,
@@ -70,7 +84,7 @@ export async function POST(
       },
     });
 
-    return NextResponse.json(document, { status: 201 });
+    return NextResponse.json(withProtectedDocumentUrl(document), { status: 201 });
   } catch (error) {
     console.error("Error subiendo documento:", error);
     return NextResponse.json(
@@ -79,4 +93,3 @@ export async function POST(
     );
   }
 }
-

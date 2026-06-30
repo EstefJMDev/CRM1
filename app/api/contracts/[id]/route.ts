@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { withProtectedDocumentUrls } from "@/lib/documents";
 import { getAuthUser } from "@/lib/session";
 import {
   canViewAllContracts,
@@ -67,7 +68,7 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(contract, { status: 200 });
+    return NextResponse.json(withProtectedDocumentUrls(contract), { status: 200 });
   } catch (error) {
     console.error("Error obteniendo contrato:", error);
     return NextResponse.json(
@@ -172,7 +173,7 @@ export async function PUT(
       });
     });
 
-    return NextResponse.json(updatedContract, { status: 200 });
+    return NextResponse.json(withProtectedDocumentUrls(updatedContract), { status: 200 });
   } catch (error) {
     console.error("Error actualizando contrato:", error);
     return NextResponse.json(

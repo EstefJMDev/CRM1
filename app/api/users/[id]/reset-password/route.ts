@@ -51,6 +51,7 @@ export async function PUT(
       data: {
         password,
         mustChangePassword: true,
+        sessionVersion: { increment: 1 },
       },
     });
 

@@ -5,6 +5,12 @@ import { NextResponse } from "next/server";
 const JWT_SECRET = process.env.NEXTAUTH_SECRET;
 export const SESSION_COOKIE_NAME = "crm_session";
 
+type SessionTokenPayload = {
+  userId: string;
+  email: string;
+  sessionVersion: number;
+};
+
 function getJwtSecret() {
   if (!JWT_SECRET) {
     throw new Error("NEXTAUTH_SECRET no está configurado");
@@ -25,17 +31,31 @@ export async function verifyPassword(
   return bcrypt.compare(password, hashedPassword);
 }
 
-export function generateToken(userId: string, email: string): string {
+export function generateToken(
+  userId: string,
+  email: string,
+  sessionVersion: number
+): string {
   return jwt.sign(
-    { userId, email },
+    { userId, email, sessionVersion },
     getJwtSecret(),
     { expiresIn: "24h" }
   );
 }
 
-export function verifyToken(token: string): { userId: string; email: string } | null {
+export function verifyToken(token: string): SessionTokenPayload | null {
   try {
-    return jwt.verify(token, getJwtSecret()) as { userId: string; email: string };
+    const decoded = jwt.verify(token, getJwtSecret()) as Partial<SessionTokenPayload>;
+    if (!decoded.userId || !decoded.email) {
+      return null;
+    }
+
+    return {
+      userId: decoded.userId,
+      email: decoded.email,
+      sessionVersion:
+        typeof decoded.sessionVersion === "number" ? decoded.sessionVersion : 0,
+    };
   } catch {
     return null;
   }
