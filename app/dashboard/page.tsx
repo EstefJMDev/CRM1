@@ -670,7 +670,7 @@ export default function DashboardPage() {
       </aside>
 
       <div className="min-w-0 flex-1">
-        <header className="app-header">
+        <header className="app-header relative z-30">
           <div className="app-header-inner">
             <div>
               <button
@@ -693,8 +693,8 @@ export default function DashboardPage() {
                   className="relative inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-700 transition hover:bg-slate-100"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 1-5.714 0A2 2 0 0 1 7.4 15.094V10a4.6 4.6 0 1 1 9.2 0v5.094a2 2 0 0 1-1.743 1.988Z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 18.5a2.25 2.25 0 0 0 4.5 0" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.75a4.25 4.25 0 0 0-4.25 4.25v2.14c0 .92-.27 1.81-.78 2.58l-1.12 1.7a1 1 0 0 0 .83 1.55h10.64a1 1 0 0 0 .83-1.55l-1.12-1.7a4.63 4.63 0 0 1-.78-2.58V9A4.25 4.25 0 0 0 12 4.75Z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.25 18.25a1.75 1.75 0 0 0 3.5 0" />
                   </svg>
                   {unreadConsentNotifications > 0 && (
                     <span className="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
@@ -704,7 +704,7 @@ export default function DashboardPage() {
                 </button>
 
                 {isNotificationsOpen && (
-                  <div className="absolute right-0 z-20 mt-2 w-[360px] max-w-[88vw] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+                  <div className="absolute right-0 z-[80] mt-2 w-[360px] max-w-[88vw] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
                     <div className="border-b border-slate-200 px-4 py-3">
                       <p className="text-sm font-semibold text-slate-900">Consentimientos aceptados</p>
                       <p className="mt-1 text-xs text-slate-500">Avisos recientes cuando un cliente acepta su consentimiento.</p>
