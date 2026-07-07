@@ -35,7 +35,12 @@ export async function GET(request: NextRequest) {
     };
 
     if (status !== "all") {
-      where.status = status === "APPROVED" ? "APPROVED" : "PENDING";
+      where.status =
+        status === "APPROVED"
+          ? "APPROVED"
+          : status === "SUPERSEDED"
+            ? "SUPERSEDED"
+            : "PENDING";
     }
 
     if (agentId !== "all" && canViewAllContracts(user.role)) {

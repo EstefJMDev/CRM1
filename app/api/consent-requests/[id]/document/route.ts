@@ -34,6 +34,13 @@ export async function GET(
       return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
     }
 
+    if (consentRequest.status !== "APPROVED") {
+      return NextResponse.json(
+        { error: "El documento solo esta disponible para consentimientos aprobados" },
+        { status: 400 }
+      );
+    }
+
     const pdfBytes = await renderConsentDocumentPdf({
       snapshot: consentRequest.snapshot as never,
       signerName: consentRequest.signerName,

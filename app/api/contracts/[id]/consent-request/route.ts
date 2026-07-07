@@ -49,6 +49,8 @@ export async function POST(
       );
     }
 
+    const recipientEmail = contract.clientEmail;
+
     const token = generateConsentToken();
     const snapshot = buildConsentSnapshot({
       contractId: contract.id,
@@ -68,21 +70,33 @@ export async function POST(
     const consentLink = buildConsentLink(token, request.nextUrl.origin);
 
     await sendConsentEmail({
-      to: contract.clientEmail,
+      to: recipientEmail,
       consentLink,
       customerName: snapshot.clientFullName,
       contractNumber: contract.contractNumber,
     });
 
-    const consentRequest = await prisma.consentRequest.create({
-      data: {
-        token,
-        recipientEmail: contract.clientEmail,
-        snapshot,
-        requestedBy: `${user.name} ${user.lastName || ""}`.trim() || user.email,
-        contractId: contract.id,
-        signerIp: getClientIpAddress(request),
-      },
+    const consentRequest = await prisma.$transaction(async (tx) => {
+      await tx.consentRequest.updateMany({
+        where: {
+          contractId: contract.id,
+          status: "PENDING",
+        },
+        data: {
+          status: "SUPERSEDED",
+        },
+      });
+
+      return tx.consentRequest.create({
+        data: {
+          token,
+          recipientEmail,
+          snapshot,
+          requestedBy: `${user.name} ${user.lastName || ""}`.trim() || user.email,
+          contractId: contract.id,
+          signerIp: getClientIpAddress(request),
+        },
+      });
     });
 
     return NextResponse.json(

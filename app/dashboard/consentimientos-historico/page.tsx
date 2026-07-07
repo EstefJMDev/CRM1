@@ -11,7 +11,7 @@ type AgentOption = {
 
 type ConsentRequestItem = {
   id: string;
-  status: "PENDING" | "APPROVED";
+  status: "PENDING" | "APPROVED" | "SUPERSEDED";
   recipientEmail: string;
   requestedBy: string;
   requestedAt: string;
@@ -36,6 +36,7 @@ type ConsentRequestItem = {
 const STATUS_LABELS: Record<string, string> = {
   PENDING: "Enviada a la espera",
   APPROVED: "Consentimiento aprobado",
+  SUPERSEDED: "Enlace invalidado",
 };
 
 function formatDate(date?: string | null) {
@@ -151,6 +152,7 @@ export default function ConsentimientosHistoricoPage() {
                 <option value="all">Todos</option>
                 <option value="PENDING">Enviada a la espera</option>
                 <option value="APPROVED">Consentimiento aprobado</option>
+                <option value="SUPERSEDED">Enlace invalidado</option>
               </select>
             </div>
             <div className="flex items-end justify-start md:col-span-2 md:justify-end">
@@ -199,7 +201,7 @@ export default function ConsentimientosHistoricoPage() {
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-700">{item.requestedBy || "-"}</td>
                     <td className="px-4 py-3 text-sm text-slate-700">
-                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${item.status === "APPROVED" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>
+                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${item.status === "APPROVED" ? "bg-emerald-100 text-emerald-800" : item.status === "SUPERSEDED" ? "bg-slate-200 text-slate-700" : "bg-amber-100 text-amber-800"}`}>
                         {STATUS_LABELS[item.status] || item.status}
                       </span>
                     </td>
@@ -207,14 +209,20 @@ export default function ConsentimientosHistoricoPage() {
                     <td className="px-4 py-3 text-sm text-slate-700">{formatDate(item.requestedAt)}</td>
                     <td className="px-4 py-3 text-sm text-slate-700">{formatDate(item.approvedAt)}</td>
                     <td className="px-4 py-3 text-sm text-slate-700">
-                      <a
-                        href={`/api/consent-requests/${item.id}/document`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="btn-secondary px-3 py-2 text-xs"
-                      >
-                        Descargar
-                      </a>
+                      {item.status === "APPROVED" ? (
+                        <a
+                          href={`/api/consent-requests/${item.id}/document`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="btn-secondary px-3 py-2 text-xs"
+                        >
+                          Descargar
+                        </a>
+                      ) : (
+                        <span className="inline-flex cursor-not-allowed rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-xs font-medium text-slate-400">
+                          Descargar
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}

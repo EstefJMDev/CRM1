@@ -46,7 +46,7 @@ export default async function ConsentPage({
 
         <ConsentAcceptForm
           token={token}
-          alreadyApproved={consentRequest.status === "APPROVED"}
+          status={consentRequest.status}
           defaultSignerName={snapshot.clientFullName}
         />
       </div>

@@ -46,13 +46,14 @@ export type ConsentDocumentData = {
   snapshot: ConsentSnapshot;
   signerName?: string | null;
   approvedAt?: string | Date | null;
-  status?: "PENDING" | "APPROVED";
+  status?: "PENDING" | "APPROVED" | "SUPERSEDED";
 };
 
 export const CONSENT_STATUS_LABELS = {
   NOT_SENT: "Solicitud no enviada",
   PENDING: "Enviada a la espera",
   APPROVED: "Consentimiento aprobado",
+  SUPERSEDED: "Enlace invalidado por una solicitud mas reciente",
 } as const;
 
 export function generateConsentToken() {
@@ -110,7 +111,7 @@ export function buildConsentSnapshot(contract: ContractConsentSnapshotInput): Co
     companyAddress: owner.address,
     companyPhone: owner.phone,
     companyEmail: owner.email,
-    locationLabel: owner.location,
+    locationLabel: "España",
     requestedDateLabel: now.toLocaleDateString("es-ES"),
     allowedPurposes: [
       "Solicitar, comparar y tramitar ofertas de suministro eléctrico o de gas en mi nombre.",
@@ -154,7 +155,11 @@ export function renderConsentDocumentHtml({
   const ownerEmail = snapshot.companyEmail || owner.email;
 
   const statusLabel =
-    status === "APPROVED" ? "Consentimiento aprobado" : "Solicitud pendiente de aprobación";
+    status === "APPROVED"
+      ? "Consentimiento aprobado"
+      : status === "SUPERSEDED"
+        ? "Enlace invalidado por una solicitud mas reciente"
+        : "Solicitud pendiente de aprobación";
 
   return `<!DOCTYPE html>
   <html lang="es">
@@ -179,7 +184,7 @@ export function renderConsentDocumentHtml({
         .checklist { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
         .checklist li { display: flex; gap: 10px; align-items: flex-start; }
         .check { min-width: 22px; height: 22px; border: 1px solid #334155; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
-        .status { display: inline-flex; margin-top: 10px; padding: 7px 12px; border-radius: 999px; background: ${status === "APPROVED" ? "#dcfce7" : "#fef3c7"}; color: ${status === "APPROVED" ? "#166534" : "#92400e"}; font-size: 13px; font-weight: 700; }
+        .status { display: inline-flex; margin-top: 10px; padding: 7px 12px; border-radius: 999px; background: ${status === "APPROVED" ? "#dcfce7" : status === "SUPERSEDED" ? "#e2e8f0" : "#fef3c7"}; color: ${status === "APPROVED" ? "#166534" : status === "SUPERSEDED" ? "#334155" : "#92400e"}; font-size: 13px; font-weight: 700; }
         .intro { margin: 0; font-size: 15px; line-height: 1.7; }
         .legal { margin: 12px 0 0; line-height: 1.7; }
         .summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 18px; }
@@ -266,7 +271,7 @@ export function renderConsentDocumentHtml({
         <section class="section">
           <h2>Declaración y firma</h2>
           <p>El firmante declara que los datos facilitados son veraces, que actúa como titular del suministro o representante autorizado y que ha comprendido el alcance de este consentimiento.</p>
-          <p>En ${escapeHtml(snapshot.locationLabel)}, a ${escapeHtml(snapshot.requestedDateLabel)}</p>
+          <p>En España, a ${escapeHtml(snapshot.requestedDateLabel)}</p>
         </section>
       </main>
     </body>
@@ -791,10 +796,18 @@ export async function renderConsentDocumentPdf({
       }) + 6
     : 0;
   const declarationSectionHeight = 24 + 20 + declarationHeight + 12 + 12 + acceptanceHeight + 14;
+  let declarationPage = page;
+  let declarationTopY = y;
 
-  page.drawRectangle({
+  // Keep the final signature section visible by moving it to a new page when needed.
+  if (declarationTopY - declarationSectionHeight < 54) {
+    declarationPage = pdfDoc.addPage([595.28, 841.89]);
+    declarationTopY = declarationPage.getHeight() - 72;
+  }
+
+  declarationPage.drawRectangle({
     x: margin,
-    y: y - declarationSectionHeight,
+    y: declarationTopY - declarationSectionHeight,
     width: contentWidth,
     height: declarationSectionHeight,
     color: rgb(1, 1, 1),
@@ -802,19 +815,19 @@ export async function renderConsentDocumentPdf({
     borderWidth: 1,
   });
 
-  page.drawText("Declaración y firma", {
+  declarationPage.drawText("Declaración y firma", {
     x: margin + sectionPadding,
-    y: y - 20,
+    y: declarationTopY - 20,
     size: 12,
     font: boldFont,
     color: dark,
   });
 
-  y = drawWrappedText({
-    page,
+  const declarationBodyY = drawWrappedText({
+    page: declarationPage,
     text: declarationText,
     x: margin + sectionPadding,
-    y: y - 42,
+    y: declarationTopY - 42,
     maxWidth: contentWidth - sectionPadding * 2,
     font: regularFont,
     size: 9,
@@ -822,9 +835,9 @@ export async function renderConsentDocumentPdf({
     lineHeight: 12,
   }) - 8;
 
-  page.drawText(`En ${snapshot.locationLabel}, a ${snapshot.requestedDateLabel}`, {
+  declarationPage.drawText(`En España, a ${snapshot.requestedDateLabel}`, {
     x: margin + sectionPadding,
-    y,
+    y: declarationBodyY,
     size: 9,
     font: regularFont,
     color: dark,
@@ -832,10 +845,10 @@ export async function renderConsentDocumentPdf({
 
   if (acceptanceText) {
     drawWrappedText({
-      page,
+      page: declarationPage,
       text: acceptanceText,
       x: margin + sectionPadding,
-      y: y - 18,
+      y: declarationBodyY - 18,
       maxWidth: contentWidth - sectionPadding * 2,
       font: regularFont,
       size: 8.5,

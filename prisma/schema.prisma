@@ -183,4 +183,5 @@ enum PaymentStatus {
 enum ConsentRequestStatus {
   PENDING
   APPROVED
+  SUPERSEDED
 }

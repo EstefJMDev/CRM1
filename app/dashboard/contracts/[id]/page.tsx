@@ -33,7 +33,7 @@ interface StatusHistoryItem {
 
 interface ConsentRequest {
   id: string;
-  status: "PENDING" | "APPROVED";
+  status: "PENDING" | "APPROVED" | "SUPERSEDED";
   recipientEmail: string;
   requestedAt: string;
   approvedAt?: string | null;
@@ -352,6 +352,8 @@ export default function ContractDetailPage() {
   const consentStatusLabel =
     latestConsentRequest?.status === "APPROVED"
       ? "Consentimiento aprobado"
+      : latestConsentRequest?.status === "SUPERSEDED"
+      ? "Enlace invalidado"
       : latestConsentRequest?.status === "PENDING"
       ? "Enviada a la espera"
       : "Solicitud no enviada";
@@ -779,7 +781,11 @@ export default function ContractDetailPage() {
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <p className="text-sm font-semibold text-slate-900">
-                            {request.status === "APPROVED" ? "Consentimiento aprobado" : "Solicitud enviada"}
+                            {request.status === "APPROVED"
+                              ? "Consentimiento aprobado"
+                              : request.status === "SUPERSEDED"
+                                ? "Enlace invalidado"
+                                : "Solicitud enviada"}
                           </p>
                           <p className="text-xs text-slate-500">
                             Enviado el {new Date(request.requestedAt).toLocaleString("es-ES")}
@@ -787,6 +793,8 @@ export default function ContractDetailPage() {
                           <p className="text-xs text-slate-500">
                             {request.approvedAt
                               ? `Aprobado el ${new Date(request.approvedAt).toLocaleString("es-ES")}`
+                              : request.status === "SUPERSEDED"
+                                ? "Invalidado al generarse una solicitud mas reciente"
                               : "Pendiente de aprobacion"}
                           </p>
                         </div>

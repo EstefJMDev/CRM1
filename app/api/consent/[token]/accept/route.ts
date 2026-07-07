@@ -41,6 +41,15 @@ export async function POST(
       );
     }
 
+    if (consentRequest.status === "SUPERSEDED") {
+      return NextResponse.json(
+        {
+          error: "Este enlace ya no es valido porque existe una solicitud mas reciente",
+        },
+        { status: 409 }
+      );
+    }
+
     const updated = await prisma.consentRequest.update({
       where: { token },
       data: {

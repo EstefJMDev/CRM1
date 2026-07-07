@@ -4,20 +4,21 @@ import { useState } from "react";
 
 export function ConsentAcceptForm({
   token,
-  alreadyApproved,
+  status,
   defaultSignerName,
 }: {
   token: string;
-  alreadyApproved: boolean;
+  status: "PENDING" | "APPROVED" | "SUPERSEDED";
   defaultSignerName: string;
 }) {
   const [signerName, setSignerName] = useState(defaultSignerName);
   const [accepted, setAccepted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
-  const [approved, setApproved] = useState(alreadyApproved);
+  const [approved, setApproved] = useState(status === "APPROVED");
+  const [superseded, setSuperseded] = useState(status === "SUPERSEDED");
   const [downloadUrl, setDownloadUrl] = useState(
-    alreadyApproved ? `/api/consent/${token}/document` : ""
+    status === "APPROVED" ? `/api/consent/${token}/document` : ""
   );
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
@@ -50,6 +51,9 @@ export function ConsentAcceptForm({
 
       if (!response.ok) {
         setMessage(data.error || "No se pudo registrar el consentimiento.");
+        if (response.status === 409) {
+          setSuperseded(true);
+        }
         return;
       }
 
@@ -97,6 +101,10 @@ export function ConsentAcceptForm({
       {approved ? (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-900">
           Consentimiento enviado correctamente.
+        </div>
+      ) : superseded ? (
+        <div className="rounded-2xl border border-slate-300 bg-slate-100 px-5 py-4 text-sm text-slate-800">
+          Este enlace ya no es valido porque existe una solicitud mas reciente. Si lo necesitas, pide que te reenvien el ultimo email.
         </div>
       ) : (
         <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
