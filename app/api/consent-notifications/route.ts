@@ -11,10 +11,10 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const requestedLimit = Number(searchParams.get("limit") || "8");
+    const requestedLimit = Number(searchParams.get("limit") || "10");
     const take = Number.isFinite(requestedLimit)
-      ? Math.min(Math.max(requestedLimit, 1), 20)
-      : 8;
+      ? Math.min(Math.max(requestedLimit, 1), 10)
+      : 10;
 
     const items = await prisma.consentRequest.findMany({
       where: {

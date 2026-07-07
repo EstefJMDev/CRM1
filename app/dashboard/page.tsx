@@ -301,7 +301,7 @@ export default function DashboardPage() {
 
   const fetchConsentNotifications = useCallback(async () => {
     try {
-      const response = await fetch("/api/consent-notifications?limit=12", {
+      const response = await fetch("/api/consent-notifications?limit=10", {
         cache: "no-store",
       });
 
@@ -704,13 +704,12 @@ export default function DashboardPage() {
                 </button>
 
                 {isNotificationsOpen && (
-                  <div className="absolute right-0 z-[80] mt-2 w-[360px] max-w-[88vw] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+                  <div className="fixed left-3 right-3 top-20 z-[80] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-[430px] sm:max-w-[92vw]">
                     <div className="border-b border-slate-200 px-4 py-3">
-                      <p className="text-sm font-semibold text-slate-900">Consentimientos aceptados</p>
-                      <p className="mt-1 text-xs text-slate-500">Avisos recientes cuando un cliente acepta su consentimiento.</p>
+                      <p className="text-sm font-semibold text-slate-900">Notificaciones recientes</p>
                     </div>
                     {consentNotifications.length > 0 ? (
-                      <div className="max-h-[420px] overflow-y-auto">
+                      <div className="max-h-[60vh] overflow-y-auto sm:max-h-[520px]">
                         {consentNotifications.map((notification) => {
                           const clientFullName = `${notification.contract.clientName} ${notification.contract.clientLastName || ""}`.trim();
                           return (
@@ -718,13 +717,13 @@ export default function DashboardPage() {
                               key={notification.id}
                               href={`/dashboard/contracts/${notification.contract.id}`}
                               onClick={() => setIsNotificationsOpen(false)}
-                              className="block border-b border-slate-100 px-4 py-3 transition hover:bg-slate-50 last:border-b-0"
+                              className="block border-b border-slate-100 px-4 py-3 transition hover:bg-slate-50 last:border-b-0 sm:px-5 sm:py-4"
                             >
-                              <p className="text-sm font-semibold text-slate-900">
-                                Talm {notification.contract.contractNumber}
+                              <p className="text-sm font-semibold text-slate-900 sm:text-[15px]">
+                                Contrato {notification.contract.contractNumber}
                               </p>
-                              <p className="mt-1 text-sm text-slate-700">{clientFullName}</p>
-                              <p className="mt-1 text-xs text-slate-500">
+                              <p className="mt-1 text-sm text-slate-700 sm:text-[15px]">{clientFullName}</p>
+                              <p className="mt-1 text-xs text-slate-500 sm:text-sm">
                                 Aceptado el {new Date(notification.approvedAt).toLocaleString("es-ES")}
                               </p>
                             </Link>
@@ -732,8 +731,8 @@ export default function DashboardPage() {
                         })}
                       </div>
                     ) : (
-                      <div className="px-4 py-6 text-sm text-slate-500">
-                        No hay consentimientos aceptados recientes.
+                      <div className="px-4 py-6 text-sm text-slate-500 sm:px-5">
+                        No hay notificaciones recientes.
                       </div>
                     )}
                   </div>
