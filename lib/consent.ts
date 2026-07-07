@@ -574,7 +574,9 @@ export async function renderConsentDocumentPdf({
 
   y = cardTop - cardHeight - 24;
 
-  const summaryWidth = (contentWidth - 24) / 3;
+  const summaryContainerWidth = contentWidth - sectionPadding * 2;
+  const summaryGap = 12;
+  const summaryWidth = (summaryContainerWidth - summaryGap * 2) / 3;
   const summaryItems = [
     ["Contrato", snapshot.contractNumber],
     ["Fecha de solicitud", snapshot.requestedDateLabel],
@@ -674,7 +676,7 @@ export async function renderConsentDocumentPdf({
       color: accent,
       lineHeight: 10,
     });
-    summaryX += summaryWidth + 12;
+    summaryX += summaryWidth + summaryGap;
   }
 
   y -= summaryHeight + 18;
