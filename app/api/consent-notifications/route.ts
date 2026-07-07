@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
       where: {
         status: "APPROVED",
         approvedAt: { not: null },
-        ...(canViewAllContracts(user.role) ? {} : { contract: { userId: user.id } }),
+        ...(canViewAllContracts(user.role) ? {} : { contract: { is: { userId: user.id } } }),
       },
       orderBy: { approvedAt: "desc" },
       take,

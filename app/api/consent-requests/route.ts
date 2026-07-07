@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     const phoneVariants = buildPhoneSearchVariants(search);
 
     const where: Prisma.ConsentRequestWhereInput = {
-      ...(canViewAllContracts(user.role) ? {} : { contract: { userId: user.id } }),
+      ...(canViewAllContracts(user.role) ? {} : { contract: { is: { userId: user.id } } }),
     };
 
     if (status !== "all") {
@@ -40,8 +40,9 @@ export async function GET(request: NextRequest) {
 
     if (agentId !== "all" && canViewAllContracts(user.role)) {
       where.contract = {
-        ...(where.contract || {}),
-        userId: agentId,
+        is: {
+          userId: agentId,
+        },
       };
     }
 
