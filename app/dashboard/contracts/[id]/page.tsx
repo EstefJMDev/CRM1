@@ -31,6 +31,15 @@ interface StatusHistoryItem {
   createdAt: string;
 }
 
+interface ConsentRequest {
+  id: string;
+  status: "PENDING" | "APPROVED";
+  recipientEmail: string;
+  requestedAt: string;
+  approvedAt?: string | null;
+  createdAt: string;
+}
+
 interface Contract {
   id: string;
   contractNumber: string;
@@ -76,6 +85,7 @@ interface Contract {
   updatedAt: string;
   interactions: Interaction[];
   documents: Document[];
+  consentRequests?: ConsentRequest[];
   statusHistory?: StatusHistoryItem[];
   user: { name: string; email: string };
 }
@@ -132,6 +142,7 @@ export default function ContractDetailPage() {
   const [showInteractionForm, setShowInteractionForm] = useState(false);
   const [interactionLoading, setInteractionLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [sendingConsent, setSendingConsent] = useState(false);
 
   useEffect(() => {
     const fetchContract = async () => {
@@ -245,6 +256,39 @@ export default function ContractDetailPage() {
     }
   };
 
+  const handleSendConsent = async () => {
+    if (!contract?.clientEmail) {
+      alert("Este cliente no tiene email informado");
+      return;
+    }
+
+    setSendingConsent(true);
+    try {
+      const response = await fetch(`/api/contracts/${contractId}/consent-request`, {
+        method: "POST",
+      });
+      const data = (await response.json()) as ConsentRequest | { error?: string };
+
+      if (!response.ok) {
+        throw new Error("error" in data ? data.error || "No se pudo enviar la solicitud" : "No se pudo enviar la solicitud");
+      }
+
+      setContract((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          consentRequests: [data as ConsentRequest, ...(prev.consentRequests || [])],
+        };
+      });
+      alert("Solicitud de consentimiento enviada");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "No se pudo enviar la solicitud");
+      console.error(err);
+    } finally {
+      setSendingConsent(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="app-shell app-main">
@@ -283,6 +327,14 @@ export default function ContractDetailPage() {
   }
 
   const importedContract = isImportedContract(contract);
+  const consentRequests = contract.consentRequests || [];
+  const latestConsentRequest = consentRequests[0];
+  const consentStatusLabel =
+    latestConsentRequest?.status === "APPROVED"
+      ? "Consentimiento aprobado"
+      : latestConsentRequest?.status === "PENDING"
+      ? "Enviada a la espera"
+      : "Solicitud no enviada";
 
   return (
     <div className="app-shell">
@@ -659,6 +711,78 @@ export default function ContractDetailPage() {
               ) : (
                 <p className="text-sm text-gray-600">Sin documentos todavía</p>
               )}
+            </div>
+
+            <div className="app-card p-6 mb-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Consentimiento</h3>
+              <div className="space-y-3 text-sm text-slate-700">
+                <div>
+                  <p className="text-gray-500">Total de consentimientos</p>
+                  <p className="font-medium text-slate-900">{consentRequests.length}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Estado actual</p>
+                  <p className="font-medium text-slate-900">{consentStatusLabel}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Email destino</p>
+                  <p className="font-medium text-slate-900">{contract.clientEmail || "-"}</p>
+                </div>
+                {latestConsentRequest?.requestedAt ? (
+                  <div>
+                    <p className="text-gray-500">Ultimo envio</p>
+                    <p className="font-medium text-slate-900">{new Date(latestConsentRequest.requestedAt).toLocaleString("es-ES")}</p>
+                  </div>
+                ) : null}
+                {latestConsentRequest?.approvedAt ? (
+                  <div>
+                    <p className="text-gray-500">Aprobado el</p>
+                    <p className="font-medium text-slate-900">{new Date(latestConsentRequest.approvedAt).toLocaleString("es-ES")}</p>
+                  </div>
+                ) : null}
+              </div>
+
+              <button
+                type="button"
+                onClick={handleSendConsent}
+                disabled={sendingConsent || !contract.clientEmail}
+                className="btn-primary mt-4 w-full disabled:bg-slate-400"
+              >
+                {sendingConsent ? "Enviando..." : latestConsentRequest ? "Reenviar solicitud de consentimiento" : "Enviar solicitud de consentimiento"}
+              </button>
+
+              {consentRequests.length > 0 ? (
+                <div className="mt-5 space-y-3 border-t border-slate-200 pt-4">
+                  <p className="text-sm font-semibold text-slate-800">Historial del contrato</p>
+                  {consentRequests.map((request) => (
+                    <div key={request.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">
+                            {request.status === "APPROVED" ? "Consentimiento aprobado" : "Solicitud enviada"}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            Enviado el {new Date(request.requestedAt).toLocaleString("es-ES")}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {request.approvedAt
+                              ? `Aprobado el ${new Date(request.approvedAt).toLocaleString("es-ES")}`
+                              : "Pendiente de aprobacion"}
+                          </p>
+                        </div>
+                        <a
+                          href={`/api/consent-requests/${request.id}/document`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="btn-secondary whitespace-nowrap px-3 py-2 text-xs"
+                        >
+                          Descargar
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
             </div>
 
             <div className="app-card p-6 mb-6">

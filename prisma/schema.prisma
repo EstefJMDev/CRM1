@@ -79,6 +79,7 @@ model Contract {
   documents              Document[]
   interactions           Interaction[]
   statusHistory          ContractStatusHistory[]
+  consentRequests        ConsentRequest[]
 
   userId                 String
   user                   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -144,6 +145,29 @@ enum Role {
   USER
 }
 
+model ConsentRequest {
+  id             String               @id @default(cuid())
+  token          String               @unique
+  status         ConsentRequestStatus @default(PENDING)
+  recipientEmail String
+  snapshot       Json
+  signerName     String?
+  signerIp       String?
+  signerUserAgent String?
+  requestedBy    String
+  requestedAt    DateTime             @default(now())
+  approvedAt     DateTime?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  contract       Contract             @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  contractId     String
+
+  @@index([contractId, createdAt])
+  @@index([token])
+  @@map("consent_requests")
+}
+
 enum ContractStatus {
   ACTIVE
   PENDING
@@ -154,4 +178,9 @@ enum ContractStatus {
 enum PaymentStatus {
   PAID
   UNPAID
+}
+
+enum ConsentRequestStatus {
+  PENDING
+  APPROVED
 }

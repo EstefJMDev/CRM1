@@ -33,6 +33,10 @@ export async function GET(
           documents: {
             orderBy: { createdAt: "desc" },
           },
+          consentRequests: {
+            orderBy: { createdAt: "desc" },
+            take: 10,
+          },
           statusHistory: {
             orderBy: { createdAt: "desc" },
           },
@@ -50,6 +54,10 @@ export async function GET(
           },
           documents: {
             orderBy: { createdAt: "desc" },
+          },
+          consentRequests: {
+            orderBy: { createdAt: "desc" },
+            take: 10,
           },
           statusHistory: {
             orderBy: { createdAt: "desc" },
@@ -144,6 +152,10 @@ export async function PUT(
         include: {
           interactions: true,
           documents: true,
+          consentRequests: {
+            orderBy: { createdAt: "desc" },
+            take: 10,
+          },
           statusHistory: {
             orderBy: { createdAt: "desc" },
           },
@@ -166,6 +178,10 @@ export async function PUT(
         include: {
           interactions: true,
           documents: true,
+          consentRequests: {
+            orderBy: { createdAt: "desc" },
+            take: 10,
+          },
           statusHistory: {
             orderBy: { createdAt: "desc" },
           },
