@@ -16,6 +16,10 @@ export function ConsentAcceptForm({
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [approved, setApproved] = useState(alreadyApproved);
+  const [downloadUrl, setDownloadUrl] = useState(
+    alreadyApproved ? `/api/consent/${token}/document` : ""
+  );
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const handleSubmit = async () => {
     if (!signerName.trim() || !accepted) {
@@ -38,7 +42,11 @@ export function ConsentAcceptForm({
         }),
       });
 
-      const data = (await response.json()) as { error?: string; message?: string };
+      const data = (await response.json()) as {
+        error?: string;
+        message?: string;
+        downloadUrl?: string;
+      };
 
       if (!response.ok) {
         setMessage(data.error || "No se pudo registrar el consentimiento.");
@@ -46,7 +54,8 @@ export function ConsentAcceptForm({
       }
 
       setApproved(true);
-      setMessage("Consentimiento registrado correctamente.");
+      setDownloadUrl(data.downloadUrl || `/api/consent/${token}/document`);
+      setShowSuccessModal(true);
     } catch (error) {
       console.error(error);
       setMessage("No se pudo registrar el consentimiento.");
@@ -55,50 +64,78 @@ export function ConsentAcceptForm({
     }
   };
 
-  if (approved) {
-    return (
-      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-900">
-        Consentimiento aprobado correctamente.
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div>
-        <label className="mb-2 block text-sm font-semibold text-slate-700">
-          Nombre completo del firmante
-        </label>
-        <input
-          value={signerName}
-          onChange={(event) => setSignerName(event.target.value)}
-          className="field-input"
-          placeholder="Nombre y apellidos"
-        />
-      </div>
+    <>
+      {showSuccessModal ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4">
+          <div className="w-full max-w-md rounded-[28px] border border-emerald-200 bg-white p-6 shadow-2xl">
+            <h2 className="text-xl font-bold text-slate-900">
+              Tu solicitud de consentimiento ha sido enviada
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              Puedes descargarla pulsando aqui.
+            </p>
+            <div className="mt-5 flex flex-col gap-3">
+              <a
+                href={downloadUrl}
+                className="btn-primary block w-full text-center"
+              >
+                Descargar PDF
+              </a>
+              <button
+                type="button"
+                onClick={() => setShowSuccessModal(false)}
+                className="btn-secondary w-full"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
-      <label className="flex items-start gap-3 text-sm text-slate-700">
-        <input
-          type="checkbox"
-          checked={accepted}
-          onChange={(event) => setAccepted(event.target.checked)}
-          className="mt-1 h-4 w-4"
-        />
-        <span>
-          He revisado este consentimiento y autorizo el tratamiento y las gestiones descritas en el documento.
-        </span>
-      </label>
+      {approved ? (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-900">
+          Consentimiento enviado correctamente.
+        </div>
+      ) : (
+        <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-slate-700">
+              Nombre completo del firmante
+            </label>
+            <input
+              value={signerName}
+              onChange={(event) => setSignerName(event.target.value)}
+              className="field-input"
+              placeholder="Nombre y apellidos"
+            />
+          </div>
 
-      <button
-        type="button"
-        onClick={handleSubmit}
-        disabled={submitting}
-        className="btn-primary w-full disabled:bg-slate-400"
-      >
-        {submitting ? "Registrando..." : "Aceptar consentimiento"}
-      </button>
+          <label className="flex items-start gap-3 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={accepted}
+              onChange={(event) => setAccepted(event.target.checked)}
+              className="mt-1 h-4 w-4"
+            />
+            <span>
+              He revisado este consentimiento y autorizo el tratamiento y las gestiones descritas en el documento.
+            </span>
+          </label>
 
-      {message ? <p className="text-sm text-slate-600">{message}</p> : null}
-    </div>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={submitting}
+            className="btn-primary w-full disabled:bg-slate-400"
+          >
+            {submitting ? "Registrando..." : "Aceptar consentimiento"}
+          </button>
+
+          {message ? <p className="text-sm text-slate-600">{message}</p> : null}
+        </div>
+      )}
+    </>
   );
 }

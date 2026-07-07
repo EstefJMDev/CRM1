@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { canViewAllContracts } from "@/lib/contracts";
-import { renderConsentDocumentHtml } from "@/lib/consent";
+import { renderConsentDocumentPdf } from "@/lib/consent";
 import { getAuthUser } from "@/lib/session";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -34,18 +34,18 @@ export async function GET(
       return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
     }
 
-    const html = renderConsentDocumentHtml({
+    const pdfBytes = await renderConsentDocumentPdf({
       snapshot: consentRequest.snapshot as never,
       signerName: consentRequest.signerName,
       approvedAt: consentRequest.approvedAt,
       status: consentRequest.status,
     });
 
-    return new NextResponse(html, {
+    return new NextResponse(Buffer.from(pdfBytes), {
       status: 200,
       headers: {
-        "Content-Type": "text/html; charset=utf-8",
-        "Content-Disposition": `attachment; filename="consentimiento-${consentRequest.id}.html"`,
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="consentimiento-${consentRequest.id}.pdf"`,
         "Cache-Control": "private, no-store",
       },
     });

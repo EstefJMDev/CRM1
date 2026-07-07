@@ -38,6 +38,7 @@ interface ConsentRequest {
   requestedAt: string;
   approvedAt?: string | null;
   createdAt: string;
+  consentLink?: string;
 }
 
 interface Contract {
@@ -143,6 +144,7 @@ export default function ContractDetailPage() {
   const [interactionLoading, setInteractionLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [sendingConsent, setSendingConsent] = useState(false);
+  const [copiedConsentId, setCopiedConsentId] = useState("");
 
   useEffect(() => {
     const fetchContract = async () => {
@@ -286,6 +288,24 @@ export default function ContractDetailPage() {
       console.error(err);
     } finally {
       setSendingConsent(false);
+    }
+  };
+
+  const handleCopyConsentLink = async (request: ConsentRequest) => {
+    if (!request.consentLink) {
+      alert("No hay enlace disponible para esta solicitud.");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(request.consentLink);
+      setCopiedConsentId(request.id);
+      window.setTimeout(() => {
+        setCopiedConsentId((current) => (current === request.id ? "" : current));
+      }, 2000);
+    } catch (error) {
+      console.error(error);
+      alert("No se pudo copiar el enlace.");
     }
   };
 
@@ -770,15 +790,34 @@ export default function ContractDetailPage() {
                               : "Pendiente de aprobacion"}
                           </p>
                         </div>
-                        <a
-                          href={`/api/consent-requests/${request.id}/document`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="btn-secondary whitespace-nowrap px-3 py-2 text-xs"
-                        >
-                          Descargar
-                        </a>
+                        <div className="flex flex-col gap-2">
+                          <a
+                            href={`/api/consent-requests/${request.id}/document`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="btn-secondary whitespace-nowrap px-3 py-2 text-xs"
+                          >
+                            Descargar
+                          </a>
+                          {request.consentLink ? (
+                            <button
+                              type="button"
+                              onClick={() => handleCopyConsentLink(request)}
+                              className="btn-secondary whitespace-nowrap px-3 py-2 text-xs"
+                            >
+                              {copiedConsentId === request.id ? "Enlace copiado" : "Copiar enlace"}
+                            </button>
+                          ) : null}
+                        </div>
                       </div>
+                      {request.consentLink ? (
+                        <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            Enlace para reenviar por WhatsApp o manualmente
+                          </p>
+                          <p className="mt-2 break-all text-xs text-slate-700">{request.consentLink}</p>
+                        </div>
+                      ) : null}
                     </div>
                   ))}
                 </div>

@@ -85,7 +85,13 @@ export async function POST(
       },
     });
 
-    return NextResponse.json(consentRequest, { status: 201 });
+    return NextResponse.json(
+      {
+        ...consentRequest,
+        consentLink,
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Error enviando solicitud de consentimiento:", error);
     return NextResponse.json(

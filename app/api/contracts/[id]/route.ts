@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { withProtectedDocumentUrls } from "@/lib/documents";
+import { buildConsentLink } from "@/lib/consent";
 import { getAuthUser } from "@/lib/session";
 import {
   canViewAllContracts,
@@ -8,6 +9,19 @@ import {
   parsePaymentStatus,
 } from "@/lib/contracts";
 import { NextRequest, NextResponse } from "next/server";
+
+function withConsentRequestLinks<T extends { consentRequests?: Array<{ token: string }> }>(
+  contract: T,
+  origin: string
+) {
+  return {
+    ...contract,
+    consentRequests: contract.consentRequests?.map((request) => ({
+      ...request,
+      consentLink: buildConsentLink(request.token, origin),
+    })),
+  };
+}
 
 export async function GET(
   request: NextRequest,
@@ -76,7 +90,10 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(withProtectedDocumentUrls(contract), { status: 200 });
+    return NextResponse.json(
+      withConsentRequestLinks(withProtectedDocumentUrls(contract), request.nextUrl.origin),
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error obteniendo contrato:", error);
     return NextResponse.json(
@@ -189,7 +206,10 @@ export async function PUT(
       });
     });
 
-    return NextResponse.json(withProtectedDocumentUrls(updatedContract), { status: 200 });
+    return NextResponse.json(
+      withConsentRequestLinks(withProtectedDocumentUrls(updatedContract), request.nextUrl.origin),
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error actualizando contrato:", error);
     return NextResponse.json(

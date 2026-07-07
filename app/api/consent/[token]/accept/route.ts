@@ -32,7 +32,13 @@ export async function POST(
     }
 
     if (consentRequest.status === "APPROVED") {
-      return NextResponse.json({ message: "Consentimiento ya aprobado" }, { status: 200 });
+      return NextResponse.json(
+        {
+          message: "Consentimiento ya aprobado",
+          downloadUrl: `/api/consent/${token}/document`,
+        },
+        { status: 200 }
+      );
     }
 
     const updated = await prisma.consentRequest.update({
@@ -46,7 +52,13 @@ export async function POST(
       },
     });
 
-    return NextResponse.json(updated, { status: 200 });
+    return NextResponse.json(
+      {
+        ...updated,
+        downloadUrl: `/api/consent/${token}/document`,
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error aprobando consentimiento:", error);
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });

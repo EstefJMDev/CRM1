@@ -34,7 +34,7 @@ export default async function ConsentPage({
           <div className="border-b border-slate-200 px-6 py-4">
             <h1 className="text-2xl font-bold text-slate-900">Revision del consentimiento</h1>
             <p className="mt-1 text-sm text-slate-500">
-              Revisa el documento y confirma digitalmente su aceptacion.
+              Revisa el documento y confirma su aceptacion marcando la casilla y enviando el formulario.
             </p>
           </div>
           <iframe
