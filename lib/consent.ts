@@ -142,17 +142,8 @@ function escapeHtml(value: string) {
     .replaceAll("'", "&#39;");
 }
 
-function formatApprovalDate(value?: string | Date | null) {
-  if (!value) return "";
-  const parsed = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "";
-  return parsed.toLocaleString("es-ES");
-}
-
 export function renderConsentDocumentHtml({
   snapshot,
-  signerName,
-  approvedAt,
   status,
 }: ConsentDocumentData) {
   const owner = getConsentOwnerDefaults();
@@ -161,24 +152,6 @@ export function renderConsentDocumentHtml({
   const ownerAddress = snapshot.companyAddress || owner.address;
   const ownerPhone = snapshot.companyPhone || owner.phone;
   const ownerEmail = snapshot.companyEmail || owner.email;
-  const approvalLabel = formatApprovalDate(approvedAt);
-  const acceptanceBlock = signerName || approvalLabel
-    ? `<div class="acceptance-box">
-        <p class="muted">Aceptacion registrada desde el enlace enviado por correo electronico.</p>
-        ${
-          signerName
-            ? `<p class="acceptance-name">${escapeHtml(signerName)}</p>`
-            : ""
-        }
-        ${
-          approvalLabel
-            ? `<p class="acceptance-date">Aceptado el ${escapeHtml(approvalLabel)}</p>`
-            : ""
-        }
-      </div>`
-    : `<div class="acceptance-box pending">
-        <p class="muted">Pendiente de aceptacion por casilla y envio del formulario.</p>
-      </div>`;
 
   const statusLabel =
     status === "APPROVED" ? "Consentimiento aprobado" : "Solicitud pendiente de aprobacion";
@@ -207,10 +180,6 @@ export function renderConsentDocumentHtml({
         .checklist li { display: flex; gap: 10px; align-items: flex-start; }
         .check { min-width: 22px; height: 22px; border: 1px solid #334155; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
         .status { display: inline-flex; margin-top: 10px; padding: 7px 12px; border-radius: 999px; background: ${status === "APPROVED" ? "#dcfce7" : "#fef3c7"}; color: ${status === "APPROVED" ? "#166534" : "#92400e"}; font-size: 13px; font-weight: 700; }
-        .acceptance-box { margin-top: 20px; min-height: 96px; border: 1px dashed #94a3b8; border-radius: 16px; padding: 16px; background: #f8fafc; }
-        .acceptance-box.pending { display: flex; align-items: center; justify-content: center; }
-        .acceptance-name { font-size: 18px; font-weight: 700; margin: 8px 0 0; }
-        .acceptance-date, .muted { color: #475569; font-size: 13px; }
         .intro { margin: 0; font-size: 15px; line-height: 1.7; }
         .legal { margin: 12px 0 0; line-height: 1.7; }
         .summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 18px; }
@@ -298,11 +267,73 @@ export function renderConsentDocumentHtml({
           <h2>Declaracion y firma</h2>
           <p>El firmante declara que los datos facilitados son veraces, que actua como titular del suministro o representante autorizado y que ha comprendido el alcance de este consentimiento.</p>
           <p>En ${escapeHtml(snapshot.locationLabel)}, a ${escapeHtml(snapshot.requestedDateLabel)}</p>
-          ${acceptanceBlock}
         </section>
       </main>
     </body>
   </html>`;
+}
+
+function wrapTextLines(params: {
+  text: string;
+  maxWidth: number;
+  font: Awaited<ReturnType<PDFDocument["embedFont"]>>;
+  size: number;
+}) {
+  const {
+    text,
+    maxWidth,
+    font,
+    size,
+  } = params;
+  const words = text.split(/\s+/).filter(Boolean);
+  const normalizeWord = (word: string) => {
+    if (font.widthOfTextAtSize(word, size) <= maxWidth) {
+      return [word];
+    }
+
+    const chunks: string[] = [];
+    let currentChunk = "";
+    for (const character of word) {
+      const candidate = `${currentChunk}${character}`;
+      if (currentChunk && font.widthOfTextAtSize(candidate, size) > maxWidth) {
+        chunks.push(currentChunk);
+        currentChunk = character;
+      } else {
+        currentChunk = candidate;
+      }
+    }
+
+    if (currentChunk) {
+      chunks.push(currentChunk);
+    }
+
+    return chunks;
+  };
+
+  const lines: string[] = [];
+  let currentLine = "";
+
+  for (const word of words) {
+    for (const token of normalizeWord(word)) {
+      const candidate = currentLine ? `${currentLine} ${token}` : token;
+      if (font.widthOfTextAtSize(candidate, size) <= maxWidth) {
+        currentLine = candidate;
+        continue;
+      }
+
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+
+      currentLine = token;
+    }
+  }
+
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+
+  return lines;
 }
 
 function drawWrappedText(params: {
@@ -327,28 +358,12 @@ function drawWrappedText(params: {
     color = rgb(0.15, 0.23, 0.32),
     lineHeight = size + 4,
   } = params;
-
-  const words = text.split(/\s+/).filter(Boolean);
-  const lines: string[] = [];
-  let currentLine = "";
-
-  for (const word of words) {
-    const candidate = currentLine ? `${currentLine} ${word}` : word;
-    if (font.widthOfTextAtSize(candidate, size) <= maxWidth) {
-      currentLine = candidate;
-      continue;
-    }
-
-    if (currentLine) {
-      lines.push(currentLine);
-    }
-
-    currentLine = word;
-  }
-
-  if (currentLine) {
-    lines.push(currentLine);
-  }
+  const lines = wrapTextLines({
+    text,
+    maxWidth,
+    font,
+    size,
+  });
 
   let cursorY = y;
   for (const line of lines) {
@@ -357,6 +372,30 @@ function drawWrappedText(params: {
   }
 
   return cursorY;
+}
+
+function measureWrappedTextHeight(params: {
+  text: string;
+  maxWidth: number;
+  font: Awaited<ReturnType<PDFDocument["embedFont"]>>;
+  size: number;
+  lineHeight?: number;
+}) {
+  const {
+    text,
+    maxWidth,
+    font,
+    size,
+    lineHeight = size + 4,
+  } = params;
+  const lines = wrapTextLines({
+    text,
+    maxWidth,
+    font,
+    size,
+  });
+
+  return Math.max(lines.length, 1) * lineHeight;
 }
 
 export async function renderConsentDocumentPdf({
@@ -378,9 +417,15 @@ export async function renderConsentDocumentPdf({
   const ownerAddress = snapshot.companyAddress || owner.address;
   const ownerPhone = snapshot.companyPhone || owner.phone;
   const ownerEmail = snapshot.companyEmail || owner.email;
-  const approvalLabel = formatApprovalDate(approvedAt);
+  const approvalLabel =
+    approvedAt instanceof Date
+      ? approvedAt.toLocaleString("es-ES")
+      : approvedAt
+        ? new Date(approvedAt).toLocaleString("es-ES")
+        : "";
   const margin = 42;
   const contentWidth = page.getWidth() - margin * 2;
+  const sectionPadding = 14;
 
   page.drawRectangle({
     x: margin - 12,
@@ -442,10 +487,45 @@ export async function renderConsentDocumentPdf({
 
   const columnGap = 18;
   const columnWidth = (contentWidth - columnGap) / 2;
-  const cardHeight = 138;
   const leftX = margin;
   const rightX = margin + columnWidth + columnGap;
   const cardTop = y;
+
+  const measureFieldBlock = (title: string, rows: Array<[string, string]>) => {
+    let height = 18 + 20;
+    for (const [, value] of rows) {
+      height += 10;
+      height += measureWrappedTextHeight({
+        text: value || "-",
+        maxWidth: columnWidth - sectionPadding * 2,
+        font: regularFont,
+        size: 9,
+        lineHeight: 11,
+      });
+      height += 8;
+    }
+    return Math.max(height + 12, 160);
+  };
+
+  const ownerRows: Array<[string, string]> = [
+    ["Nombre", ownerName],
+    ["NIF / DNI", ownerDocumentId],
+    ["Domicilio", ownerAddress],
+    ["Telefono", ownerPhone],
+    ["Email", ownerEmail || "-"],
+  ];
+  const clientRows: Array<[string, string]> = [
+    ["Nombre / razon social", snapshot.clientFullName],
+    ["DNI / CIF", snapshot.clientDni],
+    ["Telefono", snapshot.clientPhone],
+    ["Email", snapshot.clientEmail || "-"],
+    ["Direccion del suministro", snapshot.supplyAddress],
+    ["CUPS", snapshot.cups],
+  ];
+  const cardHeight = Math.max(
+    measureFieldBlock("Datos del gestor autorizado", ownerRows),
+    measureFieldBlock("Datos del titular del suministro", clientRows)
+  );
 
   for (const x of [leftX, rightX]) {
     page.drawRectangle({
@@ -461,7 +541,7 @@ export async function renderConsentDocumentPdf({
 
   const drawFieldBlock = (x: number, startY: number, title: string, rows: Array<[string, string]>) => {
     page.drawText(title, {
-      x: x + 14,
+      x: x + sectionPadding,
       y: startY - 18,
       size: 12,
       font: boldFont,
@@ -471,7 +551,7 @@ export async function renderConsentDocumentPdf({
     let rowY = startY - 38;
     for (const [label, value] of rows) {
       page.drawText(label, {
-        x: x + 14,
+        x: x + sectionPadding,
         y: rowY,
         size: 8,
         font: boldFont,
@@ -480,48 +560,77 @@ export async function renderConsentDocumentPdf({
       rowY = drawWrappedText({
         page,
         text: value || "-",
-        x: x + 14,
+        x: x + sectionPadding,
         y: rowY - 12,
-        maxWidth: columnWidth - 28,
+        maxWidth: columnWidth - sectionPadding * 2,
         font: regularFont,
         size: 9,
         color: dark,
         lineHeight: 11,
-      }) - 6;
+      }) - 8;
     }
   };
 
-  drawFieldBlock(leftX, cardTop, "Datos del gestor autorizado", [
-    ["Nombre", ownerName],
-    ["NIF / DNI", ownerDocumentId],
-    ["Domicilio", ownerAddress],
-    ["Telefono", ownerPhone],
-    ["Email", ownerEmail || "-"],
-  ]);
-
-  drawFieldBlock(rightX, cardTop, "Datos del titular del suministro", [
-    ["Nombre / razon social", snapshot.clientFullName],
-    ["DNI / CIF", snapshot.clientDni],
-    ["Telefono", snapshot.clientPhone],
-    ["Email", snapshot.clientEmail || "-"],
-    ["Direccion del suministro", snapshot.supplyAddress],
-    ["CUPS", snapshot.cups],
-  ]);
+  drawFieldBlock(leftX, cardTop, "Datos del gestor autorizado", ownerRows);
+  drawFieldBlock(rightX, cardTop, "Datos del titular del suministro", clientRows);
 
   y = cardTop - cardHeight - 24;
 
+  const summaryWidth = (contentWidth - 24) / 3;
+  const summaryItems = [
+    ["Contrato", snapshot.contractNumber],
+    ["Fecha de solicitud", snapshot.requestedDateLabel],
+    ["Colaborador CRM", snapshot.collaboratorName],
+  ] as const;
+  let summaryHeight = 0;
+  for (const [, value] of summaryItems) {
+    summaryHeight = Math.max(
+      summaryHeight,
+      22 +
+        measureWrappedTextHeight({
+          text: value,
+          maxWidth: summaryWidth - 20,
+          font: boldFont,
+          size: 8.5,
+          lineHeight: 10,
+        })
+    );
+  }
+
+  const introHeight = measureWrappedTextHeight({
+    text: `Yo, ${snapshot.clientFullName}, con DNI/CIF ${snapshot.clientDni}, como titular o representante autorizado del punto de suministro asociado al contrato ${snapshot.contractNumber}, otorgo mi consentimiento expreso a ${ownerName}, con NIF/DNI ${ownerDocumentId}, para que pueda gestionar en mi nombre las actuaciones comerciales y administrativas necesarias relacionadas con dicho suministro.`,
+    maxWidth: contentWidth - sectionPadding * 2,
+    font: regularFont,
+    size: 10,
+    lineHeight: 14,
+  });
+
+  let checklistHeight = 0;
+  for (const purpose of snapshot.allowedPurposes) {
+    checklistHeight += measureWrappedTextHeight({
+      text: purpose,
+      maxWidth: contentWidth - 46,
+      font: regularFont,
+      size: 9,
+      lineHeight: 12,
+    }) + 6;
+  }
+
+  const consentSectionHeight =
+    24 + 20 + introHeight + 16 + summaryHeight + 18 + checklistHeight + 18;
+
   page.drawRectangle({
     x: margin,
-    y: y - 148,
+    y: y - consentSectionHeight,
     width: contentWidth,
-    height: 148,
+    height: consentSectionHeight,
     color: rgb(1, 1, 1),
     borderColor: rgb(0.86, 0.89, 0.93),
     borderWidth: 1,
   });
 
   page.drawText("Declaracion de consentimiento", {
-    x: margin + 14,
+    x: margin + sectionPadding,
     y: y - 20,
     size: 12,
     font: boldFont,
@@ -531,41 +640,51 @@ export async function renderConsentDocumentPdf({
   y = drawWrappedText({
     page,
     text: `Yo, ${snapshot.clientFullName}, con DNI/CIF ${snapshot.clientDni}, como titular o representante autorizado del punto de suministro asociado al contrato ${snapshot.contractNumber}, otorgo mi consentimiento expreso a ${ownerName}, con NIF/DNI ${ownerDocumentId}, para que pueda gestionar en mi nombre las actuaciones comerciales y administrativas necesarias relacionadas con dicho suministro.`,
-    x: margin + 14,
+    x: margin + sectionPadding,
     y: y - 40,
-    maxWidth: contentWidth - 28,
+    maxWidth: contentWidth - sectionPadding * 2,
     font: regularFont,
     size: 10,
     color: dark,
     lineHeight: 14,
-  }) - 8;
+  }) - 12;
 
-  page.drawText(`Contrato: ${snapshot.contractNumber}`, {
-    x: margin + 14,
-    y,
-    size: 9,
-    font: boldFont,
-    color: accent,
-  });
-  page.drawText(`Fecha de solicitud: ${snapshot.requestedDateLabel}`, {
-    x: margin + 170,
-    y,
-    size: 9,
-    font: boldFont,
-    color: accent,
-  });
-  page.drawText(`Colaborador CRM: ${snapshot.collaboratorName}`, {
-    x: margin + 342,
-    y,
-    size: 9,
-    font: boldFont,
-    color: accent,
-  });
+  let summaryX = margin + sectionPadding;
+  for (const [label, value] of summaryItems) {
+    page.drawRectangle({
+      x: summaryX,
+      y: y - summaryHeight,
+      width: summaryWidth,
+      height: summaryHeight,
+      color: rgb(0.97, 0.98, 0.99),
+      borderColor: rgb(0.86, 0.89, 0.93),
+      borderWidth: 1,
+    });
+    page.drawText(label, {
+      x: summaryX + 10,
+      y: y - 14,
+      size: 7.5,
+      font: boldFont,
+      color: muted,
+    });
+    drawWrappedText({
+      page,
+      text: value,
+      x: summaryX + 10,
+      y: y - 28,
+      maxWidth: summaryWidth - 20,
+      font: boldFont,
+      size: 8.5,
+      color: accent,
+      lineHeight: 10,
+    });
+    summaryX += summaryWidth + 12;
+  }
 
-  y -= 26;
+  y -= summaryHeight + 18;
   for (const purpose of snapshot.allowedPurposes) {
     page.drawRectangle({
-      x: margin + 14,
+      x: margin + sectionPadding,
       y: y - 2,
       width: 10,
       height: 10,
@@ -573,7 +692,7 @@ export async function renderConsentDocumentPdf({
       borderWidth: 1,
     });
     page.drawText("X", {
-      x: margin + 16.5,
+      x: margin + sectionPadding + 2.5,
       y: y - 0.5,
       size: 8,
       font: boldFont,
@@ -582,92 +701,111 @@ export async function renderConsentDocumentPdf({
     y = drawWrappedText({
       page,
       text: purpose,
-      x: margin + 32,
+      x: margin + sectionPadding + 18,
       y,
       maxWidth: contentWidth - 46,
       font: regularFont,
       size: 9,
       color: dark,
       lineHeight: 12,
-    }) - 2;
+    }) - 6;
   }
 
-  y -= 8;
+  y -= 12;
+  const legalParagraphs = [
+    "Finalidad: gestionar solicitudes de oferta, contratacion, modificacion, seguimiento y atencion del suministro energetico solicitado por el cliente.",
+    "Legitimacion: consentimiento expreso del interesado, ejecucion de actuaciones precontractuales o contractuales y cumplimiento de obligaciones legales aplicables.",
+    "Conservacion: la evidencia del consentimiento y la documentacion vinculada se conservaran mientras resulte necesaria para justificar la gestion realizada y atender obligaciones legales.",
+    "Derechos: el interesado puede solicitar acceso, rectificacion, supresion y demas derechos aplicables dirigiendose al gestor autorizado a traves de los datos de contacto que figuran en este documento.",
+  ];
+  const legalHeight =
+    24 +
+    20 +
+    legalParagraphs.reduce(
+      (total, paragraph) =>
+        total +
+        measureWrappedTextHeight({
+          text: paragraph,
+          maxWidth: contentWidth - sectionPadding * 2,
+          font: regularFont,
+          size: 9,
+          lineHeight: 12,
+        }) +
+        6,
+      0
+    ) +
+    10;
   page.drawRectangle({
     x: margin,
-    y: y - 120,
+    y: y - legalHeight,
     width: contentWidth,
-    height: 120,
+    height: legalHeight,
     color: rgb(1, 1, 1),
     borderColor: rgb(0.86, 0.89, 0.93),
     borderWidth: 1,
   });
 
   page.drawText("Informacion basica de proteccion de datos", {
-    x: margin + 14,
+    x: margin + sectionPadding,
     y: y - 20,
     size: 12,
     font: boldFont,
     color: dark,
   });
 
-  y = drawWrappedText({
-    page,
-    text: "Finalidad: gestionar solicitudes de oferta, contratacion, modificacion, seguimiento y atencion del suministro energetico solicitado por el cliente.",
-    x: margin + 14,
-    y: y - 42,
-    maxWidth: contentWidth - 28,
+  let legalY = y - 42;
+  for (const paragraph of legalParagraphs) {
+    legalY = drawWrappedText({
+      page,
+      text: paragraph,
+      x: margin + sectionPadding,
+      y: legalY,
+      maxWidth: contentWidth - sectionPadding * 2,
+      font: regularFont,
+      size: 9,
+      color: dark,
+      lineHeight: 12,
+    }) - 6;
+  }
+
+  y -= legalHeight + 12;
+
+  const declarationText =
+    "El firmante declara que los datos facilitados son veraces, que actua como titular del suministro o representante autorizado y que ha comprendido el alcance de este consentimiento.";
+  const declarationHeight = measureWrappedTextHeight({
+    text: declarationText,
+    maxWidth: contentWidth - sectionPadding * 2,
     font: regularFont,
     size: 9,
-    color: dark,
     lineHeight: 12,
-  }) - 4;
-  y = drawWrappedText({
-    page,
-    text: "Legitimacion: consentimiento expreso del interesado, ejecucion de actuaciones precontractuales o contractuales y cumplimiento de obligaciones legales aplicables.",
-    x: margin + 14,
-    y,
-    maxWidth: contentWidth - 28,
-    font: regularFont,
-    size: 9,
-    color: dark,
-    lineHeight: 12,
-  }) - 4;
-  y = drawWrappedText({
-    page,
-    text: "Conservacion: la evidencia del consentimiento y la documentacion vinculada se conservaran mientras resulte necesaria para justificar la gestion realizada y atender obligaciones legales.",
-    x: margin + 14,
-    y,
-    maxWidth: contentWidth - 28,
-    font: regularFont,
-    size: 9,
-    color: dark,
-    lineHeight: 12,
-  }) - 4;
-  y = drawWrappedText({
-    page,
-    text: "Derechos: el interesado puede solicitar acceso, rectificacion, supresion y demas derechos aplicables dirigiendose al gestor autorizado a traves de los datos de contacto que figuran en este documento.",
-    x: margin + 14,
-    y,
-    maxWidth: contentWidth - 28,
-    font: regularFont,
-    size: 9,
-    color: dark,
-    lineHeight: 12,
-  }) - 12;
+  });
+  const acceptanceText =
+    status === "APPROVED"
+      ? `Aceptacion registrada${signerName ? ` por ${signerName}` : ""}${approvalLabel ? ` el ${approvalLabel}` : ""}.`
+      : "";
+  const acceptanceHeight = acceptanceText
+    ? measureWrappedTextHeight({
+        text: acceptanceText,
+        maxWidth: contentWidth - sectionPadding * 2,
+        font: regularFont,
+        size: 8.5,
+        lineHeight: 11,
+      }) + 6
+    : 0;
+  const declarationSectionHeight = 24 + 20 + declarationHeight + 12 + 12 + acceptanceHeight + 14;
 
   page.drawRectangle({
     x: margin,
-    y: y - 104,
+    y: y - declarationSectionHeight,
     width: contentWidth,
-    height: 104,
+    height: declarationSectionHeight,
     color: rgb(1, 1, 1),
     borderColor: rgb(0.86, 0.89, 0.93),
     borderWidth: 1,
   });
 
   page.drawText("Declaracion y firma", {
-    x: margin + 14,
+    x: margin + sectionPadding,
     y: y - 20,
     size: 12,
     font: boldFont,
@@ -676,51 +814,37 @@ export async function renderConsentDocumentPdf({
 
   y = drawWrappedText({
     page,
-    text: "El firmante declara que los datos facilitados son veraces, que actua como titular del suministro o representante autorizado y que ha comprendido el alcance de este consentimiento.",
-    x: margin + 14,
+    text: declarationText,
+    x: margin + sectionPadding,
     y: y - 42,
-    maxWidth: contentWidth - 28,
+    maxWidth: contentWidth - sectionPadding * 2,
     font: regularFont,
     size: 9,
     color: dark,
     lineHeight: 12,
-  }) - 4;
+  }) - 8;
 
   page.drawText(`En ${snapshot.locationLabel}, a ${snapshot.requestedDateLabel}`, {
-    x: margin + 14,
+    x: margin + sectionPadding,
     y,
     size: 9,
     font: regularFont,
     color: dark,
   });
 
-  page.drawRectangle({
-    x: margin + 14,
-    y: y - 48,
-    width: contentWidth - 28,
-    height: 34,
-    color: rgb(0.97, 0.98, 0.99),
-    borderColor: rgb(0.78, 0.83, 0.9),
-    borderWidth: 1,
-  });
-
-  const acceptanceText = signerName
-    ? `Aceptacion registrada por ${signerName}${approvalLabel ? ` el ${approvalLabel}` : ""}.`
-    : approvalLabel
-      ? `Aceptacion registrada el ${approvalLabel}.`
-      : "Pendiente de aceptacion por casilla y envio del formulario.";
-
-  drawWrappedText({
-    page,
-    text: acceptanceText,
-    x: margin + 26,
-    y: y - 34,
-    maxWidth: contentWidth - 52,
-    font: regularFont,
-    size: 9,
-    color: muted,
-    lineHeight: 11,
-  });
+  if (acceptanceText) {
+    drawWrappedText({
+      page,
+      text: acceptanceText,
+      x: margin + sectionPadding,
+      y: y - 18,
+      maxWidth: contentWidth - sectionPadding * 2,
+      font: regularFont,
+      size: 8.5,
+      color: muted,
+      lineHeight: 11,
+    });
+  }
 
   return pdfDoc.save();
 }

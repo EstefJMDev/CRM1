@@ -791,19 +791,28 @@ export default function ContractDetailPage() {
                           </p>
                         </div>
                         <div className="flex flex-col gap-2">
-                          <a
-                            href={`/api/consent-requests/${request.id}/document`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="btn-secondary whitespace-nowrap px-3 py-2 text-xs"
-                          >
-                            Descargar
-                          </a>
+                          {request.status === "APPROVED" ? (
+                            <a
+                              href={`/api/consent-requests/${request.id}/document`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="btn-secondary flex items-center justify-center whitespace-nowrap px-3 py-2 text-center text-xs"
+                            >
+                              Descargar
+                            </a>
+                          ) : (
+                            <span
+                              className="inline-flex cursor-not-allowed items-center justify-center whitespace-nowrap rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-center text-xs font-medium text-slate-400"
+                              aria-disabled="true"
+                            >
+                              Descargar
+                            </span>
+                          )}
                           {request.consentLink ? (
                             <button
                               type="button"
                               onClick={() => handleCopyConsentLink(request)}
-                              className="btn-secondary whitespace-nowrap px-3 py-2 text-xs"
+                              className="btn-secondary flex items-center justify-center whitespace-nowrap px-3 py-2 text-center text-xs"
                             >
                               {copiedConsentId === request.id ? "Enlace copiado" : "Copiar enlace"}
                             </button>
@@ -813,7 +822,7 @@ export default function ContractDetailPage() {
                       {request.consentLink ? (
                         <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
                           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            Enlace para reenviar por WhatsApp o manualmente
+                            Enlace generado
                           </p>
                           <p className="mt-2 break-all text-xs text-slate-700">{request.consentLink}</p>
                         </div>
