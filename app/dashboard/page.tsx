@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { logoutAndRedirect, useAuthSession } from "@/hooks/use-auth-session";
@@ -70,6 +70,18 @@ interface CommercializersResponse {
 
 interface AgentsResponse {
   items: Array<{ id: string; fullName: string }>;
+}
+
+interface ConsentNotification {
+  id: string;
+  approvedAt: string;
+  contract: {
+    id: string;
+    contractNumber: string;
+    clientName: string;
+    clientLastName?: string | null;
+    userId: string;
+  };
 }
 
 
@@ -144,7 +156,12 @@ export default function DashboardPage() {
   const [agentOptions, setAgentOptions] = useState<Array<{ id: string; fullName: string }>>([]);
   const [sortPreference, setSortPreference] = useState<SortPreference>(preferences.sortPreference);
   const [dateFormatPreference, setDateFormatPreference] = useState<DateFormatPreference>(preferences.dateFormat);
+  const [consentNotifications, setConsentNotifications] = useState<ConsentNotification[]>([]);
+  const [unreadConsentNotifications, setUnreadConsentNotifications] = useState(0);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const notificationsRef = useRef<HTMLDivElement | null>(null);
   const canViewExport = user?.role === "SUPER_ADMIN";
+  const notificationsStorageKey = user ? `consentNotificationsSeenAt:${user.id}` : "";
 
   const fetchContracts = useCallback(async () => {
     try {
@@ -244,6 +261,19 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
+    if (!isNotificationsOpen) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!notificationsRef.current?.contains(event.target as Node)) {
+        setIsNotificationsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, [isNotificationsOpen]);
+
+  useEffect(() => {
     if (authLoading || !user) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchContracts();
@@ -269,8 +299,77 @@ export default function DashboardPage() {
     })();
   }, [authLoading, fetchContracts, user]);
 
+  const fetchConsentNotifications = useCallback(async () => {
+    try {
+      const response = await fetch("/api/consent-notifications?limit=12", {
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          await logoutAndRedirect(router);
+          return;
+        }
+        throw new Error("Error al obtener notificaciones");
+      }
+
+      const data = (await response.json()) as { items: ConsentNotification[] };
+      const items = Array.isArray(data.items) ? data.items : [];
+      setConsentNotifications(items);
+
+      if (typeof window === "undefined" || !notificationsStorageKey) {
+        setUnreadConsentNotifications(0);
+        return;
+      }
+
+      const seenAt = window.localStorage.getItem(notificationsStorageKey);
+      const seenTimestamp = seenAt ? new Date(seenAt).getTime() : 0;
+      const unread = items.filter((item) => {
+        const approvedTimestamp = new Date(item.approvedAt).getTime();
+        return !Number.isNaN(approvedTimestamp) && approvedTimestamp > seenTimestamp;
+      }).length;
+      setUnreadConsentNotifications(unread);
+    } catch (err) {
+      console.error(err);
+    }
+  }, [notificationsStorageKey, router]);
+
+  useEffect(() => {
+    if (authLoading || !user) return;
+
+    const timeoutId = window.setTimeout(() => {
+      void fetchConsentNotifications();
+    }, 0);
+    const intervalId = window.setInterval(() => {
+      void fetchConsentNotifications();
+    }, 60000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.clearInterval(intervalId);
+    };
+  }, [authLoading, fetchConsentNotifications, user]);
+
   const handleLogout = () => {
     void logoutAndRedirect(router);
+  };
+
+  const markNotificationsAsSeen = useCallback(() => {
+    if (typeof window === "undefined" || !notificationsStorageKey) return;
+
+    const latestApprovedAt = consentNotifications[0]?.approvedAt || new Date().toISOString();
+    window.localStorage.setItem(notificationsStorageKey, latestApprovedAt);
+    setUnreadConsentNotifications(0);
+  }, [consentNotifications, notificationsStorageKey]);
+
+  const toggleNotifications = () => {
+    setIsNotificationsOpen((prev) => {
+      const next = !prev;
+      if (next) {
+        markNotificationsAsSeen();
+      }
+      return next;
+    });
   };
 
   const handleExport = async () => {
@@ -408,6 +507,8 @@ export default function DashboardPage() {
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const startIndex = (safeCurrentPage - 1) * itemsPerPage;
   const paginatedContracts = contracts;
+  const consentNotificationCountLabel =
+    unreadConsentNotifications > 99 ? "99+" : String(unreadConsentNotifications);
 
   if (authLoading || loading) {
     return (
@@ -583,6 +684,61 @@ export default function DashboardPage() {
               <p className="text-gray-600 text-sm mt-1">Bienvenido, {user?.name}</p>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
+              <div className="relative" ref={notificationsRef}>
+                <button
+                  type="button"
+                  onClick={toggleNotifications}
+                  title="Notificaciones de consentimientos"
+                  aria-label="Notificaciones de consentimientos"
+                  className="relative inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-700 transition hover:bg-slate-100"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 1-5.714 0A2 2 0 0 1 7.4 15.094V10a4.6 4.6 0 1 1 9.2 0v5.094a2 2 0 0 1-1.743 1.988Z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 18.5a2.25 2.25 0 0 0 4.5 0" />
+                  </svg>
+                  {unreadConsentNotifications > 0 && (
+                    <span className="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                      {consentNotificationCountLabel}
+                    </span>
+                  )}
+                </button>
+
+                {isNotificationsOpen && (
+                  <div className="absolute right-0 z-20 mt-2 w-[360px] max-w-[88vw] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+                    <div className="border-b border-slate-200 px-4 py-3">
+                      <p className="text-sm font-semibold text-slate-900">Consentimientos aceptados</p>
+                      <p className="mt-1 text-xs text-slate-500">Avisos recientes cuando un cliente acepta su consentimiento.</p>
+                    </div>
+                    {consentNotifications.length > 0 ? (
+                      <div className="max-h-[420px] overflow-y-auto">
+                        {consentNotifications.map((notification) => {
+                          const clientFullName = `${notification.contract.clientName} ${notification.contract.clientLastName || ""}`.trim();
+                          return (
+                            <Link
+                              key={notification.id}
+                              href={`/dashboard/contracts/${notification.contract.id}`}
+                              onClick={() => setIsNotificationsOpen(false)}
+                              className="block border-b border-slate-100 px-4 py-3 transition hover:bg-slate-50 last:border-b-0"
+                            >
+                              <p className="text-sm font-semibold text-slate-900">
+                                Talm {notification.contract.contractNumber}
+                              </p>
+                              <p className="mt-1 text-sm text-slate-700">{clientFullName}</p>
+                              <p className="mt-1 text-xs text-slate-500">
+                                Aceptado el {new Date(notification.approvedAt).toLocaleString("es-ES")}
+                              </p>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="px-4 py-6 text-sm text-slate-500">
+                        No hay consentimientos aceptados recientes.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
               <Link href="/dashboard/settings" className="btn-secondary text-sm">Ajustes</Link>
               <button
                 onClick={handleLogout}

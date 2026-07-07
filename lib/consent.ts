@@ -113,9 +113,9 @@ export function buildConsentSnapshot(contract: ContractConsentSnapshotInput): Co
     locationLabel: owner.location,
     requestedDateLabel: now.toLocaleDateString("es-ES"),
     allowedPurposes: [
-      "Solicitar, comparar y tramitar ofertas de suministro electrico o de gas en mi nombre.",
+      "Solicitar, comparar y tramitar ofertas de suministro eléctrico o de gas en mi nombre.",
       "Gestionar altas, renovaciones, modificaciones, cambios de comercializadora y seguimiento del contrato asociado.",
-      "Contactar conmigo y conservar la documentacion necesaria para acreditar este consentimiento y las gestiones realizadas.",
+      "Contactar conmigo y conservar la documentación necesaria para acreditar este consentimiento y las gestiones realizadas.",
     ],
   };
 }
@@ -154,7 +154,7 @@ export function renderConsentDocumentHtml({
   const ownerEmail = snapshot.companyEmail || owner.email;
 
   const statusLabel =
-    status === "APPROVED" ? "Consentimiento aprobado" : "Solicitud pendiente de aprobacion";
+    status === "APPROVED" ? "Consentimiento aprobado" : "Solicitud pendiente de aprobación";
 
   return `<!DOCTYPE html>
   <html lang="es">
@@ -192,8 +192,8 @@ export function renderConsentDocumentHtml({
     <body>
       <main class="sheet">
         <header class="title">
-          <p>AUTORIZACION Y CONSENTIMIENTO EXPRESO</p>
-          <h1>Gestiones comerciales y contratacion de suministro</h1>
+          <p>AUTORIZACIÓN Y CONSENTIMIENTO EXPRESO</p>
+          <h1>Gestiones comerciales y contratación de suministro</h1>
           <p>Documento asociado al contrato ${escapeHtml(snapshot.contractNumber)}</p>
           <span class="status">${escapeHtml(statusLabel)}</span>
         </header>
@@ -204,22 +204,22 @@ export function renderConsentDocumentHtml({
             <div class="row"><div class="label">Nombre</div><div class="value">${escapeHtml(ownerName)}</div></div>
             <div class="row"><div class="label">NIF / DNI</div><div class="value">${escapeHtml(ownerDocumentId)}</div></div>
             <div class="row"><div class="label">Domicilio</div><div class="value">${escapeHtml(ownerAddress)}</div></div>
-            <div class="row"><div class="label">Telefono</div><div class="value">${escapeHtml(ownerPhone)}</div></div>
+            <div class="row"><div class="label">Teléfono</div><div class="value">${escapeHtml(ownerPhone)}</div></div>
             <div class="row"><div class="label">Email</div><div class="value">${escapeHtml(ownerEmail || "-")}</div></div>
           </div>
           <div class="card">
             <h2>Datos del titular del suministro</h2>
-            <div class="row"><div class="label">Nombre / razon social</div><div class="value">${escapeHtml(snapshot.clientFullName)}</div></div>
+            <div class="row"><div class="label">Nombre / razón social</div><div class="value">${escapeHtml(snapshot.clientFullName)}</div></div>
             <div class="row"><div class="label">DNI / CIF</div><div class="value">${escapeHtml(snapshot.clientDni)}</div></div>
-            <div class="row"><div class="label">Telefono</div><div class="value">${escapeHtml(snapshot.clientPhone)}</div></div>
+            <div class="row"><div class="label">Teléfono</div><div class="value">${escapeHtml(snapshot.clientPhone)}</div></div>
             <div class="row"><div class="label">Email</div><div class="value">${escapeHtml(snapshot.clientEmail || "-")}</div></div>
-            <div class="row"><div class="label">Direccion del suministro</div><div class="value">${escapeHtml(snapshot.supplyAddress)}</div></div>
+            <div class="row"><div class="label">Dirección del suministro</div><div class="value">${escapeHtml(snapshot.supplyAddress)}</div></div>
             <div class="row"><div class="label">CUPS</div><div class="value">${escapeHtml(snapshot.cups)}</div></div>
           </div>
         </section>
 
         <section class="section">
-          <h2>Declaracion de consentimiento</h2>
+          <h2>Declaración de consentimiento</h2>
           <p class="intro">
             Yo, <strong>${escapeHtml(snapshot.clientFullName)}</strong>, con DNI/CIF
             <strong> ${escapeHtml(snapshot.clientDni)}</strong>, como titular o representante
@@ -256,16 +256,16 @@ export function renderConsentDocumentHtml({
         </section>
 
         <section class="section">
-          <h2>Informacion basica de proteccion de datos</h2>
-          <p class="legal">Finalidad: gestionar solicitudes de oferta, contratacion, modificacion, seguimiento y atencion del suministro energetico solicitado por el cliente.</p>
-          <p class="legal">Legitimacion: consentimiento expreso del interesado, ejecucion de actuaciones precontractuales o contractuales y cumplimiento de obligaciones legales aplicables.</p>
-          <p class="legal">Conservacion: la evidencia del consentimiento y la documentacion vinculada se conservaran mientras resulte necesaria para justificar la gestion realizada y atender obligaciones legales.</p>
-          <p class="legal">Derechos: el interesado puede solicitar acceso, rectificacion, supresion y demas derechos aplicables dirigiendose al gestor autorizado a traves de los datos de contacto que figuran en este documento.</p>
+          <h2>Información básica de protección de datos</h2>
+          <p class="legal">Finalidad: gestionar solicitudes de oferta, contratación, modificación, seguimiento y atención del suministro energético solicitado por el cliente.</p>
+          <p class="legal">Legitimación: consentimiento expreso del interesado, ejecución de actuaciones precontractuales o contractuales y cumplimiento de obligaciones legales aplicables.</p>
+          <p class="legal">Conservación: la evidencia del consentimiento y la documentación vinculada se conservarán mientras resulte necesaria para justificar la gestión realizada y atender obligaciones legales.</p>
+          <p class="legal">Derechos: el interesado puede solicitar acceso, rectificación, supresión y demás derechos aplicables dirigiéndose al gestor autorizado a través de los datos de contacto que figuran en este documento.</p>
         </section>
 
         <section class="section">
-          <h2>Declaracion y firma</h2>
-          <p>El firmante declara que los datos facilitados son veraces, que actua como titular del suministro o representante autorizado y que ha comprendido el alcance de este consentimiento.</p>
+          <h2>Declaración y firma</h2>
+          <p>El firmante declara que los datos facilitados son veraces, que actúa como titular del suministro o representante autorizado y que ha comprendido el alcance de este consentimiento.</p>
           <p>En ${escapeHtml(snapshot.locationLabel)}, a ${escapeHtml(snapshot.requestedDateLabel)}</p>
         </section>
       </main>
@@ -433,13 +433,11 @@ export async function renderConsentDocumentPdf({
     width: contentWidth + 24,
     height: page.getHeight() - 96,
     color: rgb(1, 1, 1),
-    borderColor: rgb(0.86, 0.89, 0.93),
-    borderWidth: 1,
   });
 
   let y = page.getHeight() - 72;
 
-  page.drawText("AUTORIZACION Y CONSENTIMIENTO EXPRESO", {
+  page.drawText("AUTORIZACIÓN Y CONSENTIMIENTO EXPRESO", {
     x: margin,
     y,
     size: 11,
@@ -448,7 +446,7 @@ export async function renderConsentDocumentPdf({
   });
   y -= 24;
 
-  page.drawText("Gestiones comerciales y contratacion de suministro", {
+  page.drawText("Gestiones comerciales y contratación de suministro", {
     x: margin,
     y,
     size: 18,
@@ -466,7 +464,7 @@ export async function renderConsentDocumentPdf({
   });
 
   const statusLabel =
-    status === "APPROVED" ? "Consentimiento aprobado" : "Solicitud pendiente de aprobacion";
+    status === "APPROVED" ? "Consentimiento aprobado" : "Solicitud pendiente de aprobación";
   const statusWidth = boldFont.widthOfTextAtSize(statusLabel, 10) + 18;
   page.drawRectangle({
     x: page.getWidth() - margin - statusWidth,
@@ -511,15 +509,15 @@ export async function renderConsentDocumentPdf({
     ["Nombre", ownerName],
     ["NIF / DNI", ownerDocumentId],
     ["Domicilio", ownerAddress],
-    ["Telefono", ownerPhone],
+    ["Teléfono", ownerPhone],
     ["Email", ownerEmail || "-"],
   ];
   const clientRows: Array<[string, string]> = [
-    ["Nombre / razon social", snapshot.clientFullName],
+    ["Nombre / razón social", snapshot.clientFullName],
     ["DNI / CIF", snapshot.clientDni],
-    ["Telefono", snapshot.clientPhone],
+    ["Teléfono", snapshot.clientPhone],
     ["Email", snapshot.clientEmail || "-"],
-    ["Direccion del suministro", snapshot.supplyAddress],
+    ["Dirección del suministro", snapshot.supplyAddress],
     ["CUPS", snapshot.cups],
   ];
   const cardHeight = Math.max(
@@ -629,7 +627,7 @@ export async function renderConsentDocumentPdf({
     borderWidth: 1,
   });
 
-  page.drawText("Declaracion de consentimiento", {
+  page.drawText("Declaración de consentimiento", {
     x: margin + sectionPadding,
     y: y - 20,
     size: 12,
@@ -657,8 +655,6 @@ export async function renderConsentDocumentPdf({
       width: summaryWidth,
       height: summaryHeight,
       color: rgb(0.97, 0.98, 0.99),
-      borderColor: rgb(0.86, 0.89, 0.93),
-      borderWidth: 1,
     });
     page.drawText(label, {
       x: summaryX + 10,
@@ -713,10 +709,10 @@ export async function renderConsentDocumentPdf({
 
   y -= 12;
   const legalParagraphs = [
-    "Finalidad: gestionar solicitudes de oferta, contratacion, modificacion, seguimiento y atencion del suministro energetico solicitado por el cliente.",
-    "Legitimacion: consentimiento expreso del interesado, ejecucion de actuaciones precontractuales o contractuales y cumplimiento de obligaciones legales aplicables.",
-    "Conservacion: la evidencia del consentimiento y la documentacion vinculada se conservaran mientras resulte necesaria para justificar la gestion realizada y atender obligaciones legales.",
-    "Derechos: el interesado puede solicitar acceso, rectificacion, supresion y demas derechos aplicables dirigiendose al gestor autorizado a traves de los datos de contacto que figuran en este documento.",
+    "Finalidad: gestionar solicitudes de oferta, contratación, modificación, seguimiento y atención del suministro energético solicitado por el cliente.",
+    "Legitimación: consentimiento expreso del interesado, ejecución de actuaciones precontractuales o contractuales y cumplimiento de obligaciones legales aplicables.",
+    "Conservación: la evidencia del consentimiento y la documentación vinculada se conservarán mientras resulte necesaria para justificar la gestión realizada y atender obligaciones legales.",
+    "Derechos: el interesado puede solicitar acceso, rectificación, supresión y demás derechos aplicables dirigiéndose al gestor autorizado a través de los datos de contacto que figuran en este documento.",
   ];
   const legalHeight =
     24 +
@@ -745,7 +741,7 @@ export async function renderConsentDocumentPdf({
     borderWidth: 1,
   });
 
-  page.drawText("Informacion basica de proteccion de datos", {
+  page.drawText("Información básica de protección de datos", {
     x: margin + sectionPadding,
     y: y - 20,
     size: 12,
@@ -771,7 +767,7 @@ export async function renderConsentDocumentPdf({
   y -= legalHeight + 12;
 
   const declarationText =
-    "El firmante declara que los datos facilitados son veraces, que actua como titular del suministro o representante autorizado y que ha comprendido el alcance de este consentimiento.";
+    "El firmante declara que los datos facilitados son veraces, que actúa como titular del suministro o representante autorizado y que ha comprendido el alcance de este consentimiento.";
   const declarationHeight = measureWrappedTextHeight({
     text: declarationText,
     maxWidth: contentWidth - sectionPadding * 2,
@@ -781,7 +777,7 @@ export async function renderConsentDocumentPdf({
   });
   const acceptanceText =
     status === "APPROVED"
-      ? `Aceptacion registrada${signerName ? ` por ${signerName}` : ""}${approvalLabel ? ` el ${approvalLabel}` : ""}.`
+      ? `Aceptación registrada${signerName ? ` por ${signerName}` : ""}${approvalLabel ? ` el ${approvalLabel}` : ""}.`
       : "";
   const acceptanceHeight = acceptanceText
     ? measureWrappedTextHeight({
@@ -804,7 +800,7 @@ export async function renderConsentDocumentPdf({
     borderWidth: 1,
   });
 
-  page.drawText("Declaracion y firma", {
+  page.drawText("Declaración y firma", {
     x: margin + sectionPadding,
     y: y - 20,
     size: 12,
@@ -859,7 +855,7 @@ export async function sendConsentEmail(params: {
   const fromEmail = process.env.CONSENT_FROM_EMAIL;
 
   if (!apiKey || !fromEmail) {
-    throw new Error("El correo de consentimientos no esta configurado");
+    throw new Error("El correo de consentimientos no está configurado");
   }
 
   const response = await fetch("https://api.resend.com/emails", {
@@ -877,13 +873,13 @@ export async function sendConsentEmail(params: {
           <h2 style="margin-bottom: 12px;">Solicitud de consentimiento</h2>
           <p>Hola ${params.customerName || "cliente"},</p>
           <p>Te hemos enviado esta solicitud para que revises y aceptes el consentimiento asociado a tu contrato <strong>${params.contractNumber}</strong>.</p>
-          <p>En el documento veras los datos del titular del suministro y del gestor autorizado para realizar las gestiones comerciales y administrativas relacionadas con el contrato.</p>
+          <p>En el documento verás los datos del titular del suministro y del gestor autorizado para realizar las gestiones comerciales y administrativas relacionadas con el contrato.</p>
           <p>
             <a href="${params.consentLink}" style="display:inline-block;background:#0f766e;color:#ffffff;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:600;">
               Revisar y aceptar consentimiento
             </a>
           </p>
-          <p>Si el boton no funciona, copia y pega este enlace en tu navegador:</p>
+          <p>Si el botón no funciona, copia y pega este enlace en tu navegador:</p>
           <p><a href="${params.consentLink}">${params.consentLink}</a></p>
         </div>
       `,
