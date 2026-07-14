@@ -220,9 +220,9 @@ function escapeHtml(value: string) {
     .replaceAll("'", "&#39;");
 }
 
-function buildConsentLegalParagraphs() {
+function buildConsentLegalParagraphs(companyName = "Empresa") {
   return [
-    "Responsable del tratamiento: [Empresa]",
+    `Responsable del tratamiento: ${companyName}`,
     "Finalidad: Gestionar la solicitud realizada por el interesado y continuar las actuaciones precontractuales necesarias.",
     "Base jurídica: Consentimiento del interesado y aplicación de medidas precontractuales solicitadas por el propio interesado.",
     "Conservación: La evidencia de esta confirmación será conservada durante el tiempo legalmente necesario.",
@@ -236,7 +236,7 @@ function buildConsentLegalTextHash(snapshot: ConsentSnapshot) {
     snapshot.recordNumber,
     CONFIRMATION_PARAGRAPHS.join("\n"),
     DECLARATION_ITEMS.join("\n"),
-    buildConsentLegalParagraphs().join("\n"),
+    buildConsentLegalParagraphs(snapshot.companyName).join("\n"),
     "La aceptación de este documento no supone la formalización de un contrato de suministro energético ni la aceptación definitiva de una oferta comercial.",
   ].join("\n\n");
 
@@ -704,10 +704,13 @@ export function renderConsentDocumentHtml({
         }
         .prose {
           display: grid;
-          gap: 16px;
+          gap: 8px;
           color: #233248;
           font-size: 14px;
-          line-height: 1.9;
+          line-height: 1.55;
+        }
+        .prose p {
+          margin: 0;
         }
         .callout {
           background: linear-gradient(180deg, #f5f9ff 0%, #eef5ff 100%);
@@ -756,12 +759,13 @@ export function renderConsentDocumentHtml({
         .data-box {
           background: linear-gradient(180deg, #f7fafc 0%, #eef4fa 100%);
           border: 1px solid var(--line-strong);
-          border-radius: 24px;
-          padding: 22px;
+          border-radius: 20px;
+          padding: 18px;
         }
         .data-box .prose {
-          gap: 12px;
+          gap: 8px;
           font-size: 13px;
+          line-height: 1.5;
         }
         .evidence-grid {
           display: grid;
@@ -981,7 +985,7 @@ export function renderConsentDocumentHtml({
             </div>
             <div class="data-box">
               <div class="prose">
-                ${buildConsentLegalParagraphs().map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("")}
+                ${buildConsentLegalParagraphs(snapshot.companyName).map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("")}
               </div>
             </div>
           </section>
