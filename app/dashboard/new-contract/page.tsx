@@ -13,6 +13,7 @@ export default function NewContractPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
   const [relatedDocuments, setRelatedDocuments] = useState<File[]>([]);
   const {
     formData,
@@ -53,6 +54,7 @@ export default function NewContractPage() {
     event.preventDefault();
     setError("");
     setSuccess(false);
+    setSuccessMessage("");
     setLoading(true);
 
     try {
@@ -75,6 +77,7 @@ export default function NewContractPage() {
       }
 
       setSuccess(true);
+      setSuccessMessage("Contrato creado correctamente. Redirigiendo al dashboard...");
       window.setTimeout(() => {
         router.push("/dashboard");
       }, 1200);
@@ -100,14 +103,14 @@ export default function NewContractPage() {
       <main className="app-main max-w-5xl">
         <div className="app-card p-6 sm:p-8 slide-up">
           {error ? <div className="alert alert-error mb-6">{error}</div> : null}
-          {success ? <div className="alert alert-success mb-6">Contrato creado exitosamente</div> : null}
+          {success ? <div className="alert alert-success mb-6">{successMessage}</div> : null}
 
           <ContractForm
             formData={formData}
             sameSupplyPoint={sameSupplyPoint}
             loading={loading}
             cancelHref="/dashboard"
-            submitLabel="Enviar"
+            submitLabel="Guardar contrato"
             contractNumberHelpText="Se asigna automaticamente cuando guardas el contrato."
             extraSection={
               <section>

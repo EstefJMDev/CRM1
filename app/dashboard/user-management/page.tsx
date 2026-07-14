@@ -314,7 +314,7 @@ export default function UserManagementPage() {
                   <div className="rounded-2xl border border-teal-200 bg-teal-50 px-4 py-4 text-teal-900">
                     <p className="text-sm font-medium">Cambio obligatorio antes de continuar</p>
                     <p className="mt-1 text-sm text-teal-800">
-                      Cuando guardes la nueva contraseña, volveras a tener acceso completo a la plataforma.
+                      Cuando guardes la nueva contraseña, volverás a tener acceso completo a la plataforma.
                     </p>
                   </div>
 
@@ -471,7 +471,6 @@ export default function UserManagementPage() {
                   <select className="field-input" value={newUserForm.role} onChange={(e) => setNewUserForm((prev) => ({ ...prev, role: e.target.value }))}>
                     <option value="USER">USER</option>
                     <option value="TENANT_ADMIN">TENANT_ADMIN</option>
-                    <option value="ADMIN">ADMIN</option>
                   </select>
                 </div>
                 <div className="md:col-span-2 lg:col-span-3 pt-1">
@@ -556,7 +555,6 @@ export default function UserManagementPage() {
                           >
                             <option value="USER">USER</option>
                             <option value="TENANT_ADMIN">TENANT_ADMIN</option>
-                            <option value="ADMIN">ADMIN</option>
                           </select>
                           <label className="inline-flex items-center gap-2 rounded-full bg-gray-50 px-3 py-2 text-sm">
                             <input
@@ -665,7 +663,6 @@ export default function UserManagementPage() {
                             >
                               <option value="USER">USER</option>
                               <option value="TENANT_ADMIN">TENANT_ADMIN</option>
-                              <option value="ADMIN">ADMIN</option>
                             </select>
                           )}
                         </td>

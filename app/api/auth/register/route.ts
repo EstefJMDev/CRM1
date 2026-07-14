@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
 
     if (!normalizedEmail || !password || !normalizedName) {
       return NextResponse.json(
-        { error: "Email, nombre y contrasena son requeridos" },
+        { error: "Email, nombre y contrase\u00f1a son obligatorios" },
         { status: 400 }
       );
     }
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     const rateLimitState = getRateLimitState(rateLimitKey, REGISTER_RATE_LIMIT);
     if (rateLimitState.blocked) {
       return NextResponse.json(
-        { error: "Demasiados intentos. Intentalo de nuevo mas tarde." },
+        { error: "Demasiados intentos. Int\u00e9ntalo de nuevo m\u00e1s tarde." },
         {
           status: 429,
           headers: {
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     const usersCount = await prisma.user.count();
     if (usersCount > 0) {
       return NextResponse.json(
-        { error: "El registro directo esta deshabilitado. Contacta con Super Admin." },
+        { error: "El registro directo est\u00e1 deshabilitado. Contacta con Super Admin." },
         { status: 403 }
       );
     }
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     if (bootstrapToken && String(setupToken || "") !== bootstrapToken) {
       registerRateLimitFailure(rateLimitKey, REGISTER_RATE_LIMIT);
       return NextResponse.json(
-        { error: "Token de configuracion inicial invalido" },
+        { error: "Token de configuraci\u00f3n inicial inv\u00e1lido" },
         { status: 403 }
       );
     }
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
 
     const response = NextResponse.json(
       {
-        message: "Usuario creado exitosamente",
+        message: "Usuario creado correctamente",
         user: {
           id: user.id,
           email: user.email,

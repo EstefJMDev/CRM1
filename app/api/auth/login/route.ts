@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     if (!normalizedEmail || !password) {
       return NextResponse.json(
-        { error: "Email y contrasena son requeridos" },
+        { error: "Email y contrase\u00f1a son obligatorios" },
         { status: 400 }
       );
     }
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     const rateLimitState = getRateLimitState(rateLimitKey, LOGIN_RATE_LIMIT);
     if (rateLimitState.blocked) {
       return NextResponse.json(
-        { error: "Demasiados intentos. Intentalo de nuevo mas tarde." },
+        { error: "Demasiados intentos. Int\u00e9ntalo de nuevo m\u00e1s tarde." },
         {
           status: 429,
           headers: {
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     if (!user) {
       registerRateLimitFailure(rateLimitKey, LOGIN_RATE_LIMIT);
       return NextResponse.json(
-        { error: "Credenciales invalidas" },
+        { error: "Credenciales inv\u00e1lidas" },
         { status: 401 }
       );
     }
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     if (!isPasswordValid) {
       registerRateLimitFailure(rateLimitKey, LOGIN_RATE_LIMIT);
       return NextResponse.json(
-        { error: "Credenciales invalidas" },
+        { error: "Credenciales inv\u00e1lidas" },
         { status: 401 }
       );
     }
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
 
     const response = NextResponse.json(
       {
-        message: "Login exitoso",
+        message: "Inicio de sesi\u00f3n correcto",
         user: {
           id: user.id,
           email: user.email,

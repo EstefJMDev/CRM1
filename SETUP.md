@@ -1,219 +1,118 @@
-# Guía de Configuración - CRM Gestión de Contratos
+# Guia de Configuracion
 
-## 🚀 Primeros Pasos
+## Base de datos
 
-Tu CRM está listo para configurar. Sigue estos pasos:
+El proyecto usa `PostgreSQL` con `Prisma`.
 
-### 1️⃣ Opción A: Usar Supabase (Recomendado - Gratis)
+Opciones recomendadas:
 
-Supabase proporciona PostgreSQL gratis sin necesidad de infraestructura.
+- PostgreSQL local
+- Supabase
 
-**Pasos:**
-1. Accede a https://supabase.com
-2. Crea una cuenta gratuita
-3. Crea un nuevo proyecto
-4. Ve a **Settings → Database**
-5. Copia la **Connection String (URI)** de PostgreSQL
-6. Pega en `.env.local`:
+Ejemplo de conexion:
 
 ```env
-DATABASE_URL="postgresql://[user]:[password]@[host]:[port]/[database]"
+DATABASE_URL="postgresql://user:password@host:5432/crm_db"
+DIRECT_URL="postgresql://user:password@host:5432/crm_db"
 ```
 
-### 1️⃣ Opción B: PostgreSQL Local
+## Variables de entorno minimas
 
-Si prefieres PostgreSQL local en tu máquina:
-
-**Linux/Mac:**
-```bash
-brew install postgresql
-brew services start postgresql
-createdb crm_db
-```
-
-**Windows:**
-- Descarga desde https://www.postgresql.org/download/windows/
-- Durante instalación, recuerda la contraseña del usuario `postgres`
-- Abre pgAdmin y crea base de datos `crm_db`
-
-**Cadena de conexión:**
 ```env
-DATABASE_URL="postgresql://postgres:tu_contraseña@localhost:5432/crm_db"
+NEXTAUTH_SECRET="clave-larga-y-segura"
+NEXTAUTH_URL="http://localhost:3000"
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
 
-### 1️⃣ Opción C: Docker
-
-```bash
-docker run --name crm-postgres -e POSTGRES_PASSWORD=password -e POSTGRES_DB=crm_db -p 5432:5432 -d postgres
-```
-
-### 2️⃣ Configurar Variables de Entorno
-
-1. Abre `.env.local`
-2. Actualiza `DATABASE_URL` con tu cadena de conexión
-3. Genera `NEXTAUTH_SECRET`:
+Genera un secreto con:
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-Copia el resultado en `NEXTAUTH_SECRET`
-
-### 3️⃣ Crear Base de Datos
+## Migraciones
 
 ```bash
-npx prisma migrate dev --name init
+npx prisma migrate dev
 ```
 
 Esto:
-- ✅ Crea todas las tablas
-- ✅ Ejecuta las migraciones
-- ✅ Genera el cliente Prisma
 
-### 4️⃣ Iniciar el servidor
+- aplica migraciones
+- genera el cliente Prisma
+- deja la BD alineada con el schema actual
+
+## Primer acceso
+
+1. Ve a `http://localhost:3000/auth/register`
+2. Crea el primer `SUPER_ADMIN`
+3. A partir de ese momento el registro directo queda deshabilitado
+
+Si defines `INITIAL_SUPER_ADMIN_SETUP_TOKEN`, el formulario inicial exigira ese token.
+
+## Gestion de usuarios
+
+Una vez dentro:
+
+- `SUPER_ADMIN` puede crear usuarios
+- puede asignar `TENANT_ADMIN` o `USER`
+- puede desactivar usuarios
+- puede resetear contrasenas temporales
+
+## Consentimientos
+
+Para habilitar el envio de emails de consentimiento:
+
+```env
+RESEND_API_KEY="re_xxx"
+CONSENT_FROM_EMAIL="noreply@tu-dominio.com"
+CONSENT_OWNER_NAME="Nombre o razon social"
+CONSENT_OWNER_DOCUMENT_ID="CIF/NIF"
+CONSENT_OWNER_ADDRESS="Direccion fiscal"
+CONSENT_OWNER_PHONE="Telefono"
+CONSENT_OWNER_EMAIL="correo@tu-dominio.com"
+CONSENT_SIGNATURE_LOCATION="Murcia"
+```
+
+## Documentos
+
+Para almacenar documentos en Vercel Blob:
+
+```env
+BLOB_READ_WRITE_TOKEN="vercel_blob_rw_xxx"
+```
+
+Los documentos no se exponen directamente en el listado: se sirven a traves de rutas autenticadas del CRM.
+
+## Verificacion
 
 ```bash
-npm run dev
+npm run lint
+npm run typecheck
 ```
 
-### 5️⃣ Primer usuario (Admin)
+## Solucion de problemas
 
-Accede a http://localhost:3000 y:
-1. Haz clic en "Registrarse"
-2. Completa el formulario
-3. El usuario se crea como USER automáticamente
+### No puedo registrarme
 
-**Para hacerlo ADMIN:**
+- si ya existe un usuario, el registro directo esta bloqueado por diseno
+- crea nuevos usuarios desde el panel de gestion
+- si es el alta inicial y usas token, revisa `INITIAL_SUPER_ADMIN_SETUP_TOKEN`
 
-Abre una terminal psql y ejecuta:
+### No inicia sesion
 
-```sql
-UPDATE users SET role = 'ADMIN' WHERE email = 'tu@email.com';
-```
+- revisa `NEXTAUTH_SECRET`
+- comprueba que la BD esta accesible
+- verifica que el usuario este activo
 
-O usa Prisma Studio:
-```bash
-npx prisma studio
-```
+### No se envian consentimientos
 
-### ✅ ¡Listo!
+- revisa `RESEND_API_KEY`
+- revisa `CONSENT_FROM_EMAIL`
+- comprueba que el contrato tenga `clientEmail`
 
-Ahora puedes:
-- 🔐 Inicia sesión en http://localhost:3000/auth/login
-- ➕ Crear contratos
-- 📋 Ver tu listado
-- 🔍 Buscar y filtrar
-- 💬 Agregar interacciones
+### No se suben documentos
 
-## 📊 Verificar la Base de Datos
-
-### Con Prisma Studio (UI visual)
-```bash
-npx prisma studio
-```
-
-Se abre en http://localhost:5555
-
-### Con psql (línea de comandos)
-```bash
-psql -U postgres -d crm_db
-
-# Ver tablas
-\dt
-
-# Ver estructura de tabla
-\d users
-
-# Ver datos
-SELECT * FROM users;
-```
-
-### Con Supabase
-- Inicia sesión en https://supabase.com
-- Ve a tu proyecto
-- Haz clic en **Table Editor** en el menú lateral
-
-## 🔄 Comandos Útiles de Prisma
-
-```bash
-# Ver estado de migraciones
-npx prisma migrate status
-
-# Crear nueva migración
-npx prisma migrate dev --name agregar_campos
-
-# Resetear base de datos (⚠️ ELIMINA TODOS LOS DATOS)
-npx prisma migrate reset
-
-# Generar cliente (después de cambiar schema.prisma)
-npx prisma generate
-
-# Abrir Prisma Studio
-npx prisma studio
-```
-
-## 🆘 Solución de Problemas
-
-### Error: "ECONNREFUSED - No connection to database"
-- ✅ Verifica que PostgreSQL esté corriendo
-- ✅ Verifica DATABASE_URL en `.env.local`
-- ✅ Comprueba usuario/contraseña
-- ✅ Comprueba que la base de datos existe
-
-### Error: "No such migration was found"
-```bash
-# Resetea las migraciones
-npx prisma migrate reset
-```
-
-### Error: "P1000 Authentication failed"
-- ✅ Verifica la contraseña en DATABASE_URL
-- ✅ Verifica que el usuario tiene permisos
-
-### La aplicación no carga datos
-- ✅ Verifica el token en localStorage (F12 → Storage)
-- ✅ Verifica que el usuario fue creado correctamente
-- ✅ Abre la consola del navegador (F12) para ver errores
-
-## 📱 Crear Usuarios de Prueba
-
-### Usuario Normal
-1. Accede a http://localhost:3000/auth/register
-2. Completa el formulario
-3. Se crea como USER automáticamente
-
-### Usuario Admin
-1. Crea un usuario normal
-2. Ejecuta en la terminal:
-```bash
-npx prisma studio
-```
-3. Ve a la tabla `users`
-4. Edita el `role` a `ADMIN`
-
-## 🚀 Próximos Pasos
-
-Después de la configuración inicial:
-
-1. **Agregar más usuarios** - Cada usuario registrado puede crear contratos
-2. **Crear contratos de prueba** - Prueba el flujo completo
-3. **Configurar email** (Opcional) - Para notificaciones
-4. **Backup de datos** - Configura backups automáticos en Supabase
-5. **Deployment** - Deploya en Vercel o similar
-
-## 💡 Tips
-
-- Los **Admins** ven todos los contratos de todos los usuarios
-- Los **Usuarios normales** solo ven sus propios contratos
-- Las **contraseñas** se hashean automáticamente con bcryptjs
-- Los **tokens JWT** expiran en 24 horas
-
-## 📞 Soporte
-
-Si tienes problemas:
-1. Verifica el archivo .env.local
-2. Comprueba que PostgreSQL está corriendo
-3. Mira los logs de la aplicación (F12 en el navegador)
-4. Consulta la documentación de Prisma: https://www.prisma.io/docs/
-
-¡Éxito! 🎉
+- revisa `BLOB_READ_WRITE_TOKEN`
+- el limite actual por archivo es 10 MB
+- algunos tipos potencialmente peligrosos estan bloqueados

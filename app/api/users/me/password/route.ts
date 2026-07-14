@@ -16,7 +16,7 @@ export async function PUT(request: NextRequest) {
 
     if (!newPassword || newPassword.length < 6) {
       return NextResponse.json(
-        { error: "La nueva contrasena debe tener al menos 6 caracteres" },
+        { error: "La nueva contrase\u00f1a debe tener al menos 6 caracteres" },
         { status: 400 }
       );
     }
@@ -32,7 +32,7 @@ export async function PUT(request: NextRequest) {
 
     if (!userWithPassword.mustChangePassword && !currentPassword) {
       return NextResponse.json(
-        { error: "Debes indicar la contrasena actual" },
+        { error: "Debes indicar la contrase\u00f1a actual" },
         { status: 400 }
       );
     }
@@ -40,7 +40,7 @@ export async function PUT(request: NextRequest) {
     if (currentPassword) {
       const isValid = await verifyPassword(currentPassword, userWithPassword.password);
       if (!isValid) {
-        return NextResponse.json({ error: "Contrasena actual incorrecta" }, { status: 400 });
+        return NextResponse.json({ error: "Contrase\u00f1a actual incorrecta" }, { status: 400 });
       }
     }
 
@@ -55,9 +55,9 @@ export async function PUT(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ message: "Contrasena actualizada" }, { status: 200 });
+    return NextResponse.json({ message: "Contrase\u00f1a actualizada" }, { status: 200 });
   } catch (error) {
-    console.error("Error cambiando contrasena:", error);
+    console.error("Error cambiando contrase\u00f1a:", error);
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }
 }

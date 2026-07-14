@@ -4,8 +4,17 @@ const bcrypt = require('bcryptjs');
 
 async function main() {
   const prisma = new PrismaClient();
-  const email = 'salva@sevital.es';
-  const password = 'WMrlYe';
+  const email = String(process.env.SUPER_ADMIN_EMAIL || '').trim().toLowerCase();
+  const password = String(process.env.SUPER_ADMIN_PASSWORD || '');
+  const name = String(process.env.SUPER_ADMIN_NAME || 'Super').trim() || 'Super';
+  const lastName = String(process.env.SUPER_ADMIN_LAST_NAME || 'Admin').trim() || 'Admin';
+
+  if (!email || !password) {
+    throw new Error(
+      'Define SUPER_ADMIN_EMAIL y SUPER_ADMIN_PASSWORD antes de ejecutar este script.'
+    );
+  }
+
   const hash = await bcrypt.hash(password, 10);
 
   const existing = await prisma.user.findUnique({ where: { email } });
@@ -16,8 +25,8 @@ async function main() {
       data: {
         password: hash,
         role: 'SUPER_ADMIN',
-        name: existing.name || 'Super',
-        lastName: existing.lastName || 'Admin',
+        name: existing.name || name,
+        lastName: existing.lastName || lastName,
         mustChangePassword: false,
         isActive: true,
       },
@@ -27,8 +36,8 @@ async function main() {
     await prisma.user.create({
       data: {
         email,
-        name: 'Super',
-        lastName: 'Admin',
+        name,
+        lastName,
         password: hash,
         role: 'SUPER_ADMIN',
         mustChangePassword: false,

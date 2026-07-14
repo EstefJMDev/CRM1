@@ -23,7 +23,7 @@ export async function PUT(
 
     if (!temporaryPassword || temporaryPassword.length < 6) {
       return NextResponse.json(
-        { error: "La contrasena temporal debe tener al menos 6 caracteres" },
+        { error: "La contrase\u00f1a temporal debe tener al menos 6 caracteres" },
         { status: 400 }
       );
     }
@@ -39,7 +39,7 @@ export async function PUT(
 
     if (targetUser.role === "SUPER_ADMIN") {
       return NextResponse.json(
-        { error: "No se puede resetear la contrasena de otro Super Admin desde este flujo" },
+        { error: "No se puede restablecer la contrase\u00f1a de otro Super Admin desde este flujo" },
         { status: 400 }
       );
     }
@@ -55,9 +55,9 @@ export async function PUT(
       },
     });
 
-    return NextResponse.json({ message: "Contrasena reseteada" }, { status: 200 });
+    return NextResponse.json({ message: "Contrase\u00f1a restablecida" }, { status: 200 });
   } catch (error) {
-    console.error("Error reseteando contrasena:", error);
+    console.error("Error restableciendo contrase\u00f1a:", error);
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }
 }

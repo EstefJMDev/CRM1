@@ -40,7 +40,7 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Error en el login");
+        setError(data.error || "No se pudo iniciar sesión");
         return;
       }
 
@@ -51,7 +51,7 @@ export default function LoginPage() {
 
       router.push("/dashboard");
     } catch (err) {
-      setError("Error de conexion");
+      setError("Error de conexión");
       console.error(err);
     } finally {
       setLoading(false);

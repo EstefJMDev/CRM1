@@ -96,7 +96,6 @@ const STATUS_LABELS: Record<string, string> = {
   ACTIVE: "Activo",
   INACTIVE: "Inactivo",
   CANCELLED: "Cancelado",
-  TRAMITE: "Trámite",
 };
 
 function formatDate(date?: string) {
@@ -145,6 +144,14 @@ export default function ContractDetailPage() {
   const [uploading, setUploading] = useState(false);
   const [sendingConsent, setSendingConsent] = useState(false);
   const [copiedConsentId, setCopiedConsentId] = useState("");
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  const showFeedback = (type: "success" | "error", message: string) => {
+    setFeedback({ type, message });
+    window.setTimeout(() => {
+      setFeedback((current) => (current?.message === message ? null : current));
+    }, 3200);
+  };
 
   useEffect(() => {
     const fetchContract = async () => {
@@ -177,7 +184,7 @@ export default function ContractDetailPage() {
 
   const handleAddInteraction = async () => {
     if (!newInteraction.type || !newInteraction.notes) {
-      alert("Por favor completa todos los campos");
+      showFeedback("error", "Completa el tipo y las notas de la interacción.");
       return;
     }
 
@@ -213,8 +220,9 @@ export default function ContractDetailPage() {
 
       setNewInteraction({ type: "", notes: "" });
       setShowInteractionForm(false);
+      showFeedback("success", "Interacción guardada correctamente.");
     } catch (err) {
-      alert("Error al agregar interacción");
+      showFeedback("error", "No se pudo guardar la interacción.");
       console.error(err);
     } finally {
       setInteractionLoading(false);
@@ -249,8 +257,9 @@ export default function ContractDetailPage() {
           documents: [newDocument, ...prev.documents],
         };
       });
+      showFeedback("success", "Documento subido correctamente.");
     } catch (err) {
-      alert("No se pudo subir el documento");
+      showFeedback("error", "No se pudo subir el documento.");
       console.error(err);
     } finally {
       setUploading(false);
@@ -260,7 +269,7 @@ export default function ContractDetailPage() {
 
   const handleSendConsent = async () => {
     if (!contract?.clientEmail) {
-      alert("Este cliente no tiene email informado");
+      showFeedback("error", "Este cliente no tiene email informado.");
       return;
     }
 
@@ -282,9 +291,12 @@ export default function ContractDetailPage() {
           consentRequests: [data as ConsentRequest, ...(prev.consentRequests || [])],
         };
       });
-      alert("Solicitud de consentimiento enviada");
+      showFeedback("success", "Solicitud de consentimiento enviada.");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "No se pudo enviar la solicitud");
+      showFeedback(
+        "error",
+        err instanceof Error ? err.message : "No se pudo enviar la solicitud."
+      );
       console.error(err);
     } finally {
       setSendingConsent(false);
@@ -293,7 +305,7 @@ export default function ContractDetailPage() {
 
   const handleCopyConsentLink = async (request: ConsentRequest) => {
     if (!request.consentLink) {
-      alert("No hay enlace disponible para esta solicitud.");
+      showFeedback("error", "No hay enlace disponible para esta solicitud.");
       return;
     }
 
@@ -303,9 +315,10 @@ export default function ContractDetailPage() {
       window.setTimeout(() => {
         setCopiedConsentId((current) => (current === request.id ? "" : current));
       }, 2000);
+      showFeedback("success", "Enlace copiado al portapapeles.");
     } catch (error) {
       console.error(error);
-      alert("No se pudo copiar el enlace.");
+      showFeedback("error", "No se pudo copiar el enlace.");
     }
   };
 
@@ -381,6 +394,11 @@ export default function ContractDetailPage() {
       </header>
 
       <main className="app-main max-w-7xl">
+        {feedback ? (
+          <div className={`mb-6 alert ${feedback.type === "success" ? "alert-success" : "alert-error"}`}>
+            {feedback.message}
+          </div>
+        ) : null}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             <div className="app-card p-6 mb-6">

@@ -48,6 +48,9 @@ export default function SettingsPage() {
   const [agents, setAgents] = useState<Array<{ id: string; fullName: string }>>([]);
   const [commercializers, setCommercializers] = useState<string[]>([]);
   const [saved, setSaved] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [importText, setImportText] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -79,6 +82,10 @@ export default function SettingsPage() {
     [commercializers]
   );
 
+  const showFeedback = (type: "success" | "error", message: string) => {
+    setFeedback({ type, message });
+  };
+
   const saveAll = () => {
     saveDashboardPreferences({
       pageSize,
@@ -88,6 +95,7 @@ export default function SettingsPage() {
       dateFormat,
     });
     setSaved(true);
+    showFeedback("success", "Ajustes guardados correctamente.");
     setTimeout(() => setSaved(false), 1600);
   };
 
@@ -105,6 +113,7 @@ export default function SettingsPage() {
       dateFormat: "short",
     });
     setSaved(true);
+    showFeedback("success", "Ajustes restaurados a sus valores por defecto.");
     setTimeout(() => setSaved(false), 1600);
   };
 
@@ -118,12 +127,17 @@ export default function SettingsPage() {
     };
     await navigator.clipboard.writeText(JSON.stringify(bundle, null, 2));
     setSaved(true);
+    showFeedback("success", "Configuración copiada al portapapeles.");
     setTimeout(() => setSaved(false), 1600);
   };
 
   const importSettings = () => {
-    const raw = window.prompt("Pega aquí la configuración exportada (JSON):");
-    if (!raw) return;
+    const raw = importText.trim();
+    if (!raw) {
+      showFeedback("error", "Pega una configuración JSON antes de importarla.");
+      return;
+    }
+
     try {
       const parsed = JSON.parse(raw) as Partial<SettingsBundle>;
       if (typeof parsed.contractsPageSize === "number" && PAGE_SIZE_OPTIONS.includes(parsed.contractsPageSize)) {
@@ -153,10 +167,14 @@ export default function SettingsPage() {
       if (parsed.contractsDateFormat === "short" || parsed.contractsDateFormat === "long") {
         setDateFormat(parsed.contractsDateFormat);
       }
+
       setSaved(true);
+      showFeedback("success", "Configuración importada correctamente.");
+      setImportText("");
+      setIsImportOpen(false);
       setTimeout(() => setSaved(false), 1600);
     } catch {
-      window.alert("Formato JSON inválido");
+      showFeedback("error", "El contenido pegado no es un JSON válido.");
     }
   };
 
@@ -187,6 +205,39 @@ export default function SettingsPage() {
 
   return (
     <div className="app-shell">
+      {isImportOpen ? (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/45 px-4">
+          <div className="w-full max-w-2xl rounded-[28px] border border-slate-200 bg-white p-6 shadow-2xl">
+            <h2 className="text-xl font-bold text-slate-900">Importar configuración</h2>
+            <p className="mt-2 text-sm text-slate-600">
+              Pega aquí el JSON exportado desde otro usuario o equipo.
+            </p>
+            <textarea
+              value={importText}
+              onChange={(event) => setImportText(event.target.value)}
+              rows={12}
+              className="field-input mt-4 font-mono text-sm"
+              placeholder='{"contractsPageSize":10,...}'
+            />
+            <div className="mt-4 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                className="btn-soft"
+                onClick={() => {
+                  setIsImportOpen(false);
+                  setImportText("");
+                }}
+              >
+                Cancelar
+              </button>
+              <button type="button" className="btn-primary" onClick={importSettings}>
+                Importar configuración
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <header className="app-header">
         <div className="app-header-inner">
           <div>
@@ -205,6 +256,12 @@ export default function SettingsPage() {
       </header>
 
       <main className="app-main space-y-6">
+        {feedback ? (
+          <div className={`alert ${feedback.type === "success" ? "alert-success" : "alert-error"}`}>
+            {feedback.message}
+          </div>
+        ) : null}
+
         <section className="app-card p-6">
           <h2 className="text-lg font-semibold text-gray-900">Listado principal de contratos</h2>
           <p className="mt-1 text-sm text-gray-500">
@@ -248,7 +305,7 @@ export default function SettingsPage() {
 
         <section className="app-card p-6">
           <h2 className="text-lg font-semibold text-gray-900">Filtros por defecto</h2>
-          <p className="mt-1 text-sm text-gray-500">Se aplican al abrir el dashboard o al pulsar “Limpiar”.</p>
+          <p className="mt-1 text-sm text-gray-500">Se aplican al abrir el dashboard o al pulsar &quot;Limpiar&quot;.</p>
 
           <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
             <div>
@@ -327,7 +384,7 @@ export default function SettingsPage() {
           <p className="mt-1 text-sm text-gray-500">Comparte tu configuración entre equipos o usuarios.</p>
           <div className="mt-4 flex flex-wrap gap-2">
             <button type="button" className="btn-secondary" onClick={exportSettings}>Copiar configuración (JSON)</button>
-            <button type="button" className="btn-soft" onClick={importSettings}>Pegar configuración</button>
+            <button type="button" className="btn-soft" onClick={() => setIsImportOpen(true)}>Pegar configuración</button>
           </div>
         </section>
 
@@ -346,7 +403,7 @@ export default function SettingsPage() {
 
         <div className="flex items-center gap-3">
           <button type="button" onClick={saveAll} className="btn-primary">Guardar ajustes</button>
-          {saved && <p className="text-sm font-medium text-emerald-700">Ajustes guardados correctamente.</p>}
+          {saved && <p className="text-sm font-medium text-emerald-700">Cambios aplicados.</p>}
         </div>
       </main>
     </div>

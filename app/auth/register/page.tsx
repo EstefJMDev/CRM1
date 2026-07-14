@@ -66,13 +66,13 @@ export default function RegisterPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Error en el registro");
+        setError(data.error || "No se pudo completar el registro");
         return;
       }
 
       router.push("/dashboard");
     } catch (err) {
-      setError("Error de conexion");
+      setError("Error de conexión");
       console.error(err);
     } finally {
       setLoading(false);

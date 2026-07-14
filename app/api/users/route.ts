@@ -57,14 +57,14 @@ export async function POST(request: NextRequest) {
 
     if (!email || !name || !temporaryPassword) {
       return NextResponse.json(
-        { error: "Email, nombre y contrasena temporal son requeridos" },
+        { error: "Email, nombre y contrase\u00f1a temporal son obligatorios" },
         { status: 400 }
       );
     }
 
     if (temporaryPassword.length < 6) {
       return NextResponse.json(
-        { error: "La contrasena temporal debe tener al menos 6 caracteres" },
+        { error: "La contrase\u00f1a temporal debe tener al menos 6 caracteres" },
         { status: 400 }
       );
     }

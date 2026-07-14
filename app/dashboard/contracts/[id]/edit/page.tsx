@@ -20,6 +20,7 @@ export default function EditContractPage() {
   const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
   const {
     formData,
     sameSupplyPoint,
@@ -57,6 +58,7 @@ export default function EditContractPage() {
     event.preventDefault();
     setError("");
     setSuccess(false);
+    setSuccessMessage("");
     setLoading(true);
 
     try {
@@ -73,6 +75,7 @@ export default function EditContractPage() {
       }
 
       setSuccess(true);
+      setSuccessMessage("Cambios guardados correctamente. Redirigiendo al detalle...");
       window.setTimeout(() => {
         router.push(`/dashboard/contracts/${contractId}`);
       }, 1000);
@@ -115,7 +118,7 @@ export default function EditContractPage() {
       <main className="app-main max-w-5xl">
         <div className="app-card p-6 sm:p-8 slide-up">
           {error ? <div className="alert alert-error mb-6">{error}</div> : null}
-          {success ? <div className="alert alert-success mb-6">Contrato actualizado</div> : null}
+          {success ? <div className="alert alert-success mb-6">{successMessage}</div> : null}
 
           <ContractForm
             formData={formData}

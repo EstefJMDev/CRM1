@@ -74,10 +74,10 @@ export function ConsentAcceptForm({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4">
           <div className="w-full max-w-md rounded-[28px] border border-emerald-200 bg-white p-6 shadow-2xl">
             <h2 className="text-xl font-bold text-slate-900">
-              Tu solicitud de consentimiento ha sido enviada
+              Tu consentimiento ha sido aceptado correctamente
             </h2>
             <p className="mt-3 text-sm leading-6 text-slate-600">
-              Puedes descargarla pulsando aqui.
+              Ya puedes descargar el documento firmado.
             </p>
             <div className="mt-5 flex flex-col gap-3">
               <a
@@ -100,7 +100,7 @@ export function ConsentAcceptForm({
 
       {approved ? (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-900">
-          Consentimiento enviado correctamente.
+          Consentimiento aceptado correctamente.
         </div>
       ) : superseded ? (
         <div className="rounded-2xl border border-slate-300 bg-slate-100 px-5 py-4 text-sm text-slate-800">

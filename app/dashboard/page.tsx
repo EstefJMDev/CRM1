@@ -36,7 +36,6 @@ const STATUS_LABELS: Record<string, string> = {
   ACTIVE: "Activo",
   INACTIVE: "Inactivo",
   CANCELLED: "Cancelado",
-  TRAMITE: "Trámite",
 };
 
 function toDateOnly(date?: string) {
@@ -129,6 +128,7 @@ export default function DashboardPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [isExporting, setIsExporting] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -377,6 +377,7 @@ export default function DashboardPage() {
 
     setIsExporting(true);
     setError("");
+    setSuccessMessage("");
 
     try {
       const response = await fetch("/api/contracts/export", {
@@ -416,6 +417,7 @@ export default function DashboardPage() {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
+      setSuccessMessage("Excel generado correctamente.");
     } catch (err) {
       console.error(err);
       setError("No se pudo generar el Excel");
@@ -844,6 +846,11 @@ export default function DashboardPage() {
         {error && (
           <div className="alert alert-error mb-4">
             {error}
+          </div>
+        )}
+        {successMessage && (
+          <div className="alert alert-success mb-4">
+            {successMessage}
           </div>
         )}
 

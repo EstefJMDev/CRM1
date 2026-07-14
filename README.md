@@ -1,95 +1,126 @@
-# CRM - Gestión de Contratos
+# CRM Gestion de Contratos
 
-Un sistema de gestión de contratos construido con **Next.js**, **TypeScript**, **Prisma** y **PostgreSQL**.
+Aplicacion interna para gestionar contratos, usuarios, documentos y consentimientos, construida con `Next.js`, `TypeScript`, `Prisma` y `PostgreSQL`.
 
-## 🚀 Características
+## Estado actual
 
-✅ **Autenticación de usuarios** con roles (Admin, Usuario)  
-✅ **Gestión de contratos** - Crear, editar, ver detalles  
-✅ **Control de acceso** - Admins ven todos los contratos, usuarios ven solo los suyos  
-✅ **Seguimiento de interacciones** - Registra llamadas, emails, visitas  
-✅ **Búsqueda y filtros** - Por cliente, número de contrato, estado  
-✅ **Información detallada** - Cliente, dirección, comercializadora, etc.  
+El repositorio ya no corresponde al MVP inicial que aparece en algunos textos antiguos. El estado real del proyecto incluye:
 
-## 🛠️ Stack Tecnológico
+- autenticacion propia con JWT en cookie `httpOnly`
+- roles `SUPER_ADMIN`, `TENANT_ADMIN` y `USER`
+- alta inicial controlada del primer `SUPER_ADMIN`
+- gestion completa de contratos con filtros, historial e interacciones
+- subida de documentos protegidos mediante rutas autenticadas
+- solicitudes de consentimiento por email con aprobacion publica y PDF
+- exportacion de contratos a Excel
+- autocompletado de municipio y provincia por codigo postal
+- panel de ajustes y gestion de usuarios
 
-- **Frontend**: Next.js 15, React, Tailwind CSS
-- **Backend**: Next.js API Routes
-- **Base de Datos**: PostgreSQL
-- **ORM**: Prisma
-- **Autenticación**: JWT
-- **TypeScript**: Para seguridad de tipos
+## Stack
 
-## 📋 Prerequisitos
+- `Next.js 16`
+- `React 19`
+- `TypeScript`
+- `Prisma`
+- `PostgreSQL`
+- `@vercel/blob` para almacenamiento de documentos
+- `pdf-lib` para generar PDFs de consentimiento
+- `geonames-postalcodes` para lookup postal
 
-- Node.js 18+
-- npm o yarn
-- PostgreSQL 12+ (local o Supabase)
+## Estructura principal
 
-## 🔧 Instalación
+```text
+crm-main/
+|-- app/
+|   |-- api/                     # Auth, contratos, usuarios, consentimientos, documentos
+|   |-- auth/                    # Login y bootstrap inicial del primer super admin
+|   |-- consent/                 # Vista publica para aceptar consentimientos
+|   `-- dashboard/               # Panel principal y vistas de gestion
+|-- components/                  # Formularios reutilizables
+|-- hooks/                       # Estado cliente y sesion
+|-- lib/                         # Auth, session, contratos, consentimientos y utilidades
+|-- prisma/                      # Schema y migraciones
+|-- scripts/                     # Scripts operativos y mantenimiento
+`-- data/ES/                     # Dataset postal usado por el lookup
+```
 
-1. **Instalar dependencias** (ya hecho)
+## Variables de entorno
+
+Configura al menos estas variables en `.env.local`:
+
+```env
+DATABASE_URL="postgresql://user:password@host:5432/crm_db"
+DIRECT_URL="postgresql://user:password@host:5432/crm_db"
+NEXTAUTH_SECRET="clave-larga-y-segura"
+NEXTAUTH_URL="http://localhost:3000"
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+
+# Opcional: bloquear el alta inicial del primer super admin
+INITIAL_SUPER_ADMIN_SETUP_TOKEN="token-inicial"
+
+# Opcional: correo de consentimientos
+RESEND_API_KEY="re_xxx"
+CONSENT_FROM_EMAIL="noreply@tu-dominio.com"
+CONSENT_OWNER_NAME="Nombre o razon social"
+CONSENT_OWNER_DOCUMENT_ID="CIF/NIF"
+CONSENT_OWNER_ADDRESS="Direccion fiscal"
+CONSENT_OWNER_PHONE="Telefono"
+CONSENT_OWNER_EMAIL="correo@tu-dominio.com"
+CONSENT_SIGNATURE_LOCATION="Murcia"
+
+# Opcional: Vercel Blob
+BLOB_READ_WRITE_TOKEN="vercel_blob_rw_xxx"
+```
+
+## Puesta en marcha
+
 ```bash
 npm install
-```
-
-2. **Configurar variables de entorno**
-
-Edita `.env.local` con tus credenciales de PostgreSQL:
-```env
-DATABASE_URL="postgresql://usuario:contraseña@localhost:5432/crm_db"
-NEXTAUTH_SECRET="tu-secret-seguro"
-NEXTAUTH_URL="http://localhost:3000"
-```
-
-3. **Crear la base de datos y migraciones**
-```bash
-npx prisma migrate dev --name init
-```
-
-4. **Ejecutar servidor de desarrollo**
-```bash
+npx prisma migrate dev
 npm run dev
 ```
 
-Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
+La aplicacion quedara disponible en `http://localhost:3000`.
 
-## 📚 Estructura del Proyecto
+## Autenticacion y roles
 
-```
-crm/
-├── app/
-│   ├── api/                    # API Routes
-│   ├── auth/                  # Páginas de autenticación
-│   ├── dashboard/             # Páginas principales
-│   ├── layout.tsx
-│   └── page.tsx              # Home
-├── lib/
-│   ├── auth.ts               # Funciones de autenticación
-│   └── db.ts                 # Instancia de Prisma
-├── prisma/
-│   └── schema.prisma         # Esquema de base de datos
-└── package.json
-```
+La sesion se guarda en cookie segura `httpOnly`; no se usa `localStorage` para almacenar el token.
 
-## 🚀 Iniciar Desarrollo
+Roles disponibles:
+
+- `SUPER_ADMIN`: administracion global, exportacion, alta y gestion de usuarios, borrado de contratos
+- `TENANT_ADMIN`: acceso ampliado de lectura y gestion de contratos
+- `USER`: acceso a sus propios contratos y consentimientos
+
+El registro abierto solo sirve para crear el primer `SUPER_ADMIN`. Una vez existe un usuario, las nuevas altas se hacen desde el panel de gestion de usuarios.
+
+## Funcionalidades principales
+
+- listado de contratos con filtros, orden y preferencias persistidas
+- alta, edicion y detalle completo de contratos
+- historial de estados e interacciones
+- subida y descarga protegida de documentos
+- envio y seguimiento de consentimientos
+- historico de consentimientos aprobados, pendientes e invalidados
+- exportacion a Excel para `SUPER_ADMIN`
+- gestion de perfil, cambio de contrasena y administracion de usuarios
+
+## Scripts
+
+- `scripts/upsert-super-admin.cjs`
+  Crea o actualiza un `SUPER_ADMIN`. Usa variables de entorno en lugar de credenciales hardcodeadas.
+
+- `scripts/enrich-imported-postal-data.cjs`
+  Completa `municipality` y `province` en contratos importados a partir del codigo postal.
+
+## Verificacion rapida
 
 ```bash
-npm run dev
+npm run lint
+npm run typecheck
 ```
 
-Accede a:
-- Dashboard: http://localhost:3000 (redirige a login si no estás autenticado)
-- Login: http://localhost:3000/auth/login
-- Registro: http://localhost:3000/auth/register
+## Notas
 
-## 📝 Próximos Pasos
-
-1. **Configura tu base de datos PostgreSQL**
-2. **Ejecuta las migraciones de Prisma**
-3. **Registra tu primer usuario**
-4. **Crea contratos de prueba**
-5. **Prueba la funcionalidad**
-
-¡Listo para usar!
-
+- Parte de la documentacion antigua del proyecto describia el MVP inicial. Este README refleja el estado real actual del repositorio.
+- Los documentos subidos se almacenan en Vercel Blob, pero siempre se sirven mediante rutas protegidas del CRM.

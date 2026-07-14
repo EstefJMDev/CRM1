@@ -109,10 +109,10 @@ export default function ConsentimientosHistoricoPage() {
       <div className="app-card p-6">
         <div className="mb-6 flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Consentimientos Histórico</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Histórico de consentimientos</h1>
             <p className="mt-1 text-sm text-gray-500">Seguimiento de solicitudes enviadas y aprobadas.</p>
           </div>
-          <Link href="/dashboard" className="btn-secondary text-sm">Volver a Contratos</Link>
+          <Link href="/dashboard" className="btn-secondary text-sm">Volver a contratos</Link>
         </div>
 
         <div className="mb-6 space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
