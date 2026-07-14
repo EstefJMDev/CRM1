@@ -24,7 +24,7 @@ export function ConsentAcceptForm({
 
   const handleSubmit = async () => {
     if (!signerName.trim() || !accepted) {
-      setMessage("Debes indicar el nombre del firmante y aceptar la confirmacion.");
+      setMessage("Debes indicar el nombre del firmante y aceptar la confirmación.");
       return;
     }
 
@@ -50,7 +50,7 @@ export function ConsentAcceptForm({
       };
 
       if (!response.ok) {
-        setMessage(data.error || "No se pudo registrar la confirmacion.");
+        setMessage(data.error || "No se pudo registrar la confirmación.");
         if (response.status === 409) {
           setSuperseded(true);
         }
@@ -62,7 +62,7 @@ export function ConsentAcceptForm({
       setShowSuccessModal(true);
     } catch (error) {
       console.error(error);
-      setMessage("No se pudo registrar la confirmacion.");
+      setMessage("No se pudo registrar la confirmación.");
     } finally {
       setSubmitting(false);
     }
@@ -74,7 +74,7 @@ export function ConsentAcceptForm({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4">
           <div className="w-full max-w-md rounded-[28px] border border-emerald-200 bg-white p-6 shadow-2xl">
             <h2 className="text-xl font-bold text-slate-900">
-              Tu confirmacion ha sido aceptada correctamente
+              Tu confirmación ha sido aceptada correctamente
             </h2>
             <p className="mt-3 text-sm leading-6 text-slate-600">
               Ya puedes descargar el documento firmado.
@@ -100,11 +100,11 @@ export function ConsentAcceptForm({
 
       {approved ? (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-900">
-          Confirmacion aceptada correctamente.
+          Confirmación aceptada correctamente.
         </div>
       ) : superseded ? (
         <div className="rounded-2xl border border-slate-300 bg-slate-100 px-5 py-4 text-sm text-slate-800">
-          Este enlace ya no es valido porque existe una solicitud mas reciente. Si lo necesitas, pide que te reenvien el ultimo email.
+          Este enlace ya no es válido porque existe una solicitud más reciente. Si lo necesitas, pide que te reenvíen el último email.
         </div>
       ) : (
         <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -128,7 +128,7 @@ export function ConsentAcceptForm({
               className="mt-1 h-4 w-4"
             />
             <span>
-              He leido y comprendido este documento, y confirmo que deseo continuar con las actuaciones precontractuales descritas.
+              He leído y comprendido este documento, y confirmo que deseo continuar con las actuaciones precontractuales descritas.
             </span>
           </label>
 
@@ -138,7 +138,7 @@ export function ConsentAcceptForm({
             disabled={submitting}
             className="btn-primary w-full disabled:bg-slate-400"
           >
-            {submitting ? "Registrando..." : "Aceptar confirmacion"}
+            {submitting ? "Registrando..." : "Aceptar confirmación"}
           </button>
 
           {message ? <p className="text-sm text-slate-600">{message}</p> : null}

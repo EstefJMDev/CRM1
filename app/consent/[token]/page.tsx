@@ -40,13 +40,13 @@ export default async function ConsentPage({
       <div className="mx-auto max-w-5xl space-y-6">
         <div className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-200 px-6 py-4">
-            <h1 className="text-2xl font-bold text-slate-900">Confirmacion de actuaciones precontractuales</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Confirmación de actuaciones precontractuales</h1>
             <p className="mt-1 text-sm text-slate-500">
-              Revisa el documento y confirma su aceptacion marcando la casilla y enviando el formulario.
+              Revisa el documento y confirma su aceptación marcando la casilla y enviando el formulario.
             </p>
           </div>
           <iframe
-            title="Documento de confirmacion precontractual"
+            title="Documento de confirmación precontractual"
             srcDoc={documentHtml}
             className="h-[1680px] w-full bg-slate-50"
           />

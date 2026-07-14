@@ -79,21 +79,21 @@ export const CONSENT_STATUS_LABELS = {
   NOT_SENT: "Solicitud no enviada",
   PENDING: "Enviada a la espera",
   APPROVED: "Consentimiento aprobado",
-  SUPERSEDED: "Enlace invalidado por una solicitud mas reciente",
+  SUPERSEDED: "Enlace invalidado por una solicitud más reciente",
 } as const;
 
 const CONFIRMATION_PARAGRAPHS = [
-  "Usted ha mantenido una conversacion con el colaborador identificado anteriormente, de forma presencial o telefonica, durante la cual ha manifestado su interes en recibir informacion y, en su caso, contratar un suministro energetico.",
-  "Como consecuencia de dicha solicitud, ha facilitado voluntariamente la informacion necesaria para preparar una propuesta adaptada a sus necesidades.",
-  "Mediante la aceptacion del presente documento confirma expresamente que desea que el colaborador continue con las actuaciones precontractuales necesarias relacionadas con la gestion iniciada.",
+  "Usted ha mantenido una conversación con el colaborador identificado anteriormente, de forma presencial o telefónica, durante la cual ha manifestado su interés en recibir información y, en su caso, contratar un suministro energético.",
+  "Como consecuencia de dicha solicitud, ha facilitado voluntariamente la información necesaria para preparar una propuesta adaptada a sus necesidades.",
+  "Mediante la aceptación del presente documento confirma expresamente que desea que el colaborador continúe con las actuaciones precontractuales necesarias relacionadas con la gestión iniciada.",
 ];
 
 const DECLARATION_ITEMS = [
   "He facilitado voluntariamente mis datos al colaborador.",
   "Deseo continuar con el proceso iniciado.",
-  "Solicito que el colaborador pueda contactar conmigo para completar la gestion solicitada.",
-  "He leido y comprendido el contenido del presente documento.",
-  "Entiendo que podre decidir libremente si formalizo o no la contratacion propuesta.",
+  "Solicito que el colaborador pueda contactar conmigo para completar la gestión solicitada.",
+  "He leído y comprendido el contenido del presente documento.",
+  "Entiendo que podré decidir libremente si formalizo o no la contratación propuesta.",
 ];
 
 export function generateConsentToken() {
@@ -224,9 +224,9 @@ function buildConsentLegalParagraphs() {
   return [
     "Responsable del tratamiento: [Empresa]",
     "Finalidad: Gestionar la solicitud realizada por el interesado y continuar las actuaciones precontractuales necesarias.",
-    "Base juridica: Consentimiento del interesado y aplicacion de medidas precontractuales solicitadas por el propio interesado.",
-    "Conservacion: La evidencia de esta confirmacion sera conservada durante el tiempo legalmente necesario.",
-    "Derechos: Puede ejercer los derechos de acceso, rectificacion, supresion, oposicion, limitacion y portabilidad a traves de los canales habilitados por el responsable del tratamiento.",
+    "Base jurídica: Consentimiento del interesado y aplicación de medidas precontractuales solicitadas por el propio interesado.",
+    "Conservación: La evidencia de esta confirmación será conservada durante el tiempo legalmente necesario.",
+    "Derechos: Puede ejercer los derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad a través de los canales habilitados por el responsable del tratamiento.",
   ];
 }
 
@@ -237,7 +237,7 @@ function buildConsentLegalTextHash(snapshot: ConsentSnapshot) {
     CONFIRMATION_PARAGRAPHS.join("\n"),
     DECLARATION_ITEMS.join("\n"),
     buildConsentLegalParagraphs().join("\n"),
-    "La aceptacion de este documento no supone la formalizacion de un contrato de suministro energetico ni la aceptacion definitiva de una oferta comercial.",
+    "La aceptación de este documento no supone la formalización de un contrato de suministro energético ni la aceptación definitiva de una oferta comercial.",
   ].join("\n\n");
 
   return createHash("sha256").update(source).digest("hex");
@@ -269,11 +269,11 @@ function buildStatusLabel(status?: ConsentDocumentData["status"]) {
 function buildDocumentSections(snapshot: ConsentSnapshot, evidence?: ConsentEvidence) {
   const collaboratorRows: Array<[string, string]> = [
     ["Empresa", ""],
-    ["Razon Social", snapshot.companyName],
+    ["Razón social", snapshot.companyName],
     ["CIF", snapshot.companyCif],
-    ["Direccion", snapshot.companyAddress],
-    ["Telefono", snapshot.companyPhone],
-    ["Correo electronico", snapshot.companyEmail || "-"],
+    ["Dirección", snapshot.companyAddress],
+    ["Teléfono", snapshot.companyPhone],
+    ["Correo electrónico", snapshot.companyEmail || "-"],
     ["Gestor responsable", ""],
     ["Nombre y apellidos", snapshot.collaboratorName],
     ["NIF", snapshot.collaboratorDocumentId],
@@ -282,25 +282,25 @@ function buildDocumentSections(snapshot: ConsentSnapshot, evidence?: ConsentEvid
   const interestedRows: Array<[string, string]> = [
     ["Nombre y apellidos", snapshot.clientFullName],
     ["DNI / NIE", snapshot.clientDni],
-    ["Telefono", snapshot.clientPhone],
-    ["Correo electronico", snapshot.clientEmail || "-"],
+    ["Teléfono", snapshot.clientPhone],
+    ["Correo electrónico", snapshot.clientEmail || "-"],
   ];
 
   const requestRows: Array<[string, string]> = [
-    ["Direccion del suministro", snapshot.supplyAddress],
+    ["Dirección del suministro", snapshot.supplyAddress],
     ["CUPS", snapshot.cups],
     ["Comercializadora", snapshot.commercializer],
     ["Tarifa solicitada", snapshot.requestedTariff],
   ];
 
   const evidenceRows: Array<[string, string]> = [
-    ["Fecha y hora de aceptacion", formatSpanishDateTime(evidence?.approvedAt)],
-    ["Canal", "Correo electronico"],
-    ["Direccion IP", evidence?.approvedIp || "-"],
+    ["Fecha y hora de aceptación", formatSpanishDateTime(evidence?.approvedAt)],
+    ["Canal", "Correo electrónico"],
+    ["Dirección IP", evidence?.approvedIp || "-"],
     ["Navegador", evidence?.approvedBrowser || "-"],
     ["Sistema operativo", evidence?.approvedOs || "-"],
     ["Dispositivo", getDeviceLabel(evidence?.approvedUserAgent)],
-    ["Correo de validacion", evidence?.recipientEmail || snapshot.clientEmail || "-"],
+    ["Correo de validación", evidence?.recipientEmail || snapshot.clientEmail || "-"],
     ["Expediente", snapshot.recordNumber],
   ];
 
@@ -418,6 +418,33 @@ function renderInlineIcon(
   return `<svg viewBox="0 0 24 24" aria-hidden="true">${pathByIcon[icon]}</svg>`;
 }
 
+function buildPdfFooterTemplate(generationDate: string) {
+  return `
+    <div style="
+      width: 100%;
+      margin: 0 16mm;
+      padding-top: 5px;
+      border-top: 1px solid #dbe4ef;
+      color: #334155;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 7px;
+      line-height: 1.25;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+    ">
+      <div style="max-width: 128mm; font-weight: 600;">
+        Documento generado automáticamente por el sistema CRM como evidencia electrónica de la confirmación realizada por el interesado.
+      </div>
+      <div style="white-space: nowrap; text-align: right;">
+        Generado: ${escapeHtml(generationDate)}<br />
+        Página <span class="pageNumber"></span> de <span class="totalPages"></span>
+      </div>
+    </div>
+  `;
+}
+
 async function getChromiumExecutablePath() {
   if (process.env.PUPPETEER_EXECUTABLE_PATH) {
     return process.env.PUPPETEER_EXECUTABLE_PATH;
@@ -455,7 +482,7 @@ export function renderConsentDocumentHtml({
   const companyInitials = getCompanyInitials(snapshot.companyName);
   const acceptanceSummary =
     status === "APPROVED"
-      ? `Aceptacion registrada${signerName ? ` por ${signerName}` : ""}${approvedAt ? ` el ${formatSpanishDateTime(approvedAt)}` : ""}.`
+      ? `Aceptación registrada${signerName ? ` por ${signerName}` : ""}${approvedAt ? ` el ${formatSpanishDateTime(approvedAt)}` : ""}.`
       : "";
 
   return `<!DOCTYPE html>
@@ -463,7 +490,7 @@ export function renderConsentDocumentHtml({
     <head>
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <title>Confirmacion ${escapeHtml(snapshot.recordNumber)}</title>
+      <title>Confirmación ${escapeHtml(snapshot.recordNumber)}</title>
       <style>
         :root {
           --bg: #eef3f8;
@@ -627,8 +654,10 @@ export function renderConsentDocumentHtml({
         .section-note {
           color: var(--muted);
           font-size: 13px;
-          line-height: 1.6;
-          max-width: 48ch;
+          line-height: 1.35;
+          max-width: none;
+          white-space: nowrap;
+          flex: 0 0 auto;
         }
         .cards-2 {
           display: grid;
@@ -687,7 +716,7 @@ export function renderConsentDocumentHtml({
           padding: 18px 20px;
           color: #173b6b;
           font-size: 13px;
-          line-height: 1.7;
+          line-height: 1.55;
           font-weight: 600;
         }
         .declaration-list {
@@ -696,30 +725,33 @@ export function renderConsentDocumentHtml({
         }
         .declaration-item {
           display: grid;
-          grid-template-columns: 42px 1fr;
-          gap: 14px;
+          grid-template-columns: 34px 1fr;
+          gap: 12px;
           align-items: start;
-          padding: 16px 18px;
+          padding: 15px 18px;
           border: 1px solid var(--line);
           border-radius: 20px;
           background: linear-gradient(180deg, #ffffff 0%, #f9fbfd 100%);
         }
         .check-badge {
-          width: 42px;
-          height: 42px;
-          border-radius: 14px;
-          background: #edf4ff;
-          border: 1px solid #cfe0f7;
-          color: var(--accent);
+          width: 30px;
+          height: 30px;
+          border-radius: 999px;
+          background: #0f766e;
+          border: 1px solid #0f766e;
+          color: #ffffff;
           display: flex;
           align-items: center;
           justify-content: center;
         }
         .check-badge svg,
         .evidence-icon svg {
-          width: 20px;
-          height: 20px;
+          width: 18px;
+          height: 18px;
           display: block;
+        }
+        .check-badge svg path {
+          stroke-width: 2.8;
         }
         .data-box {
           background: linear-gradient(180deg, #f7fafc 0%, #eef4fa 100%);
@@ -759,23 +791,19 @@ export function renderConsentDocumentHtml({
           justify-content: center;
         }
         .footer-note {
-          position: fixed;
-          left: 16mm;
-          right: 16mm;
-          bottom: 8mm;
+          margin: 18px 34px 0;
+          padding: 12px 0 0;
+          border-top: 1px solid var(--line);
           display: flex;
           justify-content: space-between;
           gap: 14px;
-          align-items: center;
+          align-items: flex-start;
           color: #516174;
           font-size: 10px;
           line-height: 1.4;
         }
         .footer-note strong {
           color: #213247;
-        }
-        .page-counter::after {
-          content: "Pagina " counter(page) " de " counter(pages);
         }
         @media print {
           html, body {
@@ -791,7 +819,10 @@ export function renderConsentDocumentHtml({
             overflow: visible;
           }
           .document {
-            padding: 0 0 22mm;
+            padding: 0;
+          }
+          .footer-note {
+            display: none;
           }
         }
         @media (max-width: 840px) {
@@ -810,6 +841,13 @@ export function renderConsentDocumentHtml({
           .summary-grid {
             grid-template-columns: 1fr;
           }
+          .section-heading {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+          .section-note {
+            white-space: normal;
+          }
         }
       </style>
     </head>
@@ -822,9 +860,9 @@ export function renderConsentDocumentHtml({
               <div class="brand-mark">${escapeHtml(companyInitials)}</div>
               <div>
                 <p class="eyebrow">${escapeHtml(snapshot.companyName)}</p>
-                <h1>Confirmacion de actuaciones precontractuales</h1>
+                <h1>Confirmación de actuaciones precontractuales</h1>
                 <p class="subtitle">
-                  Evidencia documental de la confirmacion realizada por el interesado para continuar con las actuaciones precontractuales vinculadas al expediente indicado.
+                  Evidencia documental de la confirmación realizada por el interesado para continuar con las actuaciones precontractuales vinculadas al expediente indicado.
                 </p>
               </div>
             </div>
@@ -846,7 +884,7 @@ export function renderConsentDocumentHtml({
                   </div>
                   <div>
                     <div class="field-label">Canal</div>
-                    <div class="field-value">Correo electronico</div>
+                    <div class="field-value">Correo electrónico</div>
                   </div>
                 </div>
               </div>
@@ -856,7 +894,7 @@ export function renderConsentDocumentHtml({
           <section class="section">
             <div class="section-heading">
               <div>
-                <p class="section-label">Identificacion</p>
+                <p class="section-label">Identificación</p>
                 <h2>Datos del interesado</h2>
               </div>
               <div class="section-note">Ficha identificativa del titular que confirma la continuidad del proceso.</div>
@@ -869,7 +907,7 @@ export function renderConsentDocumentHtml({
           <section class="section">
             <div class="section-heading">
               <div>
-                <p class="section-label">Colaboracion</p>
+                <p class="section-label">Colaboración</p>
                 <h2>Datos del colaborador</h2>
               </div>
               <div class="section-note">Entidad responsable y gestor asociado a la solicitud registrada.</div>
@@ -892,7 +930,7 @@ export function renderConsentDocumentHtml({
                 <p class="section-label">Solicitud</p>
                 <h2>Datos de la solicitud</h2>
               </div>
-              <div class="section-note">Resumen operativo de la gestion precontractual asociada al suministro.</div>
+              <div class="section-note">Resumen operativo de la gestión precontractual asociada al suministro.</div>
             </div>
             <div class="card">
               <div class="field-grid">${renderFieldList(requestRows)}</div>
@@ -902,25 +940,25 @@ export function renderConsentDocumentHtml({
           <section class="section">
             <div class="section-heading">
               <div>
-                <p class="section-label">Confirmacion</p>
-                <h2>Confirmacion de la solicitud</h2>
+                <p class="section-label">Confirmación</p>
+                <h2>Confirmación de la solicitud</h2>
               </div>
             </div>
             <div class="prose">
               ${CONFIRMATION_PARAGRAPHS.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("")}
             </div>
             <div class="callout" style="margin-top: 18px;">
-              La aceptacion de este documento no supone la formalizacion de un contrato de suministro energetico ni la aceptacion definitiva de una oferta comercial.
+              La aceptación de este documento no supone la formalización de un contrato de suministro energético ni la aceptación definitiva de una oferta comercial.
             </div>
           </section>
 
           <section class="section">
             <div class="section-heading">
               <div>
-                <p class="section-label">Declaracion</p>
-                <h2>Declaracion del interesado</h2>
+                <p class="section-label">Declaración</p>
+                <h2>Declaración del interesado</h2>
               </div>
-              <div class="section-note">Cada afirmacion queda validada junto con la evidencia electronica del consentimiento.</div>
+              <div class="section-note">Cada afirmación queda validada junto con la evidencia electrónica del consentimiento.</div>
             </div>
             <div class="declaration-list">
               ${DECLARATION_ITEMS.map(
@@ -938,7 +976,7 @@ export function renderConsentDocumentHtml({
             <div class="section-heading">
               <div>
                 <p class="section-label">Privacidad</p>
-                <h2>Proteccion de datos</h2>
+                <h2>Protección de datos</h2>
               </div>
             </div>
             <div class="data-box">
@@ -952,9 +990,9 @@ export function renderConsentDocumentHtml({
             <div class="section-heading">
               <div>
                 <p class="section-label">Trazabilidad</p>
-                <h2>Evidencia electronica</h2>
+                <h2>Evidencia electrónica</h2>
               </div>
-              <div class="section-note">Metadatos tecnicos asociados al acto de aceptacion registrado por el sistema.</div>
+              <div class="section-note">Metadatos técnicos asociados al acto de aceptación registrado por el sistema.</div>
             </div>
             <div class="evidence-grid">
               ${renderEvidenceCards(evidenceRows)}
@@ -964,8 +1002,8 @@ export function renderConsentDocumentHtml({
         </main>
       </div>
       <footer class="footer-note">
-        <div><strong>Documento generado automaticamente por el sistema CRM como evidencia electronica de la confirmacion realizada por el interesado.</strong></div>
-        <div>Generado: ${escapeHtml(generationDate)} · <span class="page-counter"></span></div>
+        <div><strong>Documento generado automáticamente por el sistema CRM como evidencia electrónica de la confirmación realizada por el interesado.</strong></div>
+        <div>Generado: ${escapeHtml(generationDate)}</div>
       </footer>
     </body>
   </html>`;
@@ -992,7 +1030,7 @@ export async function renderConsentDocumentPdf({
   const executablePath = await getChromiumExecutablePath();
   if (!executablePath) {
     throw new Error(
-      "No se encontro un ejecutable de Chromium. Configura PUPPETEER_EXECUTABLE_PATH para generar PDFs en este entorno."
+      "No se encontró un ejecutable de Chromium. Configura PUPPETEER_EXECUTABLE_PATH para generar PDFs en este entorno."
     );
   }
 
@@ -1005,6 +1043,7 @@ export async function renderConsentDocumentPdf({
 
   try {
     const page = await browser.newPage();
+    const generationDate = formatSpanishDateTime(new Date());
     await page.setViewport({ width: 1440, height: 2200, deviceScaleFactor: 1 });
     await page.setContent(html, { waitUntil: "domcontentloaded" });
     await page.waitForNetworkIdle();
@@ -1012,12 +1051,15 @@ export async function renderConsentDocumentPdf({
 
     const pdfBuffer = await page.pdf({
       format: "A4",
+      displayHeaderFooter: true,
+      footerTemplate: buildPdfFooterTemplate(generationDate),
+      headerTemplate: "<div></div>",
       printBackground: true,
       preferCSSPageSize: true,
       margin: {
         top: "0",
         right: "0",
-        bottom: "0",
+        bottom: "18mm",
         left: "0",
       },
     });
@@ -1050,13 +1092,13 @@ export async function sendConsentEmail(params: {
     body: JSON.stringify({
       from: fromEmail,
       to: [params.to],
-      subject: `Solicitud de confirmacion precontractual - expediente ${params.contractNumber}`,
+      subject: `Solicitud de confirmación precontractual - expediente ${params.contractNumber}`,
       html: `
         <div style="font-family: Arial, sans-serif; color: #0f172a; line-height: 1.6;">
-          <h2 style="margin-bottom: 12px;">Confirmacion de actuaciones precontractuales</h2>
+          <h2 style="margin-bottom: 12px;">Confirmación de actuaciones precontractuales</h2>
           <p>Hola ${params.customerName || "cliente"},</p>
-          <p>Te hemos enviado este enlace para que revises y aceptes la confirmacion de actuaciones precontractuales asociada al expediente <strong>${params.contractNumber}</strong>.</p>
-          <p>En el documento veras los datos del colaborador, del interesado, de la solicitud y la informacion legal correspondiente.</p>
+          <p>Te hemos enviado este enlace para que revises y aceptes la confirmación de actuaciones precontractuales asociada al expediente <strong>${params.contractNumber}</strong>.</p>
+          <p>En el documento verás los datos del colaborador, del interesado, de la solicitud y la información legal correspondiente.</p>
           <p>
             <a href="${params.consentLink}" style="display:inline-block;background:#0f766e;color:#ffffff;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:600;">
               Revisar y aceptar documento
