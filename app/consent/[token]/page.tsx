@@ -48,7 +48,7 @@ export default async function ConsentPage({
           <iframe
             title="Documento de confirmacion precontractual"
             srcDoc={documentHtml}
-            className="h-[980px] w-full bg-slate-50"
+            className="h-[1680px] w-full bg-slate-50"
           />
         </div>
 

@@ -24,7 +24,7 @@ El repositorio ya no corresponde al MVP inicial que aparece en algunos textos an
 - `Prisma`
 - `PostgreSQL`
 - `@vercel/blob` para almacenamiento de documentos
-- `pdf-lib` para generar PDFs de consentimiento
+- `puppeteer` para renderizar los PDFs de consentimiento desde HTML/CSS
 - `geonames-postalcodes` para lookup postal
 
 ## Estructura principal
@@ -67,6 +67,7 @@ CONSENT_OWNER_ADDRESS="Direccion fiscal"
 CONSENT_OWNER_PHONE="Telefono"
 CONSENT_OWNER_EMAIL="correo@tu-dominio.com"
 CONSENT_SIGNATURE_LOCATION="Murcia"
+PUPPETEER_EXECUTABLE_PATH=""
 
 # Opcional: Vercel Blob
 BLOB_READ_WRITE_TOKEN="vercel_blob_rw_xxx"

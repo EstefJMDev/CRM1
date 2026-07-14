@@ -1,5 +1,4 @@
 import { createHash, randomBytes } from "node:crypto";
-import { PDFDocument, PDFPage, StandardFonts, rgb } from "pdf-lib";
 
 type ContractConsentSnapshotInput = {
   contractId: string;
@@ -259,9 +258,9 @@ function getDeviceLabel(userAgent?: string | null) {
 }
 
 function buildStatusLabel(status?: ConsentDocumentData["status"]) {
-  if (status === "APPROVED") return "Consentimiento aprobado";
-  if (status === "SUPERSEDED") return "Enlace invalidado por una solicitud mas reciente";
-  return "Solicitud pendiente de aprobacion";
+  if (status === "APPROVED") return "Confirmado";
+  if (status === "SUPERSEDED") return "Invalidado";
+  return "Pendiente";
 }
 
 function buildDocumentSections(snapshot: ConsentSnapshot, evidence?: ConsentEvidence) {
@@ -305,302 +304,646 @@ function buildDocumentSections(snapshot: ConsentSnapshot, evidence?: ConsentEvid
   return { collaboratorRows, interestedRows, requestRows, evidenceRows };
 }
 
+function getStatusTheme(status?: ConsentDocumentData["status"]) {
+  if (status === "APPROVED") {
+    return {
+      background: "#dcfce7",
+      foreground: "#166534",
+      border: "#86efac",
+    };
+  }
+
+  if (status === "SUPERSEDED") {
+    return {
+      background: "#e2e8f0",
+      foreground: "#334155",
+      border: "#cbd5e1",
+    };
+  }
+
+  return {
+    background: "#fef3c7",
+    foreground: "#92400e",
+    border: "#fcd34d",
+  };
+}
+
+function getCompanyInitials(companyName: string) {
+  const letters = companyName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase() || "")
+    .join("");
+
+  return letters || "CRM";
+}
+
+function renderFieldList(rows: Array<[string, string]>) {
+  return rows
+    .map(
+      ([label, value]) => `
+        <div class="field">
+          <div class="field-label">${escapeHtml(label)}</div>
+          <div class="field-value">${escapeHtml(value)}</div>
+        </div>
+      `
+    )
+    .join("");
+}
+
+function renderEvidenceCards(rows: Array<[string, string]>) {
+  const icons = [
+    "clock",
+    "mail",
+    "globe",
+    "browser",
+    "monitor",
+    "device",
+    "shield",
+    "folder",
+  ] as const;
+
+  return rows
+    .map(
+      ([label, value], index) => `
+        <article class="evidence-item">
+          <div class="evidence-icon">${renderInlineIcon(icons[index] || "shield")}</div>
+          <div>
+            <div class="field-label">${escapeHtml(label)}</div>
+            <div class="field-value">${escapeHtml(value)}</div>
+          </div>
+        </article>
+      `
+    )
+    .join("");
+}
+
+function renderInlineIcon(
+  icon:
+    | "check"
+    | "shield"
+    | "clock"
+    | "mail"
+    | "globe"
+    | "browser"
+    | "monitor"
+    | "device"
+    | "folder"
+) {
+  const pathByIcon = {
+    check:
+      '<path d="M5 12.5 9.2 16.7 19 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
+    shield:
+      '<path d="M12 3.5 18 6v5.6c0 4.2-2.6 7.1-6 8.9-3.4-1.8-6-4.7-6-8.9V6l6-2.5Z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/>',
+    clock:
+      '<circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M12 7.8v4.7l3.2 1.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
+    mail:
+      '<rect x="4" y="6" width="16" height="12" rx="2.2" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="m5.5 8 6.5 5 6.5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
+    globe:
+      '<circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M4.5 12h15M12 4.2c2.1 2 3.4 4.8 3.4 7.8S14.1 17.8 12 19.8M12 4.2C9.9 6.2 8.6 9 8.6 12s1.3 5.8 3.4 7.8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>',
+    browser:
+      '<rect x="4" y="5" width="16" height="14" rx="2.4" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M4 9h16M7 7h.01M10 7h.01M13 7h.01" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
+    monitor:
+      '<rect x="4" y="5" width="16" height="11" rx="2.2" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M9 19h6M12 16v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
+    device:
+      '<rect x="8" y="4.5" width="8" height="15" rx="2.1" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M11 16.5h2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
+    folder:
+      '<path d="M4 8.5h5l1.6 2H20v6.3A2.2 2.2 0 0 1 17.8 19H6.2A2.2 2.2 0 0 1 4 16.8V8.5Z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/><path d="M4 8.5V7.2A2.2 2.2 0 0 1 6.2 5h2.6L10.4 7H17.8A2.2 2.2 0 0 1 20 9.2v1.3" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/>',
+  } as const;
+
+  return `<svg viewBox="0 0 24 24" aria-hidden="true">${pathByIcon[icon]}</svg>`;
+}
+
 export function renderConsentDocumentHtml({
   snapshot,
+  signerName,
+  approvedAt,
   status,
   evidence,
 }: ConsentDocumentData) {
   const statusLabel = buildStatusLabel(status);
+  const statusTheme = getStatusTheme(status);
   const { collaboratorRows, interestedRows, requestRows, evidenceRows } =
     buildDocumentSections(snapshot, evidence);
-
-  const renderRows = (rows: Array<[string, string]>) =>
-    rows
-      .map(([label, value]) => {
-        if (!value) {
-          return `<div class="row row-heading">${escapeHtml(label)}</div>`;
-        }
-
-        return `<div class="row"><div class="label">${escapeHtml(label)}</div><div class="value">${escapeHtml(value)}</div></div>`;
-      })
-      .join("");
+  const generationDate = formatSpanishDateTime(new Date());
+  const companyInitials = getCompanyInitials(snapshot.companyName);
+  const acceptanceSummary =
+    status === "APPROVED"
+      ? `Aceptacion registrada${signerName ? ` por ${signerName}` : ""}${approvedAt ? ` el ${formatSpanishDateTime(approvedAt)}` : ""}.`
+      : "";
 
   return `<!DOCTYPE html>
   <html lang="es">
     <head>
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <title>Consentimiento ${escapeHtml(snapshot.recordNumber)}</title>
+      <title>Confirmacion ${escapeHtml(snapshot.recordNumber)}</title>
       <style>
-        body { font-family: Arial, sans-serif; background: #eef2f7; color: #0f172a; margin: 0; padding: 24px; }
-        .sheet { max-width: 940px; margin: 0 auto; background: #fff; border: 1px solid #dbe3ee; border-radius: 24px; padding: 32px; box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08); }
-        .eyebrow { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; color: #0f766e; text-transform: uppercase; }
-        h1 { margin: 8px 0 4px; font-size: 30px; line-height: 1.15; }
-        .meta { margin: 16px 0 0; display: grid; gap: 10px; }
-        .meta-item { display: grid; grid-template-columns: 180px 1fr; gap: 12px; }
-        .meta-label { font-weight: 700; }
-        .status { display: inline-flex; margin-top: 14px; padding: 7px 12px; border-radius: 999px; background: ${status === "APPROVED" ? "#dcfce7" : status === "SUPERSEDED" ? "#e2e8f0" : "#fef3c7"}; color: ${status === "APPROVED" ? "#166534" : status === "SUPERSEDED" ? "#334155" : "#92400e"}; font-size: 13px; font-weight: 700; }
-        .section { margin-top: 24px; border: 1px solid #dbe3ee; border-radius: 18px; padding: 18px; }
-        .section h2 { margin: 0 0 14px; font-size: 19px; }
-        .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
-        .card { background: #f8fafc; border: 1px solid #dbe3ee; border-radius: 18px; padding: 18px; }
-        .card h3 { margin: 0 0 14px; font-size: 17px; }
-        .row { margin-bottom: 12px; }
-        .row-heading { margin: 6px 0 12px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #0f172a; }
-        .label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; margin-bottom: 4px; }
-        .value { font-weight: 700; word-break: break-word; }
-        p { margin: 0; line-height: 1.7; }
-        .spaced p + p { margin-top: 14px; }
-        .note { margin-top: 16px; font-weight: 700; }
-        .checklist { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
-        .checklist li { display: flex; gap: 10px; align-items: flex-start; }
-        .check { min-width: 22px; height: 22px; border: 1px solid #334155; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
-        .table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-        .table td { border-top: 1px solid #e2e8f0; padding: 10px 0; vertical-align: top; }
-        .table td:first-child { width: 230px; font-weight: 700; color: #334155; padding-right: 16px; }
-        @media print { body { background: #fff; padding: 0; } .sheet { box-shadow: none; border: none; border-radius: 0; max-width: none; } }
-        @media (max-width: 720px) { .grid, .meta-item { grid-template-columns: 1fr; } .sheet { padding: 20px; } .table td, .table td:first-child { display: block; width: auto; padding-right: 0; } }
+        :root {
+          --bg: #eef3f8;
+          --paper: #ffffff;
+          --ink: #0f172a;
+          --muted: #5b6b82;
+          --line: #dbe4ef;
+          --line-strong: #c7d5e4;
+          --card: #f8fbfe;
+          --accent: #184a8c;
+          --accent-soft: #edf4ff;
+          --success-bg: ${statusTheme.background};
+          --success-fg: ${statusTheme.foreground};
+          --success-line: ${statusTheme.border};
+        }
+        * { box-sizing: border-box; }
+        @page {
+          size: A4;
+          margin: 18mm 16mm 22mm;
+        }
+        html, body {
+          margin: 0;
+          padding: 0;
+          background: var(--bg);
+          color: var(--ink);
+          font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        }
+        body {
+          padding: 28px 0;
+        }
+        .page-shell {
+          width: min(100%, 980px);
+          margin: 0 auto;
+          background: linear-gradient(180deg, #f8fbff 0%, #ffffff 24%);
+          border: 1px solid var(--line);
+          border-radius: 30px;
+          box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+          overflow: hidden;
+        }
+        .top-accent {
+          height: 8px;
+          background: linear-gradient(90deg, #143d75 0%, #295ea7 45%, #8baedb 100%);
+        }
+        .document {
+          padding: 34px 34px 96px;
+        }
+        .hero {
+          display: grid;
+          grid-template-columns: 1.4fr 1fr;
+          gap: 28px;
+          align-items: start;
+          padding-bottom: 28px;
+          border-bottom: 1px solid var(--line);
+        }
+        .brand {
+          display: flex;
+          gap: 18px;
+          align-items: flex-start;
+        }
+        .brand-mark {
+          width: 62px;
+          height: 62px;
+          border-radius: 20px;
+          background: linear-gradient(135deg, #163d72 0%, #2e69b6 100%);
+          color: #ffffff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 24px;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.22);
+        }
+        .eyebrow {
+          margin: 0 0 10px;
+          color: var(--accent);
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+        }
+        h1 {
+          margin: 0;
+          font-size: 33px;
+          line-height: 1.08;
+          letter-spacing: -0.03em;
+        }
+        .subtitle {
+          margin: 12px 0 0;
+          color: var(--muted);
+          font-size: 14px;
+          line-height: 1.7;
+          max-width: 58ch;
+        }
+        .hero-side {
+          display: grid;
+          gap: 14px;
+          justify-items: stretch;
+        }
+        .summary-card {
+          background: rgba(255, 255, 255, 0.9);
+          border: 1px solid var(--line);
+          border-radius: 24px;
+          padding: 18px 20px;
+        }
+        .summary-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 14px 18px;
+        }
+        .status-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          justify-self: start;
+          padding: 8px 14px;
+          border-radius: 999px;
+          border: 1px solid var(--success-line);
+          background: var(--success-bg);
+          color: var(--success-fg);
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+        }
+        .status-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 999px;
+          background: currentColor;
+        }
+        .section {
+          padding-top: 28px;
+          margin-top: 28px;
+          border-top: 1px solid var(--line);
+        }
+        .section:first-of-type {
+          margin-top: 30px;
+        }
+        .section-heading {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 18px;
+          margin-bottom: 18px;
+        }
+        .section-label {
+          margin: 0 0 8px;
+          color: var(--accent);
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+        }
+        .section h2 {
+          margin: 0;
+          font-size: 25px;
+          line-height: 1.14;
+          letter-spacing: -0.02em;
+        }
+        .section-note {
+          color: var(--muted);
+          font-size: 13px;
+          line-height: 1.6;
+          max-width: 48ch;
+        }
+        .cards-2 {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 18px;
+        }
+        .card {
+          background: var(--card);
+          border: 1px solid var(--line);
+          border-radius: 24px;
+          padding: 22px;
+        }
+        .card-title {
+          margin: 0 0 18px;
+          font-size: 17px;
+          font-weight: 700;
+          letter-spacing: -0.01em;
+        }
+        .field-grid {
+          display: grid;
+          gap: 14px;
+        }
+        .field {
+          padding-top: 14px;
+          border-top: 1px solid rgba(199, 213, 228, 0.65);
+        }
+        .field:first-child {
+          padding-top: 0;
+          border-top: 0;
+        }
+        .field-label {
+          margin-bottom: 5px;
+          color: var(--muted);
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+        }
+        .field-value {
+          font-size: 15px;
+          line-height: 1.55;
+          font-weight: 600;
+          word-break: break-word;
+        }
+        .prose {
+          display: grid;
+          gap: 16px;
+          color: #233248;
+          font-size: 14px;
+          line-height: 1.9;
+        }
+        .callout {
+          background: linear-gradient(180deg, #f5f9ff 0%, #eef5ff 100%);
+          border: 1px solid #d7e5fb;
+          border-radius: 24px;
+          padding: 18px 20px;
+          color: #173b6b;
+          font-size: 13px;
+          line-height: 1.7;
+          font-weight: 600;
+        }
+        .declaration-list {
+          display: grid;
+          gap: 14px;
+        }
+        .declaration-item {
+          display: grid;
+          grid-template-columns: 42px 1fr;
+          gap: 14px;
+          align-items: start;
+          padding: 16px 18px;
+          border: 1px solid var(--line);
+          border-radius: 20px;
+          background: linear-gradient(180deg, #ffffff 0%, #f9fbfd 100%);
+        }
+        .check-badge {
+          width: 42px;
+          height: 42px;
+          border-radius: 14px;
+          background: #edf4ff;
+          border: 1px solid #cfe0f7;
+          color: var(--accent);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .check-badge svg,
+        .evidence-icon svg {
+          width: 20px;
+          height: 20px;
+          display: block;
+        }
+        .data-box {
+          background: linear-gradient(180deg, #f7fafc 0%, #eef4fa 100%);
+          border: 1px solid var(--line-strong);
+          border-radius: 24px;
+          padding: 22px;
+        }
+        .data-box .prose {
+          gap: 12px;
+          font-size: 13px;
+        }
+        .evidence-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 14px;
+        }
+        .evidence-item {
+          display: grid;
+          grid-template-columns: 40px 1fr;
+          gap: 14px;
+          align-items: start;
+          min-height: 98px;
+          padding: 18px;
+          border: 1px solid var(--line);
+          border-radius: 20px;
+          background: linear-gradient(180deg, #ffffff 0%, #f8fbfe 100%);
+        }
+        .evidence-icon {
+          width: 40px;
+          height: 40px;
+          border-radius: 14px;
+          background: #eff5ff;
+          border: 1px solid #d9e6f8;
+          color: var(--accent);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .footer-note {
+          position: fixed;
+          left: 16mm;
+          right: 16mm;
+          bottom: 8mm;
+          display: flex;
+          justify-content: space-between;
+          gap: 14px;
+          align-items: center;
+          color: #516174;
+          font-size: 10px;
+          line-height: 1.4;
+        }
+        .footer-note strong {
+          color: #213247;
+        }
+        .page-counter::after {
+          content: "Pagina " counter(page) " de " counter(pages);
+        }
+        @media print {
+          html, body {
+            background: #ffffff;
+            padding: 0;
+          }
+          .page-shell {
+            width: auto;
+            margin: 0;
+            border: 0;
+            border-radius: 0;
+            box-shadow: none;
+            overflow: visible;
+          }
+          .document {
+            padding: 0 0 22mm;
+          }
+        }
+        @media (max-width: 840px) {
+          body {
+            padding: 16px;
+          }
+          .page-shell {
+            width: 100%;
+          }
+          .document {
+            padding: 24px 22px 80px;
+          }
+          .hero,
+          .cards-2,
+          .evidence-grid,
+          .summary-grid {
+            grid-template-columns: 1fr;
+          }
+        }
       </style>
     </head>
     <body>
-      <main class="sheet">
-        <header>
-          <div class="eyebrow">Cliente</div>
-          <h1>Confirmacion de actuaciones precontractuales</h1>
-          <div class="meta">
-            <div class="meta-item"><div class="meta-label">Expediente:</div><div>${escapeHtml(snapshot.recordNumber)}</div></div>
-            <div class="meta-item"><div class="meta-label">Fecha de emision:</div><div>${escapeHtml(snapshot.issuedAtLabel)}</div></div>
-          </div>
-          <span class="status">${escapeHtml(statusLabel)}</span>
-        </header>
+      <div class="page-shell">
+        <div class="top-accent"></div>
+        <main class="document">
+          <header class="hero">
+            <div class="brand">
+              <div class="brand-mark">${escapeHtml(companyInitials)}</div>
+              <div>
+                <p class="eyebrow">${escapeHtml(snapshot.companyName)}</p>
+                <h1>Confirmacion de actuaciones precontractuales</h1>
+                <p class="subtitle">
+                  Evidencia documental de la confirmacion realizada por el interesado para continuar con las actuaciones precontractuales vinculadas al expediente indicado.
+                </p>
+              </div>
+            </div>
+            <div class="hero-side">
+              <div class="status-badge"><span class="status-dot"></span>${escapeHtml(statusLabel)}</div>
+              <div class="summary-card">
+                <div class="summary-grid">
+                  <div>
+                    <div class="field-label">Expediente</div>
+                    <div class="field-value">${escapeHtml(snapshot.recordNumber)}</div>
+                  </div>
+                  <div>
+                    <div class="field-label">Fecha</div>
+                    <div class="field-value">${escapeHtml(snapshot.issuedAtLabel)}</div>
+                  </div>
+                  <div>
+                    <div class="field-label">Titular</div>
+                    <div class="field-value">${escapeHtml(snapshot.clientFullName)}</div>
+                  </div>
+                  <div>
+                    <div class="field-label">Canal</div>
+                    <div class="field-value">Correo electronico</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </header>
 
-        <section class="section">
-          <h2>Datos del colaborador</h2>
-          <div class="grid">
-            <div class="card">
-              <h3>Empresa</h3>
-              ${renderRows(collaboratorRows.slice(0, 6))}
+          <section class="section">
+            <div class="section-heading">
+              <div>
+                <p class="section-label">Identificacion</p>
+                <h2>Datos del interesado</h2>
+              </div>
+              <div class="section-note">Ficha identificativa del titular que confirma la continuidad del proceso.</div>
             </div>
             <div class="card">
-              <h3>Gestor responsable</h3>
-              ${renderRows(collaboratorRows.slice(7))}
+              <div class="field-grid">${renderFieldList(interestedRows)}</div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        <section class="section">
-          <h2>Datos del interesado</h2>
-          <div class="grid">
+          <section class="section">
+            <div class="section-heading">
+              <div>
+                <p class="section-label">Colaboracion</p>
+                <h2>Datos del colaborador</h2>
+              </div>
+              <div class="section-note">Entidad responsable y gestor asociado a la solicitud registrada.</div>
+            </div>
+            <div class="cards-2">
+              <article class="card">
+                <h3 class="card-title">Entidad</h3>
+                <div class="field-grid">${renderFieldList(collaboratorRows.slice(1, 6))}</div>
+              </article>
+              <article class="card">
+                <h3 class="card-title">Gestor responsable</h3>
+                <div class="field-grid">${renderFieldList(collaboratorRows.slice(7))}</div>
+              </article>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-heading">
+              <div>
+                <p class="section-label">Solicitud</p>
+                <h2>Datos de la solicitud</h2>
+              </div>
+              <div class="section-note">Resumen operativo de la gestion precontractual asociada al suministro.</div>
+            </div>
             <div class="card">
-              ${renderRows(interestedRows)}
+              <div class="field-grid">${renderFieldList(requestRows)}</div>
             </div>
-            <div class="card">
-              <h3>Datos de la solicitud</h3>
-              ${renderRows(requestRows)}
+          </section>
+
+          <section class="section">
+            <div class="section-heading">
+              <div>
+                <p class="section-label">Confirmacion</p>
+                <h2>Confirmacion de la solicitud</h2>
+              </div>
             </div>
-          </div>
-        </section>
+            <div class="prose">
+              ${CONFIRMATION_PARAGRAPHS.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("")}
+            </div>
+            <div class="callout" style="margin-top: 18px;">
+              La aceptacion de este documento no supone la formalizacion de un contrato de suministro energetico ni la aceptacion definitiva de una oferta comercial.
+            </div>
+          </section>
 
-        <section class="section spaced">
-          <h2>Confirmacion de la solicitud</h2>
-          ${CONFIRMATION_PARAGRAPHS.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("")}
-          <p class="note">La aceptacion de este documento no supone la formalizacion de un contrato de suministro energetico ni la aceptacion definitiva de una oferta comercial.</p>
-        </section>
+          <section class="section">
+            <div class="section-heading">
+              <div>
+                <p class="section-label">Declaracion</p>
+                <h2>Declaracion del interesado</h2>
+              </div>
+              <div class="section-note">Cada afirmacion queda validada junto con la evidencia electronica del consentimiento.</div>
+            </div>
+            <div class="declaration-list">
+              ${DECLARATION_ITEMS.map(
+                (item) => `
+                  <article class="declaration-item">
+                    <div class="check-badge">${renderInlineIcon("check")}</div>
+                    <div class="field-value">${escapeHtml(item)}</div>
+                  </article>
+                `
+              ).join("")}
+            </div>
+          </section>
 
-        <section class="section">
-          <h2>Declaracion del interesado</h2>
-          <ul class="checklist">
-            ${DECLARATION_ITEMS.map((item) => `<li><span class="check">X</span><span>${escapeHtml(item)}</span></li>`).join("")}
-          </ul>
-        </section>
+          <section class="section">
+            <div class="section-heading">
+              <div>
+                <p class="section-label">Privacidad</p>
+                <h2>Proteccion de datos</h2>
+              </div>
+            </div>
+            <div class="data-box">
+              <div class="prose">
+                ${buildConsentLegalParagraphs().map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("")}
+              </div>
+            </div>
+          </section>
 
-        <section class="section spaced">
-          <h2>Informacion sobre proteccion de datos</h2>
-          ${buildConsentLegalParagraphs().map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("")}
-        </section>
-
-        <section class="section">
-          <h2>Evidencia electronica de aceptacion</h2>
-          <table class="table">
-            <tbody>
-              ${evidenceRows
-                .map(
-                  ([label, value]) =>
-                    `<tr><td>${escapeHtml(label)}</td><td>${escapeHtml(value)}</td></tr>`
-                )
-                .join("")}
-            </tbody>
-          </table>
-        </section>
-      </main>
+          <section class="section">
+            <div class="section-heading">
+              <div>
+                <p class="section-label">Trazabilidad</p>
+                <h2>Evidencia electronica</h2>
+              </div>
+              <div class="section-note">Metadatos tecnicos asociados al acto de aceptacion registrado por el sistema.</div>
+            </div>
+            <div class="evidence-grid">
+              ${renderEvidenceCards(evidenceRows)}
+            </div>
+            ${acceptanceSummary ? `<div class="callout" style="margin-top: 18px;">${escapeHtml(acceptanceSummary)}</div>` : ""}
+          </section>
+        </main>
+      </div>
+      <footer class="footer-note">
+        <div><strong>Documento generado automaticamente por el sistema CRM como evidencia electronica de la confirmacion realizada por el interesado.</strong></div>
+        <div>Generado: ${escapeHtml(generationDate)} · <span class="page-counter"></span></div>
+      </footer>
     </body>
   </html>`;
-}
-
-function wrapTextLines(params: {
-  text: string;
-  maxWidth: number;
-  font: Awaited<ReturnType<PDFDocument["embedFont"]>>;
-  size: number;
-}) {
-  const { text, maxWidth, font, size } = params;
-  const words = text.split(/\s+/).filter(Boolean);
-  const lines: string[] = [];
-  let currentLine = "";
-
-  for (const word of words) {
-    const candidate = currentLine ? `${currentLine} ${word}` : word;
-    if (font.widthOfTextAtSize(candidate, size) <= maxWidth) {
-      currentLine = candidate;
-      continue;
-    }
-
-    if (currentLine) {
-      lines.push(currentLine);
-    }
-
-    currentLine = word;
-  }
-
-  if (currentLine) {
-    lines.push(currentLine);
-  }
-
-  return lines.length > 0 ? lines : [""];
-}
-
-function drawWrappedText(params: {
-  page: PDFPage;
-  text: string;
-  x: number;
-  y: number;
-  maxWidth: number;
-  font: Awaited<ReturnType<PDFDocument["embedFont"]>>;
-  size: number;
-  color?: ReturnType<typeof rgb>;
-  lineHeight?: number;
-}) {
-  const {
-    page,
-    text,
-    x,
-    y,
-    maxWidth,
-    font,
-    size,
-    color = rgb(0.15, 0.23, 0.32),
-    lineHeight = size + 4,
-  } = params;
-  const lines = wrapTextLines({ text, maxWidth, font, size });
-
-  let cursorY = y;
-  for (const line of lines) {
-    page.drawText(line, { x, y: cursorY, size, font, color });
-    cursorY -= lineHeight;
-  }
-
-  return cursorY;
-}
-
-function measureWrappedTextHeight(params: {
-  text: string;
-  maxWidth: number;
-  font: Awaited<ReturnType<PDFDocument["embedFont"]>>;
-  size: number;
-  lineHeight?: number;
-}) {
-  const { text, maxWidth, font, size, lineHeight = size + 4 } = params;
-  return wrapTextLines({ text, maxWidth, font, size }).length * lineHeight;
-}
-
-function drawKeyValueRows(params: {
-  page: PDFPage;
-  rows: Array<[string, string]>;
-  x: number;
-  y: number;
-  width: number;
-  font: Awaited<ReturnType<PDFDocument["embedFont"]>>;
-  boldFont: Awaited<ReturnType<PDFDocument["embedFont"]>>;
-  labelSize?: number;
-  valueSize?: number;
-}) {
-  const {
-    page,
-    rows,
-    x,
-    y,
-    width,
-    font,
-    boldFont,
-    labelSize = 8,
-    valueSize = 9,
-  } = params;
-
-  let cursorY = y;
-  for (const [label, value] of rows) {
-    page.drawText(label, {
-      x,
-      y: cursorY,
-      size: labelSize,
-      font: boldFont,
-      color: rgb(0.39, 0.45, 0.52),
-    });
-
-    cursorY = drawWrappedText({
-      page,
-      text: value,
-      x,
-      y: cursorY - 12,
-      maxWidth: width,
-      font,
-      size: valueSize,
-      lineHeight: valueSize + 3,
-      color: rgb(0.09, 0.11, 0.16),
-    }) - 8;
-  }
-
-  return cursorY;
-}
-
-function measureKeyValueRowsHeight(params: {
-  rows: Array<[string, string]>;
-  width: number;
-  font: Awaited<ReturnType<PDFDocument["embedFont"]>>;
-  size?: number;
-  lineHeight?: number;
-}) {
-  const { rows, width, font, size = 9, lineHeight = size + 3 } = params;
-  return rows.reduce((total, [, value]) => {
-    return total + 12 + measureWrappedTextHeight({ text: value, maxWidth: width, font, size, lineHeight }) + 8;
-  }, 0);
-}
-
-function drawSectionBox(params: {
-  page: PDFPage;
-  title: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  boldFont: Awaited<ReturnType<PDFDocument["embedFont"]>>;
-}) {
-  const { page, title, x, y, width, height, boldFont } = params;
-  page.drawRectangle({
-    x,
-    y: y - height,
-    width,
-    height,
-    color: rgb(1, 1, 1),
-    borderColor: rgb(0.86, 0.89, 0.93),
-    borderWidth: 1,
-  });
-  page.drawText(title, {
-    x: x + 14,
-    y: y - 20,
-    size: 12,
-    font: boldFont,
-    color: rgb(0.09, 0.11, 0.16),
-  });
 }
 
 export async function renderConsentDocumentPdf({
@@ -610,448 +953,47 @@ export async function renderConsentDocumentPdf({
   status,
   evidence,
 }: ConsentDocumentData) {
-  const pdfDoc = await PDFDocument.create();
-  let page = pdfDoc.addPage([595.28, 841.89]);
-  const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-  const margin = 42;
-  const contentWidth = page.getWidth() - margin * 2;
-  const columnGap = 16;
-  const columnWidth = (contentWidth - columnGap) / 2;
-  const dark = rgb(0.09, 0.11, 0.16);
-  const muted = rgb(0.39, 0.45, 0.52);
-  const accent = rgb(0.06, 0.46, 0.43);
-  const statusLabel = buildStatusLabel(status);
-  const {
-    collaboratorRows,
-    interestedRows,
-    requestRows,
-    evidenceRows,
-  } = buildDocumentSections(snapshot, {
-    ...evidence,
-    approvedAt: evidence?.approvedAt || approvedAt,
+  const html = renderConsentDocumentHtml({
+    snapshot,
+    signerName,
+    approvedAt,
+    status,
+    evidence: {
+      ...evidence,
+      approvedAt: evidence?.approvedAt || approvedAt,
+    },
   });
 
-  const ensurePage = (requiredHeight: number, currentY: number) => {
-    if (currentY - requiredHeight >= 56) {
-      return { page, y: currentY };
-    }
-
-    page = pdfDoc.addPage([595.28, 841.89]);
-    return { page, y: page.getHeight() - 72 };
-  };
-
-  let y = page.getHeight() - 72;
-
-  page.drawText("CLIENTE", {
-    x: margin,
-    y,
-    size: 11,
-    font: boldFont,
-    color: accent,
-  });
-  y -= 24;
-
-  page.drawText("CONFIRMACION DE ACTUACIONES PRECONTRACTUALES", {
-    x: margin,
-    y,
-    size: 17,
-    font: boldFont,
-    color: dark,
-  });
-  y -= 26;
-
-  page.drawText(`Expediente: ${snapshot.recordNumber}`, {
-    x: margin,
-    y,
-    size: 10,
-    font: boldFont,
-    color: dark,
-  });
-  y -= 16;
-
-  page.drawText(`Fecha de emision: ${snapshot.issuedAtLabel}`, {
-    x: margin,
-    y,
-    size: 10,
-    font: regularFont,
-    color: muted,
+  const puppeteer = await import("puppeteer");
+  const browser = await puppeteer.launch({
+    headless: true,
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
   });
 
-  const statusWidth = boldFont.widthOfTextAtSize(statusLabel, 10) + 18;
-  page.drawRectangle({
-    x: page.getWidth() - margin - statusWidth,
-    y: y - 5,
-    width: statusWidth,
-    height: 20,
-    color: status === "APPROVED" ? rgb(0.86, 0.97, 0.9) : status === "SUPERSEDED" ? rgb(0.89, 0.91, 0.94) : rgb(1, 0.95, 0.79),
-  });
-  page.drawText(statusLabel, {
-    x: page.getWidth() - margin - statusWidth + 9,
-    y,
-    size: 10,
-    font: boldFont,
-    color: status === "APPROVED" ? rgb(0.09, 0.4, 0.21) : status === "SUPERSEDED" ? rgb(0.2, 0.25, 0.32) : rgb(0.58, 0.25, 0.05),
-  });
+  try {
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1440, height: 2200, deviceScaleFactor: 1 });
+    await page.setContent(html, { waitUntil: "domcontentloaded" });
+    await page.waitForNetworkIdle();
+    await page.emulateMediaType("print");
 
-  y -= 34;
-
-  const companyRows = collaboratorRows.slice(1, 6);
-  const managerRows = collaboratorRows.slice(7);
-  const companyHeight = 46 + measureKeyValueRowsHeight({
-    rows: companyRows,
-    width: columnWidth - 28,
-    font: regularFont,
-  });
-  const managerHeight = 46 + measureKeyValueRowsHeight({
-    rows: managerRows,
-    width: columnWidth - 28,
-    font: regularFont,
-  });
-  const collaboratorHeight = Math.max(companyHeight, managerHeight, 170);
-  ({ page, y } = ensurePage(collaboratorHeight, y));
-
-  drawSectionBox({
-    page,
-    title: "Datos del colaborador",
-    x: margin,
-    y,
-    width: contentWidth,
-    height: collaboratorHeight,
-    boldFont,
-  });
-
-  const innerTop = y - 40;
-  for (const [x, title, rows] of [
-    [margin + 14, "Empresa", companyRows],
-    [margin + 14 + columnWidth + columnGap, "Gestor responsable", managerRows],
-  ] as const) {
-    page.drawRectangle({
-      x,
-      y: y - collaboratorHeight + 14,
-      width: columnWidth - 14,
-      height: collaboratorHeight - 54,
-      color: rgb(0.97, 0.98, 0.99),
-      borderColor: rgb(0.86, 0.89, 0.93),
-      borderWidth: 1,
+    const pdfBuffer = await page.pdf({
+      format: "A4",
+      printBackground: true,
+      preferCSSPageSize: true,
+      margin: {
+        top: "0",
+        right: "0",
+        bottom: "0",
+        left: "0",
+      },
     });
-    page.drawText(title, {
-      x: x + 12,
-      y: innerTop,
-      size: 11,
-      font: boldFont,
-      color: dark,
-    });
-    drawKeyValueRows({
-      page,
-      rows,
-      x: x + 12,
-      y: innerTop - 20,
-      width: columnWidth - 38,
-      font: regularFont,
-      boldFont,
-    });
+
+    return new Uint8Array(pdfBuffer);
+  } finally {
+    await browser.close();
   }
-
-  y -= collaboratorHeight + 14;
-
-  const interestedHeight = 46 + measureKeyValueRowsHeight({
-    rows: interestedRows,
-    width: columnWidth - 28,
-    font: regularFont,
-  });
-  const requestHeight = 46 + measureKeyValueRowsHeight({
-    rows: requestRows,
-    width: columnWidth - 28,
-    font: regularFont,
-  });
-  const dataHeight = Math.max(interestedHeight, requestHeight, 160);
-  ({ page, y } = ensurePage(dataHeight, y));
-
-  drawSectionBox({
-    page,
-    title: "Datos del interesado y de la solicitud",
-    x: margin,
-    y,
-    width: contentWidth,
-    height: dataHeight,
-    boldFont,
-  });
-
-  for (const [x, title, rows] of [
-    [margin + 14, "Datos del interesado", interestedRows],
-    [margin + 14 + columnWidth + columnGap, "Datos de la solicitud", requestRows],
-  ] as const) {
-    page.drawRectangle({
-      x,
-      y: y - dataHeight + 14,
-      width: columnWidth - 14,
-      height: dataHeight - 54,
-      color: rgb(0.97, 0.98, 0.99),
-      borderColor: rgb(0.86, 0.89, 0.93),
-      borderWidth: 1,
-    });
-    page.drawText(title, {
-      x: x + 12,
-      y: y - 40,
-      size: 11,
-      font: boldFont,
-      color: dark,
-    });
-    drawKeyValueRows({
-      page,
-      rows,
-      x: x + 12,
-      y: y - 60,
-      width: columnWidth - 38,
-      font: regularFont,
-      boldFont,
-    });
-  }
-
-  y -= dataHeight + 14;
-
-  const confirmationHeight =
-    28 +
-    CONFIRMATION_PARAGRAPHS.reduce((total, paragraph) => {
-      return (
-        total +
-        measureWrappedTextHeight({
-          text: paragraph,
-          maxWidth: contentWidth - 28,
-          font: regularFont,
-          size: 9.5,
-          lineHeight: 13,
-        }) +
-        8
-      );
-    }, 0) +
-    measureWrappedTextHeight({
-      text: "La aceptacion de este documento no supone la formalizacion de un contrato de suministro energetico ni la aceptacion definitiva de una oferta comercial.",
-      maxWidth: contentWidth - 28,
-      font: boldFont,
-      size: 9.5,
-      lineHeight: 13,
-    }) +
-    24;
-  ({ page, y } = ensurePage(confirmationHeight, y));
-
-  drawSectionBox({
-    page,
-    title: "Confirmacion de la solicitud",
-    x: margin,
-    y,
-    width: contentWidth,
-    height: confirmationHeight,
-    boldFont,
-  });
-
-  let textY = y - 40;
-  for (const paragraph of CONFIRMATION_PARAGRAPHS) {
-    textY =
-      drawWrappedText({
-        page,
-        text: paragraph,
-        x: margin + 14,
-        y: textY,
-        maxWidth: contentWidth - 28,
-        font: regularFont,
-        size: 9.5,
-        lineHeight: 13,
-      }) - 8;
-  }
-  drawWrappedText({
-    page,
-    text: "La aceptacion de este documento no supone la formalizacion de un contrato de suministro energetico ni la aceptacion definitiva de una oferta comercial.",
-    x: margin + 14,
-    y: textY,
-    maxWidth: contentWidth - 28,
-    font: boldFont,
-    size: 9.5,
-    lineHeight: 13,
-    color: dark,
-  });
-
-  y -= confirmationHeight + 14;
-
-  const declarationHeight =
-    28 +
-    DECLARATION_ITEMS.reduce((total, item) => {
-      return (
-        total +
-        measureWrappedTextHeight({
-          text: item,
-          maxWidth: contentWidth - 52,
-          font: regularFont,
-          size: 9,
-          lineHeight: 12,
-        }) +
-        8
-      );
-    }, 0) +
-    16;
-  ({ page, y } = ensurePage(declarationHeight, y));
-
-  drawSectionBox({
-    page,
-    title: "Declaracion del interesado",
-    x: margin,
-    y,
-    width: contentWidth,
-    height: declarationHeight,
-    boldFont,
-  });
-
-  let checklistY = y - 40;
-  for (const item of DECLARATION_ITEMS) {
-    page.drawRectangle({
-      x: margin + 14,
-      y: checklistY - 2,
-      width: 10,
-      height: 10,
-      borderColor: rgb(0.2, 0.25, 0.32),
-      borderWidth: 1,
-    });
-    page.drawText("X", {
-      x: margin + 16.5,
-      y: checklistY - 0.5,
-      size: 8,
-      font: boldFont,
-      color: dark,
-    });
-    checklistY =
-      drawWrappedText({
-        page,
-        text: item,
-        x: margin + 32,
-        y: checklistY,
-        maxWidth: contentWidth - 52,
-        font: regularFont,
-        size: 9,
-        lineHeight: 12,
-      }) - 8;
-  }
-
-  y -= declarationHeight + 14;
-
-  const legalParagraphs = buildConsentLegalParagraphs();
-  const legalHeight =
-    28 +
-    legalParagraphs.reduce((total, paragraph) => {
-      return (
-        total +
-        measureWrappedTextHeight({
-          text: paragraph,
-          maxWidth: contentWidth - 28,
-          font: regularFont,
-          size: 9,
-          lineHeight: 12,
-        }) +
-        8
-      );
-    }, 0) +
-    12;
-  ({ page, y } = ensurePage(legalHeight, y));
-
-  drawSectionBox({
-    page,
-    title: "Informacion sobre proteccion de datos",
-    x: margin,
-    y,
-    width: contentWidth,
-    height: legalHeight,
-    boldFont,
-  });
-
-  let legalY = y - 40;
-  for (const paragraph of legalParagraphs) {
-    legalY =
-      drawWrappedText({
-        page,
-        text: paragraph,
-        x: margin + 14,
-        y: legalY,
-        maxWidth: contentWidth - 28,
-        font: regularFont,
-        size: 9,
-        lineHeight: 12,
-      }) - 8;
-  }
-
-  y -= legalHeight + 14;
-
-  const evidenceHeight =
-    28 +
-    evidenceRows.reduce((total, [label, value]) => {
-      return (
-        total +
-        Math.max(
-          measureWrappedTextHeight({
-            text: label,
-            maxWidth: 160,
-            font: boldFont,
-            size: 8.5,
-            lineHeight: 11,
-          }),
-          measureWrappedTextHeight({
-            text: value,
-            maxWidth: contentWidth - 190,
-            font: regularFont,
-            size: 8.5,
-            lineHeight: 11,
-          })
-        ) +
-        10
-      );
-    }, 0) +
-    12;
-  ({ page, y } = ensurePage(evidenceHeight, y));
-
-  drawSectionBox({
-    page,
-    title: "Evidencia electronica de aceptacion",
-    x: margin,
-    y,
-    width: contentWidth,
-    height: evidenceHeight,
-    boldFont,
-  });
-
-  let evidenceY = y - 40;
-  for (const [label, value] of evidenceRows) {
-    page.drawText(label, {
-      x: margin + 14,
-      y: evidenceY,
-      size: 8.5,
-      font: boldFont,
-      color: muted,
-    });
-    evidenceY =
-      drawWrappedText({
-        page,
-        text: value,
-        x: margin + 180,
-        y: evidenceY,
-        maxWidth: contentWidth - 194,
-        font: regularFont,
-        size: 8.5,
-        lineHeight: 11,
-      }) - 10;
-  }
-
-  if (status === "APPROVED") {
-    const acceptanceText = `Aceptacion registrada${signerName ? ` por ${signerName}` : ""}${approvedAt ? ` el ${formatSpanishDateTime(approvedAt)}` : ""}.`;
-    ({ page, y } = ensurePage(54, y - evidenceHeight - 14));
-    page.drawText(acceptanceText, {
-      x: margin,
-      y: y - 24,
-      size: 8.5,
-      font: regularFont,
-      color: muted,
-    });
-  }
-
-  return pdfDoc.save();
 }
 
 export async function sendConsentEmail(params: {
