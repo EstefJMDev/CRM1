@@ -88,12 +88,13 @@ const CONFIRMATION_PARAGRAPHS = [
   "Mediante la aceptación del presente documento confirma expresamente que desea que el colaborador continúe con las actuaciones precontractuales necesarias relacionadas con la gestión iniciada.",
 ];
 
+const ACCEPTANCE_SCOPE_TEXT =
+  "La aceptación del presente documento tiene como única finalidad confirmar su voluntad de continuar con las actuaciones precontractuales iniciadas y no supone, por sí sola, la formalización de un contrato de suministro energético ni la aceptación definitiva de una oferta comercial.";
+
 const DECLARATION_ITEMS = [
-  "He facilitado voluntariamente mis datos al colaborador.",
-  "Deseo continuar con el proceso iniciado.",
-  "Solicito que el colaborador pueda contactar conmigo para completar la gestión solicitada.",
-  "He leído y comprendido el contenido del presente documento.",
-  "Entiendo que podré decidir libremente si formalizo o no la contratación propuesta.",
+  "Declaro que he facilitado voluntariamente mis datos al colaborador identificado en el presente documento y solicito expresamente que continúe las actuaciones precontractuales necesarias para preparar una posible contratación del suministro energético solicitado.",
+  "Autorizo que pueda contactar conmigo exclusivamente para completar dicha gestión.",
+  ACCEPTANCE_SCOPE_TEXT,
 ];
 
 export function generateConsentToken() {
@@ -237,7 +238,7 @@ function buildConsentLegalTextHash(snapshot: ConsentSnapshot) {
     CONFIRMATION_PARAGRAPHS.join("\n"),
     DECLARATION_ITEMS.join("\n"),
     buildConsentLegalParagraphs(snapshot.companyName).join("\n"),
-    "La aceptación de este documento no supone la formalización de un contrato de suministro energético ni la aceptación definitiva de una oferta comercial.",
+    ACCEPTANCE_SCOPE_TEXT,
   ].join("\n\n");
 
   return createHash("sha256").update(source).digest("hex");
@@ -952,7 +953,7 @@ export function renderConsentDocumentHtml({
               ${CONFIRMATION_PARAGRAPHS.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("")}
             </div>
             <div class="callout" style="margin-top: 18px;">
-              La aceptación de este documento no supone la formalización de un contrato de suministro energético ni la aceptación definitiva de una oferta comercial.
+              ${escapeHtml(ACCEPTANCE_SCOPE_TEXT)}
             </div>
           </section>
 
