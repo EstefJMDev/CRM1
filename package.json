@@ -12,13 +12,14 @@
   },
   "dependencies": {
     "@prisma/client": "^6.9.0",
+    "@sparticuz/chromium": "^149.0.0",
     "@vercel/blob": "^2.6.1",
     "bcryptjs": "^3.0.3",
     "geonames-postalcodes": "^1.0.1",
     "jsonwebtoken": "^9.0.3",
     "next": "^16.2.10",
     "prisma": "^6.9.0",
-    "puppeteer": "^25.3.0",
+    "puppeteer-core": "^25.3.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },

@@ -4,6 +4,9 @@ import { renderConsentDocumentPdf } from "@/lib/consent";
 import { getAuthUser } from "@/lib/session";
 import { NextRequest, NextResponse } from "next/server";
 
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

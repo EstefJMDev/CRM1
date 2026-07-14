@@ -1,4 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
+import { existsSync } from "node:fs";
+import chromium from "@sparticuz/chromium";
+import puppeteer from "puppeteer-core";
 
 type ContractConsentSnapshotInput = {
   contractId: string;
@@ -413,6 +416,28 @@ function renderInlineIcon(
   } as const;
 
   return `<svg viewBox="0 0 24 24" aria-hidden="true">${pathByIcon[icon]}</svg>`;
+}
+
+async function getChromiumExecutablePath() {
+  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+    return process.env.PUPPETEER_EXECUTABLE_PATH;
+  }
+
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    return chromium.executablePath();
+  }
+
+  const localChromePaths = [
+    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/usr/bin/google-chrome-stable",
+    "/usr/bin/google-chrome",
+    "/usr/bin/chromium-browser",
+    "/usr/bin/chromium",
+  ];
+
+  return localChromePaths.find((path) => existsSync(path));
 }
 
 export function renderConsentDocumentHtml({
@@ -964,11 +989,18 @@ export async function renderConsentDocumentPdf({
     },
   });
 
-  const puppeteer = await import("puppeteer");
+  const executablePath = await getChromiumExecutablePath();
+  if (!executablePath) {
+    throw new Error(
+      "No se encontro un ejecutable de Chromium. Configura PUPPETEER_EXECUTABLE_PATH para generar PDFs en este entorno."
+    );
+  }
+
   const browser = await puppeteer.launch({
-    headless: true,
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    args: chromium.args,
+    defaultViewport: { width: 1440, height: 2200 },
+    executablePath,
+    headless: "shell",
   });
 
   try {
