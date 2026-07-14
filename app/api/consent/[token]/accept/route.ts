@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { getClientIpAddress } from "@/lib/request-security";
+import { getClientIpAddress, parseUserAgent } from "@/lib/request-security";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(
@@ -50,13 +50,21 @@ export async function POST(
       );
     }
 
+    const approvedIp = getClientIpAddress(request);
+    const approvedUserAgent = request.headers.get("user-agent");
+    const { browser, os } = parseUserAgent(approvedUserAgent);
+
     const updated = await prisma.consentRequest.update({
       where: { token },
       data: {
         status: "APPROVED",
         signerName,
-        signerIp: getClientIpAddress(request),
-        signerUserAgent: request.headers.get("user-agent") || null,
+        signerIp: approvedIp,
+        signerUserAgent: approvedUserAgent || null,
+        approvedIp,
+        approvedUserAgent,
+        approvedBrowser: browser,
+        approvedOs: os,
         approvedAt: new Date(),
       },
     });

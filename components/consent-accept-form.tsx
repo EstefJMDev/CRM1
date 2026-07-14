@@ -24,7 +24,7 @@ export function ConsentAcceptForm({
 
   const handleSubmit = async () => {
     if (!signerName.trim() || !accepted) {
-      setMessage("Debes indicar el nombre del firmante y aceptar el consentimiento.");
+      setMessage("Debes indicar el nombre del firmante y aceptar la confirmacion.");
       return;
     }
 
@@ -50,7 +50,7 @@ export function ConsentAcceptForm({
       };
 
       if (!response.ok) {
-        setMessage(data.error || "No se pudo registrar el consentimiento.");
+        setMessage(data.error || "No se pudo registrar la confirmacion.");
         if (response.status === 409) {
           setSuperseded(true);
         }
@@ -62,7 +62,7 @@ export function ConsentAcceptForm({
       setShowSuccessModal(true);
     } catch (error) {
       console.error(error);
-      setMessage("No se pudo registrar el consentimiento.");
+      setMessage("No se pudo registrar la confirmacion.");
     } finally {
       setSubmitting(false);
     }
@@ -74,7 +74,7 @@ export function ConsentAcceptForm({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4">
           <div className="w-full max-w-md rounded-[28px] border border-emerald-200 bg-white p-6 shadow-2xl">
             <h2 className="text-xl font-bold text-slate-900">
-              Tu consentimiento ha sido aceptado correctamente
+              Tu confirmacion ha sido aceptada correctamente
             </h2>
             <p className="mt-3 text-sm leading-6 text-slate-600">
               Ya puedes descargar el documento firmado.
@@ -100,7 +100,7 @@ export function ConsentAcceptForm({
 
       {approved ? (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-900">
-          Consentimiento aceptado correctamente.
+          Confirmacion aceptada correctamente.
         </div>
       ) : superseded ? (
         <div className="rounded-2xl border border-slate-300 bg-slate-100 px-5 py-4 text-sm text-slate-800">
@@ -128,7 +128,7 @@ export function ConsentAcceptForm({
               className="mt-1 h-4 w-4"
             />
             <span>
-              He revisado este consentimiento y autorizo el tratamiento y las gestiones descritas en el documento.
+              He leido y comprendido este documento, y confirmo que deseo continuar con las actuaciones precontractuales descritas.
             </span>
           </label>
 
@@ -138,7 +138,7 @@ export function ConsentAcceptForm({
             disabled={submitting}
             className="btn-primary w-full disabled:bg-slate-400"
           >
-            {submitting ? "Registrando..." : "Aceptar consentimiento"}
+            {submitting ? "Registrando..." : "Aceptar confirmacion"}
           </button>
 
           {message ? <p className="text-sm text-slate-600">{message}</p> : null}

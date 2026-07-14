@@ -154,6 +154,16 @@ model ConsentRequest {
   signerName     String?
   signerIp       String?
   signerUserAgent String?
+  requestedIp    String?
+  requestedUserAgent String?
+  requestedBrowser String?
+  requestedOs    String?
+  approvedIp     String?
+  approvedUserAgent String?
+  approvedBrowser String?
+  approvedOs     String?
+  legalTextVersion String             @default("2026-07")
+  legalTextHash  String?
   requestedBy    String
   requestedAt    DateTime             @default(now())
   approvedAt     DateTime?

@@ -6,7 +6,7 @@ import {
   generateConsentToken,
   sendConsentEmail,
 } from "@/lib/consent";
-import { getClientIpAddress } from "@/lib/request-security";
+import { getClientIpAddress, parseUserAgent } from "@/lib/request-security";
 import { getAuthUser } from "@/lib/session";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -50,8 +50,11 @@ export async function POST(
     }
 
     const recipientEmail = contract.clientEmail;
-
     const token = generateConsentToken();
+    const requestUserAgent = request.headers.get("user-agent");
+    const requestIp = getClientIpAddress(request);
+    const { browser, os } = parseUserAgent(requestUserAgent);
+    const requestedAt = new Date();
     const snapshot = buildConsentSnapshot({
       contractId: contract.id,
       contractNumber: contract.contractNumber,
@@ -65,6 +68,8 @@ export async function POST(
       province: contract.province,
       zipCode: contract.zipCode,
       cups: contract.cups,
+      commercializer: contract.commercializer,
+      tariff: contract.tariff,
       user: contract.user,
     });
     const consentLink = buildConsentLink(token, request.nextUrl.origin);
@@ -92,9 +97,17 @@ export async function POST(
           token,
           recipientEmail,
           snapshot,
+          requestedIp: requestIp,
+          requestedUserAgent: requestUserAgent,
+          requestedBrowser: browser,
+          requestedOs: os,
+          legalTextVersion: snapshot.legalTextVersion,
+          legalTextHash: snapshot.legalTextHash,
           requestedBy: `${user.name} ${user.lastName || ""}`.trim() || user.email,
+          requestedAt,
           contractId: contract.id,
-          signerIp: getClientIpAddress(request),
+          signerIp: requestIp,
+          signerUserAgent: requestUserAgent,
         },
       });
     });

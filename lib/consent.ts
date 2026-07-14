@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { PDFDocument, PDFPage, StandardFonts, rgb } from "pdf-lib";
 
 type ContractConsentSnapshotInput = {
@@ -14,6 +14,8 @@ type ContractConsentSnapshotInput = {
   province?: string | null;
   zipCode?: string | null;
   cups?: string | null;
+  commercializer?: string | null;
+  tariff?: string | null;
   user?: {
     name?: string | null;
     lastName?: string | null;
@@ -30,16 +32,37 @@ export type ConsentSnapshot = {
   clientPhone: string;
   supplyAddress: string;
   cups: string;
+  commercializer: string;
+  requestedTariff: string;
   collaboratorName: string;
+  collaboratorDocumentId: string;
   collaboratorEmail: string;
   companyName: string;
   companyCif: string;
   companyAddress: string;
   companyPhone: string;
   companyEmail: string;
-  locationLabel: string;
-  requestedDateLabel: string;
-  allowedPurposes: string[];
+  recordNumber: string;
+  issuedAtLabel: string;
+  legalTextVersion: string;
+  legalTextHash: string;
+};
+
+export type ConsentEvidence = {
+  token?: string;
+  recipientEmail?: string | null;
+  requestedAt?: string | Date | null;
+  requestedIp?: string | null;
+  requestedUserAgent?: string | null;
+  requestedBrowser?: string | null;
+  requestedOs?: string | null;
+  approvedAt?: string | Date | null;
+  approvedIp?: string | null;
+  approvedUserAgent?: string | null;
+  approvedBrowser?: string | null;
+  approvedOs?: string | null;
+  legalTextVersion?: string | null;
+  legalTextHash?: string | null;
 };
 
 export type ConsentDocumentData = {
@@ -47,6 +70,7 @@ export type ConsentDocumentData = {
   signerName?: string | null;
   approvedAt?: string | Date | null;
   status?: "PENDING" | "APPROVED" | "SUPERSEDED";
+  evidence?: ConsentEvidence;
 };
 
 export const CONSENT_STATUS_LABELS = {
@@ -56,8 +80,46 @@ export const CONSENT_STATUS_LABELS = {
   SUPERSEDED: "Enlace invalidado por una solicitud mas reciente",
 } as const;
 
+const CONFIRMATION_PARAGRAPHS = [
+  "Usted ha mantenido una conversacion con el colaborador identificado anteriormente, de forma presencial o telefonica, durante la cual ha manifestado su interes en recibir informacion y, en su caso, contratar un suministro energetico.",
+  "Como consecuencia de dicha solicitud, ha facilitado voluntariamente la informacion necesaria para preparar una propuesta adaptada a sus necesidades.",
+  "Mediante la aceptacion del presente documento confirma expresamente que desea que el colaborador continue con las actuaciones precontractuales necesarias relacionadas con la gestion iniciada.",
+];
+
+const DECLARATION_ITEMS = [
+  "He facilitado voluntariamente mis datos al colaborador.",
+  "Deseo continuar con el proceso iniciado.",
+  "Solicito que el colaborador pueda contactar conmigo para completar la gestion solicitada.",
+  "He leido y comprendido el contenido del presente documento.",
+  "Entiendo que podre decidir libremente si formalizo o no la contratacion propuesta.",
+];
+
 export function generateConsentToken() {
   return randomBytes(32).toString("hex");
+}
+
+export function getConsentLegalTextVersion() {
+  return process.env.CONSENT_LEGAL_TEXT_VERSION || "2026-07";
+}
+
+function formatSpanishDate(value: Date) {
+  return value.toLocaleDateString("es-ES");
+}
+
+function formatSpanishDateTime(value?: string | Date | null) {
+  if (!value) return "-";
+  const parsed = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "-";
+
+  return parsed.toLocaleString("es-ES", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
 }
 
 function getConsentOwnerDefaults() {
@@ -65,7 +127,7 @@ function getConsentOwnerDefaults() {
     name:
       process.env.CONSENT_OWNER_NAME ||
       process.env.CONSENT_COMPANY_NAME ||
-      "Titular autorizado",
+      "Empresa",
     documentId:
       process.env.CONSENT_OWNER_DOCUMENT_ID ||
       process.env.CONSENT_COMPANY_CIF ||
@@ -78,14 +140,23 @@ function getConsentOwnerDefaults() {
     email:
       process.env.CONSENT_OWNER_EMAIL ||
       process.env.CONSENT_FROM_EMAIL ||
-      "",
-    location: process.env.CONSENT_SIGNATURE_LOCATION || "Murcia",
+      "-",
   };
+}
+
+function getCollaboratorDocumentId() {
+  return (
+    process.env.CONSENT_COLLABORATOR_DOCUMENT_ID ||
+    process.env.CONSENT_MANAGER_DOCUMENT_ID ||
+    "-"
+  );
 }
 
 export function buildConsentSnapshot(contract: ContractConsentSnapshotInput): ConsentSnapshot {
   const owner = getConsentOwnerDefaults();
-  const collaboratorName = `${contract.user?.name || ""} ${contract.user?.lastName || ""}`.trim() || "Equipo comercial";
+  const collaboratorName =
+    `${contract.user?.name || ""} ${contract.user?.lastName || ""}`.trim() ||
+    "Equipo comercial";
   const fullName = `${contract.clientName || ""} ${contract.clientLastName || ""}`.trim();
   const addressParts = [
     contract.address,
@@ -95,30 +166,34 @@ export function buildConsentSnapshot(contract: ContractConsentSnapshotInput): Co
   ].filter(Boolean);
   const now = new Date();
 
-  return {
+  const snapshot: ConsentSnapshot = {
     contractId: contract.contractId,
     contractNumber: contract.contractNumber,
     clientFullName: fullName || "Cliente",
     clientDni: contract.clientDNI || "-",
-    clientEmail: contract.clientEmail || "",
+    clientEmail: contract.clientEmail || "-",
     clientPhone: contract.clientPhone || "-",
     supplyAddress: addressParts.join(", ") || "-",
     cups: contract.cups || "-",
+    commercializer: contract.commercializer || "-",
+    requestedTariff: contract.tariff || "-",
     collaboratorName,
-    collaboratorEmail: contract.user?.email || "",
+    collaboratorDocumentId: getCollaboratorDocumentId(),
+    collaboratorEmail: contract.user?.email || "-",
     companyName: owner.name,
     companyCif: owner.documentId,
     companyAddress: owner.address,
     companyPhone: owner.phone,
     companyEmail: owner.email,
-    locationLabel: "España",
-    requestedDateLabel: now.toLocaleDateString("es-ES"),
-    allowedPurposes: [
-      "Solicitar, comparar y tramitar ofertas de suministro eléctrico o de gas en mi nombre.",
-      "Gestionar altas, renovaciones, modificaciones, cambios de comercializadora y seguimiento del contrato asociado.",
-      "Contactar conmigo y conservar la documentación necesaria para acreditar este consentimiento y las gestiones realizadas.",
-    ],
+    recordNumber: contract.contractNumber,
+    issuedAtLabel: formatSpanishDate(now),
+    legalTextVersion: getConsentLegalTextVersion(),
+    legalTextHash: "",
   };
+
+  snapshot.legalTextHash = buildConsentLegalTextHash(snapshot);
+
+  return snapshot;
 }
 
 export function getAppBaseUrl(origin?: string | null) {
@@ -143,135 +218,219 @@ function escapeHtml(value: string) {
     .replaceAll("'", "&#39;");
 }
 
+function buildConsentLegalParagraphs() {
+  return [
+    "Responsable del tratamiento: [Empresa]",
+    "Finalidad: Gestionar la solicitud realizada por el interesado y continuar las actuaciones precontractuales necesarias.",
+    "Base juridica: Consentimiento del interesado y aplicacion de medidas precontractuales solicitadas por el propio interesado.",
+    "Conservacion: La evidencia de esta confirmacion sera conservada durante el tiempo legalmente necesario.",
+    "Derechos: Puede ejercer los derechos de acceso, rectificacion, supresion, oposicion, limitacion y portabilidad a traves de los canales habilitados por el responsable del tratamiento.",
+  ];
+}
+
+function buildConsentLegalTextHash(snapshot: ConsentSnapshot) {
+  const source = [
+    snapshot.legalTextVersion,
+    snapshot.recordNumber,
+    CONFIRMATION_PARAGRAPHS.join("\n"),
+    DECLARATION_ITEMS.join("\n"),
+    buildConsentLegalParagraphs().join("\n"),
+    "La aceptacion de este documento no supone la formalizacion de un contrato de suministro energetico ni la aceptacion definitiva de una oferta comercial.",
+  ].join("\n\n");
+
+  return createHash("sha256").update(source).digest("hex");
+}
+
+function getDeviceLabel(userAgent?: string | null) {
+  const normalized = String(userAgent || "").toLowerCase();
+  if (!normalized) return "-";
+  if (
+    normalized.includes("mobile") ||
+    normalized.includes("iphone") ||
+    normalized.includes("android")
+  ) {
+    return "Movil";
+  }
+  if (normalized.includes("ipad") || normalized.includes("tablet")) {
+    return "Tablet";
+  }
+
+  return "Ordenador";
+}
+
+function buildStatusLabel(status?: ConsentDocumentData["status"]) {
+  if (status === "APPROVED") return "Consentimiento aprobado";
+  if (status === "SUPERSEDED") return "Enlace invalidado por una solicitud mas reciente";
+  return "Solicitud pendiente de aprobacion";
+}
+
+function buildDocumentSections(snapshot: ConsentSnapshot, evidence?: ConsentEvidence) {
+  const collaboratorRows: Array<[string, string]> = [
+    ["Empresa", ""],
+    ["Razon Social", snapshot.companyName],
+    ["CIF", snapshot.companyCif],
+    ["Direccion", snapshot.companyAddress],
+    ["Telefono", snapshot.companyPhone],
+    ["Correo electronico", snapshot.companyEmail || "-"],
+    ["Gestor responsable", ""],
+    ["Nombre y apellidos", snapshot.collaboratorName],
+    ["NIF", snapshot.collaboratorDocumentId],
+  ];
+
+  const interestedRows: Array<[string, string]> = [
+    ["Nombre y apellidos", snapshot.clientFullName],
+    ["DNI / NIE", snapshot.clientDni],
+    ["Telefono", snapshot.clientPhone],
+    ["Correo electronico", snapshot.clientEmail || "-"],
+  ];
+
+  const requestRows: Array<[string, string]> = [
+    ["Direccion del suministro", snapshot.supplyAddress],
+    ["CUPS", snapshot.cups],
+    ["Comercializadora", snapshot.commercializer],
+    ["Tarifa solicitada", snapshot.requestedTariff],
+  ];
+
+  const evidenceRows: Array<[string, string]> = [
+    ["Fecha y hora de aceptacion", formatSpanishDateTime(evidence?.approvedAt)],
+    ["Canal", "Correo electronico"],
+    ["Direccion IP", evidence?.approvedIp || "-"],
+    ["Navegador", evidence?.approvedBrowser || "-"],
+    ["Sistema operativo", evidence?.approvedOs || "-"],
+    ["Dispositivo", getDeviceLabel(evidence?.approvedUserAgent)],
+    ["Correo de validacion", evidence?.recipientEmail || snapshot.clientEmail || "-"],
+    ["Expediente", snapshot.recordNumber],
+  ];
+
+  return { collaboratorRows, interestedRows, requestRows, evidenceRows };
+}
+
 export function renderConsentDocumentHtml({
   snapshot,
   status,
+  evidence,
 }: ConsentDocumentData) {
-  const owner = getConsentOwnerDefaults();
-  const ownerName = snapshot.companyName || owner.name;
-  const ownerDocumentId = snapshot.companyCif || owner.documentId;
-  const ownerAddress = snapshot.companyAddress || owner.address;
-  const ownerPhone = snapshot.companyPhone || owner.phone;
-  const ownerEmail = snapshot.companyEmail || owner.email;
+  const statusLabel = buildStatusLabel(status);
+  const { collaboratorRows, interestedRows, requestRows, evidenceRows } =
+    buildDocumentSections(snapshot, evidence);
 
-  const statusLabel =
-    status === "APPROVED"
-      ? "Consentimiento aprobado"
-      : status === "SUPERSEDED"
-        ? "Enlace invalidado por una solicitud mas reciente"
-        : "Solicitud pendiente de aprobación";
+  const renderRows = (rows: Array<[string, string]>) =>
+    rows
+      .map(([label, value]) => {
+        if (!value) {
+          return `<div class="row row-heading">${escapeHtml(label)}</div>`;
+        }
+
+        return `<div class="row"><div class="label">${escapeHtml(label)}</div><div class="value">${escapeHtml(value)}</div></div>`;
+      })
+      .join("");
 
   return `<!DOCTYPE html>
   <html lang="es">
     <head>
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <title>Consentimiento ${escapeHtml(snapshot.contractNumber)}</title>
+      <title>Consentimiento ${escapeHtml(snapshot.recordNumber)}</title>
       <style>
         body { font-family: Arial, sans-serif; background: #eef2f7; color: #0f172a; margin: 0; padding: 24px; }
         .sheet { max-width: 940px; margin: 0 auto; background: #fff; border: 1px solid #dbe3ee; border-radius: 24px; padding: 32px; box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08); }
-        .title { text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 16px; margin-bottom: 24px; }
-        .title h1 { margin: 8px 0 0; font-size: 24px; }
-        .title p { margin: 6px 0 0; color: #475569; }
+        .eyebrow { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; color: #0f766e; text-transform: uppercase; }
+        h1 { margin: 8px 0 4px; font-size: 30px; line-height: 1.15; }
+        .meta { margin: 16px 0 0; display: grid; gap: 10px; }
+        .meta-item { display: grid; grid-template-columns: 180px 1fr; gap: 12px; }
+        .meta-label { font-weight: 700; }
+        .status { display: inline-flex; margin-top: 14px; padding: 7px 12px; border-radius: 999px; background: ${status === "APPROVED" ? "#dcfce7" : status === "SUPERSEDED" ? "#e2e8f0" : "#fef3c7"}; color: ${status === "APPROVED" ? "#166534" : status === "SUPERSEDED" ? "#334155" : "#92400e"}; font-size: 13px; font-weight: 700; }
+        .section { margin-top: 24px; border: 1px solid #dbe3ee; border-radius: 18px; padding: 18px; }
+        .section h2 { margin: 0 0 14px; font-size: 19px; }
         .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
         .card { background: #f8fafc; border: 1px solid #dbe3ee; border-radius: 18px; padding: 18px; }
-        .card h2 { margin: 0 0 14px; font-size: 18px; }
-        .row { margin-bottom: 10px; }
-        .label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; margin-bottom: 3px; }
+        .card h3 { margin: 0 0 14px; font-size: 17px; }
+        .row { margin-bottom: 12px; }
+        .row-heading { margin: 6px 0 12px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #0f172a; }
+        .label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; margin-bottom: 4px; }
         .value { font-weight: 700; word-break: break-word; }
-        .section { margin-top: 22px; border: 1px solid #dbe3ee; border-radius: 18px; padding: 18px; }
-        .section h2 { margin: 0 0 12px; font-size: 18px; }
+        p { margin: 0; line-height: 1.7; }
+        .spaced p + p { margin-top: 14px; }
+        .note { margin-top: 16px; font-weight: 700; }
         .checklist { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
         .checklist li { display: flex; gap: 10px; align-items: flex-start; }
         .check { min-width: 22px; height: 22px; border: 1px solid #334155; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
-        .status { display: inline-flex; margin-top: 10px; padding: 7px 12px; border-radius: 999px; background: ${status === "APPROVED" ? "#dcfce7" : status === "SUPERSEDED" ? "#e2e8f0" : "#fef3c7"}; color: ${status === "APPROVED" ? "#166534" : status === "SUPERSEDED" ? "#334155" : "#92400e"}; font-size: 13px; font-weight: 700; }
-        .intro { margin: 0; font-size: 15px; line-height: 1.7; }
-        .legal { margin: 12px 0 0; line-height: 1.7; }
-        .summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 18px; }
-        .summary-item { border-radius: 14px; border: 1px solid #dbe3ee; background: #fff; padding: 14px; }
-        .summary-item span { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; margin-bottom: 6px; }
+        .table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        .table td { border-top: 1px solid #e2e8f0; padding: 10px 0; vertical-align: top; }
+        .table td:first-child { width: 230px; font-weight: 700; color: #334155; padding-right: 16px; }
         @media print { body { background: #fff; padding: 0; } .sheet { box-shadow: none; border: none; border-radius: 0; max-width: none; } }
-        @media (max-width: 720px) { .grid, .summary { grid-template-columns: 1fr; } .sheet { padding: 20px; } }
+        @media (max-width: 720px) { .grid, .meta-item { grid-template-columns: 1fr; } .sheet { padding: 20px; } .table td, .table td:first-child { display: block; width: auto; padding-right: 0; } }
       </style>
     </head>
     <body>
       <main class="sheet">
-        <header class="title">
-          <p>AUTORIZACIÓN Y CONSENTIMIENTO EXPRESO</p>
-          <h1>Gestiones comerciales y contratación de suministro</h1>
-          <p>Documento asociado al contrato ${escapeHtml(snapshot.contractNumber)}</p>
+        <header>
+          <div class="eyebrow">Cliente</div>
+          <h1>Confirmacion de actuaciones precontractuales</h1>
+          <div class="meta">
+            <div class="meta-item"><div class="meta-label">Expediente:</div><div>${escapeHtml(snapshot.recordNumber)}</div></div>
+            <div class="meta-item"><div class="meta-label">Fecha de emision:</div><div>${escapeHtml(snapshot.issuedAtLabel)}</div></div>
+          </div>
           <span class="status">${escapeHtml(statusLabel)}</span>
         </header>
 
-        <section class="grid">
-          <div class="card">
-            <h2>Datos del gestor autorizado</h2>
-            <div class="row"><div class="label">Nombre</div><div class="value">${escapeHtml(ownerName)}</div></div>
-            <div class="row"><div class="label">NIF / DNI</div><div class="value">${escapeHtml(ownerDocumentId)}</div></div>
-            <div class="row"><div class="label">Domicilio</div><div class="value">${escapeHtml(ownerAddress)}</div></div>
-            <div class="row"><div class="label">Teléfono</div><div class="value">${escapeHtml(ownerPhone)}</div></div>
-            <div class="row"><div class="label">Email</div><div class="value">${escapeHtml(ownerEmail || "-")}</div></div>
-          </div>
-          <div class="card">
-            <h2>Datos del titular del suministro</h2>
-            <div class="row"><div class="label">Nombre / razón social</div><div class="value">${escapeHtml(snapshot.clientFullName)}</div></div>
-            <div class="row"><div class="label">DNI / CIF</div><div class="value">${escapeHtml(snapshot.clientDni)}</div></div>
-            <div class="row"><div class="label">Teléfono</div><div class="value">${escapeHtml(snapshot.clientPhone)}</div></div>
-            <div class="row"><div class="label">Email</div><div class="value">${escapeHtml(snapshot.clientEmail || "-")}</div></div>
-            <div class="row"><div class="label">Dirección del suministro</div><div class="value">${escapeHtml(snapshot.supplyAddress)}</div></div>
-            <div class="row"><div class="label">CUPS</div><div class="value">${escapeHtml(snapshot.cups)}</div></div>
+        <section class="section">
+          <h2>Datos del colaborador</h2>
+          <div class="grid">
+            <div class="card">
+              <h3>Empresa</h3>
+              ${renderRows(collaboratorRows.slice(0, 6))}
+            </div>
+            <div class="card">
+              <h3>Gestor responsable</h3>
+              ${renderRows(collaboratorRows.slice(7))}
+            </div>
           </div>
         </section>
 
         <section class="section">
-          <h2>Declaración de consentimiento</h2>
-          <p class="intro">
-            Yo, <strong>${escapeHtml(snapshot.clientFullName)}</strong>, con DNI/CIF
-            <strong> ${escapeHtml(snapshot.clientDni)}</strong>, como titular o representante
-            autorizado del punto de suministro asociado al contrato
-            <strong> ${escapeHtml(snapshot.contractNumber)}</strong>, otorgo mi consentimiento
-            expreso a <strong>${escapeHtml(ownerName)}</strong>, con NIF/DNI
-            <strong> ${escapeHtml(ownerDocumentId)}</strong>, para que pueda gestionar en mi
-            nombre las actuaciones comerciales y administrativas necesarias relacionadas con dicho suministro.
-          </p>
-
-          <div class="summary">
-            <div class="summary-item">
-              <span>Contrato</span>
-              <strong>${escapeHtml(snapshot.contractNumber)}</strong>
+          <h2>Datos del interesado</h2>
+          <div class="grid">
+            <div class="card">
+              ${renderRows(interestedRows)}
             </div>
-            <div class="summary-item">
-              <span>Fecha de solicitud</span>
-              <strong>${escapeHtml(snapshot.requestedDateLabel)}</strong>
-            </div>
-            <div class="summary-item">
-              <span>Colaborador CRM</span>
-              <strong>${escapeHtml(snapshot.collaboratorName)}</strong>
+            <div class="card">
+              <h3>Datos de la solicitud</h3>
+              ${renderRows(requestRows)}
             </div>
           </div>
+        </section>
 
+        <section class="section spaced">
+          <h2>Confirmacion de la solicitud</h2>
+          ${CONFIRMATION_PARAGRAPHS.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("")}
+          <p class="note">La aceptacion de este documento no supone la formalizacion de un contrato de suministro energetico ni la aceptacion definitiva de una oferta comercial.</p>
+        </section>
+
+        <section class="section">
+          <h2>Declaracion del interesado</h2>
           <ul class="checklist">
-            ${snapshot.allowedPurposes
-              .map(
-                (purpose) =>
-                  `<li><span class="check">X</span><span>${escapeHtml(purpose)}</span></li>`
-              )
-              .join("")}
+            ${DECLARATION_ITEMS.map((item) => `<li><span class="check">X</span><span>${escapeHtml(item)}</span></li>`).join("")}
           </ul>
         </section>
 
-        <section class="section">
-          <h2>Información básica de protección de datos</h2>
-          <p class="legal">Finalidad: gestionar solicitudes de oferta, contratación, modificación, seguimiento y atención del suministro energético solicitado por el cliente.</p>
-          <p class="legal">Legitimación: consentimiento expreso del interesado, ejecución de actuaciones precontractuales o contractuales y cumplimiento de obligaciones legales aplicables.</p>
-          <p class="legal">Conservación: la evidencia del consentimiento y la documentación vinculada se conservarán mientras resulte necesaria para justificar la gestión realizada y atender obligaciones legales.</p>
-          <p class="legal">Derechos: el interesado puede solicitar acceso, rectificación, supresión y demás derechos aplicables dirigiéndose al gestor autorizado a través de los datos de contacto que figuran en este documento.</p>
+        <section class="section spaced">
+          <h2>Informacion sobre proteccion de datos</h2>
+          ${buildConsentLegalParagraphs().map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("")}
         </section>
 
         <section class="section">
-          <h2>Declaración y firma</h2>
-          <p>El firmante declara que los datos facilitados son veraces, que actúa como titular del suministro o representante autorizado y que ha comprendido el alcance de este consentimiento.</p>
-          <p>En España, a ${escapeHtml(snapshot.requestedDateLabel)}</p>
+          <h2>Evidencia electronica de aceptacion</h2>
+          <table class="table">
+            <tbody>
+              ${evidenceRows
+                .map(
+                  ([label, value]) =>
+                    `<tr><td>${escapeHtml(label)}</td><td>${escapeHtml(value)}</td></tr>`
+                )
+                .join("")}
+            </tbody>
+          </table>
         </section>
       </main>
     </body>
@@ -284,61 +443,30 @@ function wrapTextLines(params: {
   font: Awaited<ReturnType<PDFDocument["embedFont"]>>;
   size: number;
 }) {
-  const {
-    text,
-    maxWidth,
-    font,
-    size,
-  } = params;
+  const { text, maxWidth, font, size } = params;
   const words = text.split(/\s+/).filter(Boolean);
-  const normalizeWord = (word: string) => {
-    if (font.widthOfTextAtSize(word, size) <= maxWidth) {
-      return [word];
-    }
-
-    const chunks: string[] = [];
-    let currentChunk = "";
-    for (const character of word) {
-      const candidate = `${currentChunk}${character}`;
-      if (currentChunk && font.widthOfTextAtSize(candidate, size) > maxWidth) {
-        chunks.push(currentChunk);
-        currentChunk = character;
-      } else {
-        currentChunk = candidate;
-      }
-    }
-
-    if (currentChunk) {
-      chunks.push(currentChunk);
-    }
-
-    return chunks;
-  };
-
   const lines: string[] = [];
   let currentLine = "";
 
   for (const word of words) {
-    for (const token of normalizeWord(word)) {
-      const candidate = currentLine ? `${currentLine} ${token}` : token;
-      if (font.widthOfTextAtSize(candidate, size) <= maxWidth) {
-        currentLine = candidate;
-        continue;
-      }
-
-      if (currentLine) {
-        lines.push(currentLine);
-      }
-
-      currentLine = token;
+    const candidate = currentLine ? `${currentLine} ${word}` : word;
+    if (font.widthOfTextAtSize(candidate, size) <= maxWidth) {
+      currentLine = candidate;
+      continue;
     }
+
+    if (currentLine) {
+      lines.push(currentLine);
+    }
+
+    currentLine = word;
   }
 
   if (currentLine) {
     lines.push(currentLine);
   }
 
-  return lines;
+  return lines.length > 0 ? lines : [""];
 }
 
 function drawWrappedText(params: {
@@ -363,12 +491,7 @@ function drawWrappedText(params: {
     color = rgb(0.15, 0.23, 0.32),
     lineHeight = size + 4,
   } = params;
-  const lines = wrapTextLines({
-    text,
-    maxWidth,
-    font,
-    size,
-  });
+  const lines = wrapTextLines({ text, maxWidth, font, size });
 
   let cursorY = y;
   for (const line of lines) {
@@ -386,21 +509,98 @@ function measureWrappedTextHeight(params: {
   size: number;
   lineHeight?: number;
 }) {
-  const {
-    text,
-    maxWidth,
-    font,
-    size,
-    lineHeight = size + 4,
-  } = params;
-  const lines = wrapTextLines({
-    text,
-    maxWidth,
-    font,
-    size,
-  });
+  const { text, maxWidth, font, size, lineHeight = size + 4 } = params;
+  return wrapTextLines({ text, maxWidth, font, size }).length * lineHeight;
+}
 
-  return Math.max(lines.length, 1) * lineHeight;
+function drawKeyValueRows(params: {
+  page: PDFPage;
+  rows: Array<[string, string]>;
+  x: number;
+  y: number;
+  width: number;
+  font: Awaited<ReturnType<PDFDocument["embedFont"]>>;
+  boldFont: Awaited<ReturnType<PDFDocument["embedFont"]>>;
+  labelSize?: number;
+  valueSize?: number;
+}) {
+  const {
+    page,
+    rows,
+    x,
+    y,
+    width,
+    font,
+    boldFont,
+    labelSize = 8,
+    valueSize = 9,
+  } = params;
+
+  let cursorY = y;
+  for (const [label, value] of rows) {
+    page.drawText(label, {
+      x,
+      y: cursorY,
+      size: labelSize,
+      font: boldFont,
+      color: rgb(0.39, 0.45, 0.52),
+    });
+
+    cursorY = drawWrappedText({
+      page,
+      text: value,
+      x,
+      y: cursorY - 12,
+      maxWidth: width,
+      font,
+      size: valueSize,
+      lineHeight: valueSize + 3,
+      color: rgb(0.09, 0.11, 0.16),
+    }) - 8;
+  }
+
+  return cursorY;
+}
+
+function measureKeyValueRowsHeight(params: {
+  rows: Array<[string, string]>;
+  width: number;
+  font: Awaited<ReturnType<PDFDocument["embedFont"]>>;
+  size?: number;
+  lineHeight?: number;
+}) {
+  const { rows, width, font, size = 9, lineHeight = size + 3 } = params;
+  return rows.reduce((total, [, value]) => {
+    return total + 12 + measureWrappedTextHeight({ text: value, maxWidth: width, font, size, lineHeight }) + 8;
+  }, 0);
+}
+
+function drawSectionBox(params: {
+  page: PDFPage;
+  title: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  boldFont: Awaited<ReturnType<PDFDocument["embedFont"]>>;
+}) {
+  const { page, title, x, y, width, height, boldFont } = params;
+  page.drawRectangle({
+    x,
+    y: y - height,
+    width,
+    height,
+    color: rgb(1, 1, 1),
+    borderColor: rgb(0.86, 0.89, 0.93),
+    borderWidth: 1,
+  });
+  page.drawText(title, {
+    x: x + 14,
+    y: y - 20,
+    size: 12,
+    font: boldFont,
+    color: rgb(0.09, 0.11, 0.16),
+  });
 }
 
 export async function renderConsentDocumentPdf({
@@ -408,41 +608,42 @@ export async function renderConsentDocumentPdf({
   signerName,
   approvedAt,
   status,
+  evidence,
 }: ConsentDocumentData) {
   const pdfDoc = await PDFDocument.create();
-  const page = pdfDoc.addPage([595.28, 841.89]);
+  let page = pdfDoc.addPage([595.28, 841.89]);
   const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-  const accent = rgb(0.06, 0.46, 0.43);
-  const dark = rgb(0.09, 0.11, 0.16);
-  const muted = rgb(0.39, 0.45, 0.52);
-  const owner = getConsentOwnerDefaults();
-  const ownerName = snapshot.companyName || owner.name;
-  const ownerDocumentId = snapshot.companyCif || owner.documentId;
-  const ownerAddress = snapshot.companyAddress || owner.address;
-  const ownerPhone = snapshot.companyPhone || owner.phone;
-  const ownerEmail = snapshot.companyEmail || owner.email;
-  const approvalLabel =
-    approvedAt instanceof Date
-      ? approvedAt.toLocaleString("es-ES")
-      : approvedAt
-        ? new Date(approvedAt).toLocaleString("es-ES")
-        : "";
   const margin = 42;
   const contentWidth = page.getWidth() - margin * 2;
-  const sectionPadding = 14;
-
-  page.drawRectangle({
-    x: margin - 12,
-    y: 54,
-    width: contentWidth + 24,
-    height: page.getHeight() - 96,
-    color: rgb(1, 1, 1),
+  const columnGap = 16;
+  const columnWidth = (contentWidth - columnGap) / 2;
+  const dark = rgb(0.09, 0.11, 0.16);
+  const muted = rgb(0.39, 0.45, 0.52);
+  const accent = rgb(0.06, 0.46, 0.43);
+  const statusLabel = buildStatusLabel(status);
+  const {
+    collaboratorRows,
+    interestedRows,
+    requestRows,
+    evidenceRows,
+  } = buildDocumentSections(snapshot, {
+    ...evidence,
+    approvedAt: evidence?.approvedAt || approvedAt,
   });
+
+  const ensurePage = (requiredHeight: number, currentY: number) => {
+    if (currentY - requiredHeight >= 56) {
+      return { page, y: currentY };
+    }
+
+    page = pdfDoc.addPage([595.28, 841.89]);
+    return { page, y: page.getHeight() - 72 };
+  };
 
   let y = page.getHeight() - 72;
 
-  page.drawText("AUTORIZACIÓN Y CONSENTIMIENTO EXPRESO", {
+  page.drawText("CLIENTE", {
     x: margin,
     y,
     size: 11,
@@ -451,16 +652,25 @@ export async function renderConsentDocumentPdf({
   });
   y -= 24;
 
-  page.drawText("Gestiones comerciales y contratación de suministro", {
+  page.drawText("CONFIRMACION DE ACTUACIONES PRECONTRACTUALES", {
     x: margin,
     y,
-    size: 18,
+    size: 17,
     font: boldFont,
     color: dark,
   });
-  y -= 20;
+  y -= 26;
 
-  page.drawText(`Contrato ${snapshot.contractNumber}`, {
+  page.drawText(`Expediente: ${snapshot.recordNumber}`, {
+    x: margin,
+    y,
+    size: 10,
+    font: boldFont,
+    color: dark,
+  });
+  y -= 16;
+
+  page.drawText(`Fecha de emision: ${snapshot.issuedAtLabel}`, {
     x: margin,
     y,
     size: 10,
@@ -468,392 +678,376 @@ export async function renderConsentDocumentPdf({
     color: muted,
   });
 
-  const statusLabel =
-    status === "APPROVED" ? "Consentimiento aprobado" : "Solicitud pendiente de aprobación";
   const statusWidth = boldFont.widthOfTextAtSize(statusLabel, 10) + 18;
   page.drawRectangle({
     x: page.getWidth() - margin - statusWidth,
     y: y - 5,
     width: statusWidth,
     height: 20,
-    color: status === "APPROVED" ? rgb(0.86, 0.97, 0.9) : rgb(1, 0.95, 0.79),
+    color: status === "APPROVED" ? rgb(0.86, 0.97, 0.9) : status === "SUPERSEDED" ? rgb(0.89, 0.91, 0.94) : rgb(1, 0.95, 0.79),
   });
   page.drawText(statusLabel, {
     x: page.getWidth() - margin - statusWidth + 9,
     y,
     size: 10,
     font: boldFont,
-    color: status === "APPROVED" ? rgb(0.09, 0.4, 0.21) : rgb(0.58, 0.25, 0.05),
+    color: status === "APPROVED" ? rgb(0.09, 0.4, 0.21) : status === "SUPERSEDED" ? rgb(0.2, 0.25, 0.32) : rgb(0.58, 0.25, 0.05),
   });
 
-  y -= 42;
+  y -= 34;
 
-  const columnGap = 18;
-  const columnWidth = (contentWidth - columnGap) / 2;
-  const leftX = margin;
-  const rightX = margin + columnWidth + columnGap;
-  const cardTop = y;
+  const companyRows = collaboratorRows.slice(1, 6);
+  const managerRows = collaboratorRows.slice(7);
+  const companyHeight = 46 + measureKeyValueRowsHeight({
+    rows: companyRows,
+    width: columnWidth - 28,
+    font: regularFont,
+  });
+  const managerHeight = 46 + measureKeyValueRowsHeight({
+    rows: managerRows,
+    width: columnWidth - 28,
+    font: regularFont,
+  });
+  const collaboratorHeight = Math.max(companyHeight, managerHeight, 170);
+  ({ page, y } = ensurePage(collaboratorHeight, y));
 
-  const measureFieldBlock = (title: string, rows: Array<[string, string]>) => {
-    let height = 18 + 20;
-    for (const [, value] of rows) {
-      height += 10;
-      height += measureWrappedTextHeight({
-        text: value || "-",
-        maxWidth: columnWidth - sectionPadding * 2,
-        font: regularFont,
-        size: 9,
-        lineHeight: 11,
-      });
-      height += 8;
-    }
-    return Math.max(height + 12, 160);
-  };
+  drawSectionBox({
+    page,
+    title: "Datos del colaborador",
+    x: margin,
+    y,
+    width: contentWidth,
+    height: collaboratorHeight,
+    boldFont,
+  });
 
-  const ownerRows: Array<[string, string]> = [
-    ["Nombre", ownerName],
-    ["NIF / DNI", ownerDocumentId],
-    ["Domicilio", ownerAddress],
-    ["Teléfono", ownerPhone],
-    ["Email", ownerEmail || "-"],
-  ];
-  const clientRows: Array<[string, string]> = [
-    ["Nombre / razón social", snapshot.clientFullName],
-    ["DNI / CIF", snapshot.clientDni],
-    ["Teléfono", snapshot.clientPhone],
-    ["Email", snapshot.clientEmail || "-"],
-    ["Dirección del suministro", snapshot.supplyAddress],
-    ["CUPS", snapshot.cups],
-  ];
-  const cardHeight = Math.max(
-    measureFieldBlock("Datos del gestor autorizado", ownerRows),
-    measureFieldBlock("Datos del titular del suministro", clientRows)
-  );
-
-  for (const x of [leftX, rightX]) {
+  const innerTop = y - 40;
+  for (const [x, title, rows] of [
+    [margin + 14, "Empresa", companyRows],
+    [margin + 14 + columnWidth + columnGap, "Gestor responsable", managerRows],
+  ] as const) {
     page.drawRectangle({
       x,
-      y: cardTop - cardHeight,
-      width: columnWidth,
-      height: cardHeight,
+      y: y - collaboratorHeight + 14,
+      width: columnWidth - 14,
+      height: collaboratorHeight - 54,
       color: rgb(0.97, 0.98, 0.99),
       borderColor: rgb(0.86, 0.89, 0.93),
       borderWidth: 1,
     });
-  }
-
-  const drawFieldBlock = (x: number, startY: number, title: string, rows: Array<[string, string]>) => {
     page.drawText(title, {
-      x: x + sectionPadding,
-      y: startY - 18,
-      size: 12,
+      x: x + 12,
+      y: innerTop,
+      size: 11,
       font: boldFont,
       color: dark,
     });
-
-    let rowY = startY - 38;
-    for (const [label, value] of rows) {
-      page.drawText(label, {
-        x: x + sectionPadding,
-        y: rowY,
-        size: 8,
-        font: boldFont,
-        color: muted,
-      });
-      rowY = drawWrappedText({
-        page,
-        text: value || "-",
-        x: x + sectionPadding,
-        y: rowY - 12,
-        maxWidth: columnWidth - sectionPadding * 2,
-        font: regularFont,
-        size: 9,
-        color: dark,
-        lineHeight: 11,
-      }) - 8;
-    }
-  };
-
-  drawFieldBlock(leftX, cardTop, "Datos del gestor autorizado", ownerRows);
-  drawFieldBlock(rightX, cardTop, "Datos del titular del suministro", clientRows);
-
-  y = cardTop - cardHeight - 24;
-
-  const summaryContainerWidth = contentWidth - sectionPadding * 2;
-  const summaryGap = 12;
-  const summaryWidth = (summaryContainerWidth - summaryGap * 2) / 3;
-  const summaryItems = [
-    ["Contrato", snapshot.contractNumber],
-    ["Fecha de solicitud", snapshot.requestedDateLabel],
-    ["Colaborador CRM", snapshot.collaboratorName],
-  ] as const;
-  let summaryHeight = 0;
-  for (const [, value] of summaryItems) {
-    summaryHeight = Math.max(
-      summaryHeight,
-      22 +
-        measureWrappedTextHeight({
-          text: value,
-          maxWidth: summaryWidth - 20,
-          font: boldFont,
-          size: 8.5,
-          lineHeight: 10,
-        })
-    );
-  }
-
-  const introHeight = measureWrappedTextHeight({
-    text: `Yo, ${snapshot.clientFullName}, con DNI/CIF ${snapshot.clientDni}, como titular o representante autorizado del punto de suministro asociado al contrato ${snapshot.contractNumber}, otorgo mi consentimiento expreso a ${ownerName}, con NIF/DNI ${ownerDocumentId}, para que pueda gestionar en mi nombre las actuaciones comerciales y administrativas necesarias relacionadas con dicho suministro.`,
-    maxWidth: contentWidth - sectionPadding * 2,
-    font: regularFont,
-    size: 10,
-    lineHeight: 14,
-  });
-
-  let checklistHeight = 0;
-  for (const purpose of snapshot.allowedPurposes) {
-    checklistHeight += measureWrappedTextHeight({
-      text: purpose,
-      maxWidth: contentWidth - 46,
-      font: regularFont,
-      size: 9,
-      lineHeight: 12,
-    }) + 6;
-  }
-
-  const consentSectionHeight =
-    24 + 20 + introHeight + 16 + summaryHeight + 18 + checklistHeight + 18;
-
-  page.drawRectangle({
-    x: margin,
-    y: y - consentSectionHeight,
-    width: contentWidth,
-    height: consentSectionHeight,
-    color: rgb(1, 1, 1),
-    borderColor: rgb(0.86, 0.89, 0.93),
-    borderWidth: 1,
-  });
-
-  page.drawText("Declaración de consentimiento", {
-    x: margin + sectionPadding,
-    y: y - 20,
-    size: 12,
-    font: boldFont,
-    color: dark,
-  });
-
-  y = drawWrappedText({
-    page,
-    text: `Yo, ${snapshot.clientFullName}, con DNI/CIF ${snapshot.clientDni}, como titular o representante autorizado del punto de suministro asociado al contrato ${snapshot.contractNumber}, otorgo mi consentimiento expreso a ${ownerName}, con NIF/DNI ${ownerDocumentId}, para que pueda gestionar en mi nombre las actuaciones comerciales y administrativas necesarias relacionadas con dicho suministro.`,
-    x: margin + sectionPadding,
-    y: y - 40,
-    maxWidth: contentWidth - sectionPadding * 2,
-    font: regularFont,
-    size: 10,
-    color: dark,
-    lineHeight: 14,
-  }) - 12;
-
-  let summaryX = margin + sectionPadding;
-  for (const [label, value] of summaryItems) {
-    page.drawRectangle({
-      x: summaryX,
-      y: y - summaryHeight,
-      width: summaryWidth,
-      height: summaryHeight,
-      color: rgb(0.97, 0.98, 0.99),
-    });
-    page.drawText(label, {
-      x: summaryX + 10,
-      y: y - 14,
-      size: 7.5,
-      font: boldFont,
-      color: muted,
-    });
-    drawWrappedText({
+    drawKeyValueRows({
       page,
-      text: value,
-      x: summaryX + 10,
-      y: y - 28,
-      maxWidth: summaryWidth - 20,
-      font: boldFont,
-      size: 8.5,
-      color: accent,
-      lineHeight: 10,
+      rows,
+      x: x + 12,
+      y: innerTop - 20,
+      width: columnWidth - 38,
+      font: regularFont,
+      boldFont,
     });
-    summaryX += summaryWidth + summaryGap;
   }
 
-  y -= summaryHeight + 18;
-  for (const purpose of snapshot.allowedPurposes) {
+  y -= collaboratorHeight + 14;
+
+  const interestedHeight = 46 + measureKeyValueRowsHeight({
+    rows: interestedRows,
+    width: columnWidth - 28,
+    font: regularFont,
+  });
+  const requestHeight = 46 + measureKeyValueRowsHeight({
+    rows: requestRows,
+    width: columnWidth - 28,
+    font: regularFont,
+  });
+  const dataHeight = Math.max(interestedHeight, requestHeight, 160);
+  ({ page, y } = ensurePage(dataHeight, y));
+
+  drawSectionBox({
+    page,
+    title: "Datos del interesado y de la solicitud",
+    x: margin,
+    y,
+    width: contentWidth,
+    height: dataHeight,
+    boldFont,
+  });
+
+  for (const [x, title, rows] of [
+    [margin + 14, "Datos del interesado", interestedRows],
+    [margin + 14 + columnWidth + columnGap, "Datos de la solicitud", requestRows],
+  ] as const) {
     page.drawRectangle({
-      x: margin + sectionPadding,
-      y: y - 2,
+      x,
+      y: y - dataHeight + 14,
+      width: columnWidth - 14,
+      height: dataHeight - 54,
+      color: rgb(0.97, 0.98, 0.99),
+      borderColor: rgb(0.86, 0.89, 0.93),
+      borderWidth: 1,
+    });
+    page.drawText(title, {
+      x: x + 12,
+      y: y - 40,
+      size: 11,
+      font: boldFont,
+      color: dark,
+    });
+    drawKeyValueRows({
+      page,
+      rows,
+      x: x + 12,
+      y: y - 60,
+      width: columnWidth - 38,
+      font: regularFont,
+      boldFont,
+    });
+  }
+
+  y -= dataHeight + 14;
+
+  const confirmationHeight =
+    28 +
+    CONFIRMATION_PARAGRAPHS.reduce((total, paragraph) => {
+      return (
+        total +
+        measureWrappedTextHeight({
+          text: paragraph,
+          maxWidth: contentWidth - 28,
+          font: regularFont,
+          size: 9.5,
+          lineHeight: 13,
+        }) +
+        8
+      );
+    }, 0) +
+    measureWrappedTextHeight({
+      text: "La aceptacion de este documento no supone la formalizacion de un contrato de suministro energetico ni la aceptacion definitiva de una oferta comercial.",
+      maxWidth: contentWidth - 28,
+      font: boldFont,
+      size: 9.5,
+      lineHeight: 13,
+    }) +
+    24;
+  ({ page, y } = ensurePage(confirmationHeight, y));
+
+  drawSectionBox({
+    page,
+    title: "Confirmacion de la solicitud",
+    x: margin,
+    y,
+    width: contentWidth,
+    height: confirmationHeight,
+    boldFont,
+  });
+
+  let textY = y - 40;
+  for (const paragraph of CONFIRMATION_PARAGRAPHS) {
+    textY =
+      drawWrappedText({
+        page,
+        text: paragraph,
+        x: margin + 14,
+        y: textY,
+        maxWidth: contentWidth - 28,
+        font: regularFont,
+        size: 9.5,
+        lineHeight: 13,
+      }) - 8;
+  }
+  drawWrappedText({
+    page,
+    text: "La aceptacion de este documento no supone la formalizacion de un contrato de suministro energetico ni la aceptacion definitiva de una oferta comercial.",
+    x: margin + 14,
+    y: textY,
+    maxWidth: contentWidth - 28,
+    font: boldFont,
+    size: 9.5,
+    lineHeight: 13,
+    color: dark,
+  });
+
+  y -= confirmationHeight + 14;
+
+  const declarationHeight =
+    28 +
+    DECLARATION_ITEMS.reduce((total, item) => {
+      return (
+        total +
+        measureWrappedTextHeight({
+          text: item,
+          maxWidth: contentWidth - 52,
+          font: regularFont,
+          size: 9,
+          lineHeight: 12,
+        }) +
+        8
+      );
+    }, 0) +
+    16;
+  ({ page, y } = ensurePage(declarationHeight, y));
+
+  drawSectionBox({
+    page,
+    title: "Declaracion del interesado",
+    x: margin,
+    y,
+    width: contentWidth,
+    height: declarationHeight,
+    boldFont,
+  });
+
+  let checklistY = y - 40;
+  for (const item of DECLARATION_ITEMS) {
+    page.drawRectangle({
+      x: margin + 14,
+      y: checklistY - 2,
       width: 10,
       height: 10,
       borderColor: rgb(0.2, 0.25, 0.32),
       borderWidth: 1,
     });
     page.drawText("X", {
-      x: margin + sectionPadding + 2.5,
-      y: y - 0.5,
+      x: margin + 16.5,
+      y: checklistY - 0.5,
       size: 8,
       font: boldFont,
       color: dark,
     });
-    y = drawWrappedText({
-      page,
-      text: purpose,
-      x: margin + sectionPadding + 18,
-      y,
-      maxWidth: contentWidth - 46,
-      font: regularFont,
-      size: 9,
-      color: dark,
-      lineHeight: 12,
-    }) - 6;
+    checklistY =
+      drawWrappedText({
+        page,
+        text: item,
+        x: margin + 32,
+        y: checklistY,
+        maxWidth: contentWidth - 52,
+        font: regularFont,
+        size: 9,
+        lineHeight: 12,
+      }) - 8;
   }
 
-  y -= 12;
-  const legalParagraphs = [
-    "Finalidad: gestionar solicitudes de oferta, contratación, modificación, seguimiento y atención del suministro energético solicitado por el cliente.",
-    "Legitimación: consentimiento expreso del interesado, ejecución de actuaciones precontractuales o contractuales y cumplimiento de obligaciones legales aplicables.",
-    "Conservación: la evidencia del consentimiento y la documentación vinculada se conservarán mientras resulte necesaria para justificar la gestión realizada y atender obligaciones legales.",
-    "Derechos: el interesado puede solicitar acceso, rectificación, supresión y demás derechos aplicables dirigiéndose al gestor autorizado a través de los datos de contacto que figuran en este documento.",
-  ];
+  y -= declarationHeight + 14;
+
+  const legalParagraphs = buildConsentLegalParagraphs();
   const legalHeight =
-    24 +
-    20 +
-    legalParagraphs.reduce(
-      (total, paragraph) =>
+    28 +
+    legalParagraphs.reduce((total, paragraph) => {
+      return (
         total +
         measureWrappedTextHeight({
           text: paragraph,
-          maxWidth: contentWidth - sectionPadding * 2,
+          maxWidth: contentWidth - 28,
           font: regularFont,
           size: 9,
           lineHeight: 12,
         }) +
-        6,
-      0
-    ) +
-    10;
-  page.drawRectangle({
+        8
+      );
+    }, 0) +
+    12;
+  ({ page, y } = ensurePage(legalHeight, y));
+
+  drawSectionBox({
+    page,
+    title: "Informacion sobre proteccion de datos",
     x: margin,
-    y: y - legalHeight,
+    y,
     width: contentWidth,
     height: legalHeight,
-    color: rgb(1, 1, 1),
-    borderColor: rgb(0.86, 0.89, 0.93),
-    borderWidth: 1,
+    boldFont,
   });
 
-  page.drawText("Información básica de protección de datos", {
-    x: margin + sectionPadding,
-    y: y - 20,
-    size: 12,
-    font: boldFont,
-    color: dark,
-  });
-
-  let legalY = y - 42;
+  let legalY = y - 40;
   for (const paragraph of legalParagraphs) {
-    legalY = drawWrappedText({
-      page,
-      text: paragraph,
-      x: margin + sectionPadding,
-      y: legalY,
-      maxWidth: contentWidth - sectionPadding * 2,
-      font: regularFont,
-      size: 9,
-      color: dark,
-      lineHeight: 12,
-    }) - 6;
+    legalY =
+      drawWrappedText({
+        page,
+        text: paragraph,
+        x: margin + 14,
+        y: legalY,
+        maxWidth: contentWidth - 28,
+        font: regularFont,
+        size: 9,
+        lineHeight: 12,
+      }) - 8;
   }
 
-  y -= legalHeight + 12;
+  y -= legalHeight + 14;
 
-  const declarationText =
-    "El firmante declara que los datos facilitados son veraces, que actúa como titular del suministro o representante autorizado y que ha comprendido el alcance de este consentimiento.";
-  const declarationHeight = measureWrappedTextHeight({
-    text: declarationText,
-    maxWidth: contentWidth - sectionPadding * 2,
-    font: regularFont,
-    size: 9,
-    lineHeight: 12,
+  const evidenceHeight =
+    28 +
+    evidenceRows.reduce((total, [label, value]) => {
+      return (
+        total +
+        Math.max(
+          measureWrappedTextHeight({
+            text: label,
+            maxWidth: 160,
+            font: boldFont,
+            size: 8.5,
+            lineHeight: 11,
+          }),
+          measureWrappedTextHeight({
+            text: value,
+            maxWidth: contentWidth - 190,
+            font: regularFont,
+            size: 8.5,
+            lineHeight: 11,
+          })
+        ) +
+        10
+      );
+    }, 0) +
+    12;
+  ({ page, y } = ensurePage(evidenceHeight, y));
+
+  drawSectionBox({
+    page,
+    title: "Evidencia electronica de aceptacion",
+    x: margin,
+    y,
+    width: contentWidth,
+    height: evidenceHeight,
+    boldFont,
   });
-  const acceptanceText =
-    status === "APPROVED"
-      ? `Aceptación registrada${signerName ? ` por ${signerName}` : ""}${approvalLabel ? ` el ${approvalLabel}` : ""}.`
-      : "";
-  const acceptanceHeight = acceptanceText
-    ? measureWrappedTextHeight({
-        text: acceptanceText,
-        maxWidth: contentWidth - sectionPadding * 2,
+
+  let evidenceY = y - 40;
+  for (const [label, value] of evidenceRows) {
+    page.drawText(label, {
+      x: margin + 14,
+      y: evidenceY,
+      size: 8.5,
+      font: boldFont,
+      color: muted,
+    });
+    evidenceY =
+      drawWrappedText({
+        page,
+        text: value,
+        x: margin + 180,
+        y: evidenceY,
+        maxWidth: contentWidth - 194,
         font: regularFont,
         size: 8.5,
         lineHeight: 11,
-      }) + 6
-    : 0;
-  const declarationSectionHeight = 24 + 20 + declarationHeight + 12 + 12 + acceptanceHeight + 14;
-  let declarationPage = page;
-  let declarationTopY = y;
-
-  // Keep the final signature section visible by moving it to a new page when needed.
-  if (declarationTopY - declarationSectionHeight < 54) {
-    declarationPage = pdfDoc.addPage([595.28, 841.89]);
-    declarationTopY = declarationPage.getHeight() - 72;
+      }) - 10;
   }
 
-  declarationPage.drawRectangle({
-    x: margin,
-    y: declarationTopY - declarationSectionHeight,
-    width: contentWidth,
-    height: declarationSectionHeight,
-    color: rgb(1, 1, 1),
-    borderColor: rgb(0.86, 0.89, 0.93),
-    borderWidth: 1,
-  });
-
-  declarationPage.drawText("Declaración y firma", {
-    x: margin + sectionPadding,
-    y: declarationTopY - 20,
-    size: 12,
-    font: boldFont,
-    color: dark,
-  });
-
-  const declarationBodyY = drawWrappedText({
-    page: declarationPage,
-    text: declarationText,
-    x: margin + sectionPadding,
-    y: declarationTopY - 42,
-    maxWidth: contentWidth - sectionPadding * 2,
-    font: regularFont,
-    size: 9,
-    color: dark,
-    lineHeight: 12,
-  }) - 8;
-
-  declarationPage.drawText(`En España, a ${snapshot.requestedDateLabel}`, {
-    x: margin + sectionPadding,
-    y: declarationBodyY,
-    size: 9,
-    font: regularFont,
-    color: dark,
-  });
-
-  if (acceptanceText) {
-    drawWrappedText({
-      page: declarationPage,
-      text: acceptanceText,
-      x: margin + sectionPadding,
-      y: declarationBodyY - 18,
-      maxWidth: contentWidth - sectionPadding * 2,
-      font: regularFont,
+  if (status === "APPROVED") {
+    const acceptanceText = `Aceptacion registrada${signerName ? ` por ${signerName}` : ""}${approvedAt ? ` el ${formatSpanishDateTime(approvedAt)}` : ""}.`;
+    ({ page, y } = ensurePage(54, y - evidenceHeight - 14));
+    page.drawText(acceptanceText, {
+      x: margin,
+      y: y - 24,
       size: 8.5,
+      font: regularFont,
       color: muted,
-      lineHeight: 11,
     });
   }
 
@@ -870,7 +1064,7 @@ export async function sendConsentEmail(params: {
   const fromEmail = process.env.CONSENT_FROM_EMAIL;
 
   if (!apiKey || !fromEmail) {
-    throw new Error("El correo de consentimientos no está configurado");
+    throw new Error("El correo de consentimientos no esta configurado");
   }
 
   const response = await fetch("https://api.resend.com/emails", {
@@ -882,19 +1076,19 @@ export async function sendConsentEmail(params: {
     body: JSON.stringify({
       from: fromEmail,
       to: [params.to],
-      subject: `Solicitud de consentimiento - contrato ${params.contractNumber}`,
+      subject: `Solicitud de confirmacion precontractual - expediente ${params.contractNumber}`,
       html: `
         <div style="font-family: Arial, sans-serif; color: #0f172a; line-height: 1.6;">
-          <h2 style="margin-bottom: 12px;">Solicitud de consentimiento</h2>
+          <h2 style="margin-bottom: 12px;">Confirmacion de actuaciones precontractuales</h2>
           <p>Hola ${params.customerName || "cliente"},</p>
-          <p>Te hemos enviado esta solicitud para que revises y aceptes el consentimiento asociado a tu contrato <strong>${params.contractNumber}</strong>.</p>
-          <p>En el documento verás los datos del titular del suministro y del gestor autorizado para realizar las gestiones comerciales y administrativas relacionadas con el contrato.</p>
+          <p>Te hemos enviado este enlace para que revises y aceptes la confirmacion de actuaciones precontractuales asociada al expediente <strong>${params.contractNumber}</strong>.</p>
+          <p>En el documento veras los datos del colaborador, del interesado, de la solicitud y la informacion legal correspondiente.</p>
           <p>
             <a href="${params.consentLink}" style="display:inline-block;background:#0f766e;color:#ffffff;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:600;">
-              Revisar y aceptar consentimiento
+              Revisar y aceptar documento
             </a>
           </p>
-          <p>Si el botón no funciona, copia y pega este enlace en tu navegador:</p>
+          <p>Si el boton no funciona, copia y pega este enlace en tu navegador:</p>
           <p><a href="${params.consentLink}">${params.consentLink}</a></p>
         </div>
       `,

@@ -28,6 +28,22 @@ export async function GET(
       signerName: consentRequest.signerName,
       approvedAt: consentRequest.approvedAt,
       status: consentRequest.status,
+      evidence: {
+        token: consentRequest.token,
+        recipientEmail: consentRequest.recipientEmail,
+        requestedAt: consentRequest.requestedAt,
+        requestedIp: consentRequest.requestedIp,
+        requestedUserAgent: consentRequest.requestedUserAgent,
+        requestedBrowser: consentRequest.requestedBrowser,
+        requestedOs: consentRequest.requestedOs,
+        approvedAt: consentRequest.approvedAt,
+        approvedIp: consentRequest.approvedIp || consentRequest.signerIp,
+        approvedUserAgent: consentRequest.approvedUserAgent || consentRequest.signerUserAgent,
+        approvedBrowser: consentRequest.approvedBrowser,
+        approvedOs: consentRequest.approvedOs,
+        legalTextVersion: consentRequest.legalTextVersion,
+        legalTextHash: consentRequest.legalTextHash,
+      },
     });
 
     return new NextResponse(Buffer.from(pdfBytes), {
